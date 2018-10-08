@@ -26,6 +26,7 @@ website/node_modules
 
 website/vendor
 vendor
+terraform-provider-skytap
 
 # Test exclusions
 !command/test-fixtures/**/*.tfstate
