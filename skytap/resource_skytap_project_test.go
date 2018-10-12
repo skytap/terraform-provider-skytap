@@ -1,87 +1,136 @@
 package skytap
 
 import (
-	"context"
 	"fmt"
+	"log"
+	"testing"
+
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	"github.com/opencredo/skytap-sdk-go-internal"
-	"strings"
-	"testing"
+	"github.com/pkg/errors"
+	"github.com/skytap/terraform-provider-skytap/skytap/utils"
 )
 
-func TestAccCreateProject(t *testing.T) {
+func init() {
+	resource.AddTestSweepers("skytap_project", &resource.Sweeper{
+		Name: "skytap_project",
+		F:    testSweepSkytapProject,
+	})
+}
 
-	rName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+func testSweepSkytapProject(region string) error {
+	meta, err := sharedClientForRegion(region)
+	if err != nil {
+		return err
+	}
+
+	client := meta.projectsClient
+	ctx := meta.StopContext
+
+	log.Printf("[INFO] Retrieving list of project")
+	projects, err := client.List(ctx)
+	if err != nil {
+		return fmt.Errorf("Error retrieving list of project: %v", err)
+	}
+
+	for _, p := range projects.Value {
+		if shouldSweepAcceptanceTestResource(*p.Name) {
+			log.Printf("Destroying project %s", *p.Name)
+			if err := client.Delete(ctx, *p.Id); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func TestAccSkytapProject_Basic(t *testing.T) {
+	rInt := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckProjectResourceDestroy,
+		CheckDestroy: testAccCheckSkytapProjectDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCreateProject(rName),
-				Check:  testAccCheckProjectExists,
+				Config: testAccSkytapProjectConfig_basic(rInt),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapProjectExists("skytap_project.foo"),
+					resource.TestCheckResourceAttr("skytap_project.foo", "name", fmt.Sprintf("tftest-project-%d", rInt)),
+					resource.TestCheckResourceAttrSet("skytap_project.foo", "summary"),
+					resource.TestCheckResourceAttr("skytap_project.foo", "auto_add_role_name", ""),
+					resource.TestCheckResourceAttr("skytap_project.foo", "show_project_members", "true"),
+				),
 			},
 		},
 	})
 }
 
-func testAccCheckProjectExists(s *terraform.State) error {
-	client := testAccProvider.Meta().(*skytap.Client)
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "skytap_project" {
-			continue
+// Verifies the Project exists
+func testAccCheckSkytapProjectExists(name string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[name]
+		if !ok {
+			return fmt.Errorf("Not found: %q", name)
 		}
-		// Retrieve our widget by referencing it's state ID for API lookup
-		_, err := client.ReadProject(context.Background(), rs.Primary.ID)
+
+		if rs.Primary.ID == "" {
+			return fmt.Errorf("No Project ID is set")
+		}
+
+		// retrieve the connection established in Provider configuration
+		client := testAccProvider.Meta().(*SkytapClient).projectsClient
+		ctx := testAccProvider.Meta().(*SkytapClient).StopContext
+
+		// Retrieve our project by referencing it's state ID for API lookup
+		_, err := client.Get(ctx, rs.Primary.ID)
 		if err != nil {
-			return err
+			if utils.ResponseErrorIsNotFound(err) {
+				return errors.Errorf("Project (%s) was not found - does not exist", rs.Primary.ID)
+			}
+
+			return fmt.Errorf("Error retrieving project (%s): %v", rs.Primary.ID, err)
 		}
+
+		return nil
 	}
-	return nil
 }
 
-func testAccCreateProject(rName string) string {
-	config := `
-    resource "skytap_project" "terraform-project-acc-test" {
-  		name = %q
-  		summary = "This is a project created by the skytap terraform provider acceptance test"
-	}`
-	return fmt.Sprintf(config, rName)
-}
-
-// testAccCheckProjectResourceDestroy verifies the Project
-// has been destroyed
-func testAccCheckProjectResourceDestroy(s *terraform.State) error {
+// Verifies the Project has been destroyed
+func testAccCheckSkytapProjectDestroy(s *terraform.State) error {
 	// retrieve the connection established in Provider configuration
-	conn := testAccProvider.Meta().(*skytap.Client)
+	client := testAccProvider.Meta().(*SkytapClient).projectsClient
+	ctx := testAccProvider.Meta().(*SkytapClient).StopContext
 
-	// loop through the resources in state, verifying each widget
+	// loop through the resources in state, verifying each project
 	// is destroyed
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "skytap_project" {
 			continue
 		}
 
-		// Retrieve our widget by referencing it's state ID for API lookup
-		response, err := conn.ReadProject(context.Background(), rs.Primary.ID)
-		if err == nil {
-			if response.Id == rs.Primary.ID {
-				return fmt.Errorf("project (%s) still exists", rs.Primary.ID)
+		// Retrieve our project by referencing it's state ID for API lookup
+		_, err := client.Get(ctx, rs.Primary.ID)
+		if err != nil {
+			if utils.ResponseErrorIsNotFound(err) {
+				return nil
 			}
 
-			return nil
+			return fmt.Errorf("Error waiting for project (%s) to be destroyed: %s", rs.Primary.ID, err)
 		}
 
-		// If the error is equivalent to 404 not found, the widget is destroyed.
-		// Otherwise return the error
-		if !strings.Contains(err.Error(), "404 Not Found") {
-			return err
-		}
+		return fmt.Errorf("Project still exists: %s", rs.Primary.ID)
 	}
 
 	return nil
+}
+
+func testAccSkytapProjectConfig_basic(rInt int) string {
+	return fmt.Sprintf(`
+resource "skytap_project" "foo" {
+	name = "tftest-project-%d"
+	summary = "This is a project created by the skytap terraform provider acceptance test"
+}`, rInt)
 }

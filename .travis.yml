@@ -1,34 +1,27 @@
 dist: trusty
 sudo: required
-services:
-- docker
 language: go
 go:
-- "1.10"
+- "1.11.x"
+
 install:
+# This script is used by the Travis build to install a cookie for
+# go.googlesource.com so rate limits are higher when using `go get` to fetch
+# packages that live there.
+# See: https://github.com/golang/go/issues/12933
 - bash scripts/gogetcookie.sh
 - go get github.com/kardianos/govendor
+
 script:
-- govendor init
-- govendor fetch -tree github.com/opencredo/terraform-provider-skytap-internal
-- govendor fetch github.com/hashicorp/terraform/helper/acctest
-- govendor fetch github.com/hashicorp/terraform/helper/resource
-- govendor fetch github.com/hashicorp/terraform/helper/schema
-- govendor fetch github.com/hashicorp/terraform/plugin
-- govendor fetch github.com/hashicorp/terraform/terraform
-- make build
 - make test
 - make vendor-status
 - make vet
-- make testacc
+- make website-test
+
 branches:
   only:
   - master
-  - ci
 matrix:
   fast_finish: true
   allow_failures:
   - go: tip
-before_install:
-- openssl aes-256-cbc -K $encrypted_c07d3d4817bc_key -iv $encrypted_c07d3d4817bc_iv
-  -in gogetcookie.sh.enc -out scripts/gogetcookie.sh -d

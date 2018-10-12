@@ -1,50 +1,63 @@
 package skytap
 
 import (
-	"context"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
-	"github.com/opencredo/skytap-sdk-go-internal"
-	"github.com/opencredo/skytap-sdk-go-internal/options"
 )
 
+// Provider returns a schema.Provider for SkyTap.
 func Provider() terraform.ResourceProvider {
-	return &schema.Provider{
+	p := &schema.Provider{
 		Schema: map[string]*schema.Schema{
 			"username": &schema.Schema{
 				Type:        schema.TypeString,
 				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("SKYTAP_USER", nil),
+				DefaultFunc: schema.EnvDefaultFunc("SKYTAP_USERNAME", nil),
 				Description: "Username for the skytap account.",
 			},
-			"access_token": &schema.Schema{
+			"password": &schema.Schema{
 				Type:        schema.TypeString,
-				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("SKYTAP_ACCESS_TOKEN", nil),
-				Description: "Token for the skytap account.",
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("SKYTAP_PASSWORD", nil),
+				Description: "Password for the skytap account.",
+			},
+			"api_token": &schema.Schema{
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("SKYTAP_API_TOKEN", nil),
+				Description: "API Token for the skytap account.",
 			},
 		},
-		ResourcesMap: map[string]*schema.Resource{
-			"skytap_project": resourceProject(),
+
+		DataSourcesMap: map[string]*schema.Resource{
+			"skytap_project": dataSourceSkytapProject(),
 		},
-		ConfigureFunc: providerConfigure,
+
+		ResourcesMap: map[string]*schema.Resource{
+			"skytap_project": resourceSkytapProject(),
+		},
 	}
+
+	p.ConfigureFunc = providerConfigure(p)
+
+	return p
 }
 
-func providerConfigure(d *schema.ResourceData) (interface{}, error) {
+func providerConfigure(p *schema.Provider) schema.ConfigureFunc {
+	return func(d *schema.ResourceData) (interface{}, error) {
+		config := &Config{
+			Username: d.Get("username").(string),
+			Password: d.Get("password").(string),
+			ApiToken: d.Get("api_token").(string),
+		}
 
-	username := d.Get("username").(string)
-	token := d.Get("access_token").(string)
+		client, err := config.Client()
+		if err != nil {
+			return nil, err
+		}
 
-	client, err := skytap.NewClient(context.Background(),
-		options.WithUser(username),
-		options.WithAPIToken(token),
-		options.WithScheme("https"),
-		options.WithHost("cloud.skytap.com"))
+		client.StopContext = p.StopContext()
 
-	if err != nil {
-		return nil, err
+		return client, nil
 	}
-
-	return client, nil
 }
