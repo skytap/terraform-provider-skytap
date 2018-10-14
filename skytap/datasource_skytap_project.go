@@ -14,7 +14,7 @@ func dataSourceSkytapProject() *schema.Resource {
 		Read: dataSourceSkytapProjectRead,
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				Description:  "name of the project",
@@ -22,19 +22,19 @@ func dataSourceSkytapProject() *schema.Resource {
 			},
 
 			// computed attributes
-			"summary": &schema.Schema{
+			"summary": {
 				Type:        schema.TypeString,
 				Computed:    true,
 				Description: "summary description of the project",
 			},
 
-			"auto_add_role_name": &schema.Schema{
+			"auto_add_role_name": {
 				Type:        schema.TypeString,
 				Computed:    true,
 				Description: "role to automatically assign to every new user added to the project",
 			},
 
-			"show_project_members": &schema.Schema{
+			"show_project_members": {
 				Type:        schema.TypeBool,
 				Computed:    true,
 				Description: "whether project members can view a list of other project members",
@@ -53,17 +53,17 @@ func dataSourceSkytapProjectRead(d *schema.ResourceData, meta interface{}) error
 
 	projectsResult, err := client.List(ctx)
 	if err != nil {
-		return fmt.Errorf("Error retrieving projects: %s", err)
+		return fmt.Errorf("error retrieving projects: %s", err)
 	}
 
 	projects := filterDataSourceSkytapSnapshotsByName(projectsResult.Value, name)
 
 	if len(projects) == 0 {
-		return fmt.Errorf("No project found with name %s", name)
+		return fmt.Errorf("no project found with name %s", name)
 	}
 
 	if len(projects) > 1 {
-		return fmt.Errorf("Too many projects found with name %s (found %d, expected 1)", name, len(projects))
+		return fmt.Errorf("too many projects found with name %s (found %d, expected 1)", name, len(projects))
 	}
 
 	project := projects[0]

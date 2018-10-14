@@ -9,19 +9,19 @@ import (
 func Provider() terraform.ResourceProvider {
 	p := &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"username": &schema.Schema{
+			"username": {
 				Type:        schema.TypeString,
 				Required:    true,
 				DefaultFunc: schema.EnvDefaultFunc("SKYTAP_USERNAME", nil),
 				Description: "Username for the skytap account.",
 			},
-			"password": &schema.Schema{
+			"password": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("SKYTAP_PASSWORD", nil),
 				Description: "Password for the skytap account.",
 			},
-			"api_token": &schema.Schema{
+			"api_token": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("SKYTAP_API_TOKEN", nil),

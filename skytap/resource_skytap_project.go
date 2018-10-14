@@ -22,19 +22,19 @@ func resourceSkytapProject() *schema.Resource {
 		},
 
 		Schema: map[string]*schema.Schema{
-			"name": &schema.Schema{
+			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validation.NoZeroValues,
 			},
 
-			"summary": &schema.Schema{
+			"summary": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.NoZeroValues,
 			},
 
-			"auto_add_role_name": &schema.Schema{
+			"auto_add_role_name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ValidateFunc: validation.StringInSlice([]string{
@@ -45,7 +45,7 @@ func resourceSkytapProject() *schema.Resource {
 				}, false),
 			},
 
-			"show_project_members": &schema.Schema{
+			"show_project_members": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
@@ -77,10 +77,10 @@ func resourceSkytapProjectCreate(d *schema.ResourceData, meta interface{}) error
 		opts.AutoAddRoleName = &autoAddRoleName
 	}
 
-	log.Printf("[DEBUG] Project create options: %#v", opts)
+	log.Printf("[DEBUG] project create options: %#v", opts)
 	project, err := client.Create(ctx, &opts)
 	if err != nil {
-		return errors.Errorf("Error creating project: %v", err)
+		return errors.Errorf("error creating project: %v", err)
 	}
 
 	d.SetId(*project.Id)
@@ -94,16 +94,16 @@ func resourceSkytapProjectRead(d *schema.ResourceData, meta interface{}) error {
 
 	id := d.Id()
 
-	log.Printf("[INFO] Retrieving project: %s", id)
+	log.Printf("[INFO] retrieving project: %s", id)
 	project, err := client.Get(ctx, id)
 	if err != nil {
 		if utils.ResponseErrorIsNotFound(err) {
-			log.Printf("[DEBUG] Project (%s) was not found - removing from state", id)
+			log.Printf("[DEBUG] project (%s) was not found - removing from state", id)
 			d.SetId("")
 			return nil
 		}
 
-		return fmt.Errorf("Error retrieving project (%s): %v", id, err)
+		return fmt.Errorf("error retrieving project (%s): %v", id, err)
 	}
 
 	d.Set("name", project.Name)
@@ -136,10 +136,10 @@ func resourceSkytapProjectUpdate(d *schema.ResourceData, meta interface{}) error
 		opts.AutoAddRoleName = &autoAddRoleName
 	}
 
-	log.Printf("[DEBUG] Project update options: %#v", opts)
+	log.Printf("[DEBUG] project update options: %#v", opts)
 	_, err := client.Update(ctx, id, &opts)
 	if err != nil {
-		return errors.Errorf("Error updating project (%s): %v", id, err)
+		return errors.Errorf("error updating project (%s): %v", id, err)
 	}
 
 	return resourceSkytapProjectRead(d, meta)
@@ -151,15 +151,15 @@ func resourceSkytapProjectDelete(d *schema.ResourceData, meta interface{}) error
 
 	id := d.Id()
 
-	log.Printf("[INFO] Destroying project: %s", id)
+	log.Printf("[INFO] destroying project: %s", id)
 	err := client.Delete(ctx, id)
 	if err != nil {
 		if utils.ResponseErrorIsNotFound(err) {
-			log.Printf("[DEBUG] Project (%s) was not found - assuming removed", id)
+			log.Printf("[DEBUG] project (%s) was not found - assuming removed", id)
 			return nil
 		}
 
-		return fmt.Errorf("Error deleting project (%s): %v", id, err)
+		return fmt.Errorf("error deleting project (%s): %v", id, err)
 	}
 
 	return err

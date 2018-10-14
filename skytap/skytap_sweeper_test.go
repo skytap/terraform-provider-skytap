@@ -43,7 +43,7 @@ func shouldSweepAcceptanceTestResource(name string) bool {
 	loweredName := strings.ToLower(name)
 
 	if !strings.HasPrefix(loweredName, "tftest") {
-		log.Printf("Ignoring Resource %q as it doesn't start with `tftest`", name)
+		log.Printf("ignoring Resource %q as it doesn't start with `tftest`", name)
 		return false
 	}
 

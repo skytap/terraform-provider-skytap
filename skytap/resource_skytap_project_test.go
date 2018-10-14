@@ -31,12 +31,12 @@ func testSweepSkytapProject(region string) error {
 	log.Printf("[INFO] Retrieving list of project")
 	projects, err := client.List(ctx)
 	if err != nil {
-		return fmt.Errorf("Error retrieving list of project: %v", err)
+		return fmt.Errorf("error retrieving list of project: %v", err)
 	}
 
 	for _, p := range projects.Value {
 		if shouldSweepAcceptanceTestResource(*p.Name) {
-			log.Printf("Destroying project %s", *p.Name)
+			log.Printf("destroying project %s", *p.Name)
 			if err := client.Delete(ctx, *p.Id); err != nil {
 				return err
 			}
@@ -73,11 +73,11 @@ func testAccCheckSkytapProjectExists(name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[name]
 		if !ok {
-			return fmt.Errorf("Not found: %q", name)
+			return fmt.Errorf("not found: %q", name)
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Project ID is set")
+			return fmt.Errorf("no Project ID is set")
 		}
 
 		// retrieve the connection established in Provider configuration
@@ -88,10 +88,10 @@ func testAccCheckSkytapProjectExists(name string) resource.TestCheckFunc {
 		_, err := client.Get(ctx, rs.Primary.ID)
 		if err != nil {
 			if utils.ResponseErrorIsNotFound(err) {
-				return errors.Errorf("Project (%s) was not found - does not exist", rs.Primary.ID)
+				return errors.Errorf("project (%s) was not found - does not exist", rs.Primary.ID)
 			}
 
-			return fmt.Errorf("Error retrieving project (%s): %v", rs.Primary.ID, err)
+			return fmt.Errorf("error retrieving project (%s): %v", rs.Primary.ID, err)
 		}
 
 		return nil
@@ -118,10 +118,10 @@ func testAccCheckSkytapProjectDestroy(s *terraform.State) error {
 				return nil
 			}
 
-			return fmt.Errorf("Error waiting for project (%s) to be destroyed: %s", rs.Primary.ID, err)
+			return fmt.Errorf("error waiting for project (%s) to be destroyed: %s", rs.Primary.ID, err)
 		}
 
-		return fmt.Errorf("Project still exists: %s", rs.Primary.ID)
+		return fmt.Errorf("project still exists: %s", rs.Primary.ID)
 	}
 
 	return nil

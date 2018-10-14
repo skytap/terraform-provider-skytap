@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.com/opencredo/terraform-provider-skytap-internal.svg?token=x5jTixcvNACpLSzjcNCz&branch=master)](https://travis-ci.com/opencredo/terraform-provider-skytap-internal)
-
 Terraform Provider for Skytap
 =============================
 

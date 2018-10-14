@@ -1,8 +1,15 @@
 dist: trusty
 sudo: required
+services:
+- docker
 language: go
 go:
 - "1.11.x"
+
+before_install:
+# Temporary because we are running this in our own repo but needs to ultimately run
+# under skytap
+- bash scripts/temp-repo-adjust.sh
 
 install:
 # This script is used by the Travis build to install a cookie for
@@ -16,7 +23,7 @@ script:
 - make test
 - make vendor-status
 - make vet
-- make website-test
+#- make website-test
 
 branches:
   only:

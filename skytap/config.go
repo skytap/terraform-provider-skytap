@@ -27,12 +27,12 @@ func (c *Config) Client() (*SkytapClient, error) {
 	} else if c.Password != "" {
 		credentialsProvider = skytap.NewPasswordCredentials(c.Username, c.Password)
 	} else {
-		return nil, errors.Errorf("Either a password or an Api token must be provided in order to successfully authenticate to SkyTap")
+		return nil, errors.Errorf("either a password or an Api token must be provided in order to successfully authenticate to SkyTap")
 	}
 
 	client, err := skytap.NewClient(skytap.NewDefaultSettings(skytap.WithCredentialsProvider(credentialsProvider)))
 	if err != nil {
-		return nil, errors.Errorf("Failed to initialize the SkyTap client: %v", err)
+		return nil, errors.Errorf("failed to initialize the SkyTap client: %v", err)
 	}
 
 	skytapClient := SkytapClient{
