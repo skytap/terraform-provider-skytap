@@ -18,13 +18,13 @@ type Settings struct {
 
 func (s *Settings) Validate() error {
 	if s.baseUrl == "" {
-		return fmt.Errorf("The base URL must be provided")
+		return fmt.Errorf("the base URL must be provided")
 	}
 	if s.userAgent == "" {
-		return fmt.Errorf("The user agent must be provided")
+		return fmt.Errorf("the user agent must be provided")
 	}
 	if s.credentials == nil {
-		return fmt.Errorf("The credential provider must be provided")
+		return fmt.Errorf("the credential provider must be provided")
 	}
 
 	return nil
