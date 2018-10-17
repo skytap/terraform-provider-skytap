@@ -376,7 +376,7 @@ type EnvironmentListResult struct {
 // CreateEnvironmentRequest describes the update the environment data
 type CreateEnvironmentRequest struct {
 	TemplateID      *string `json:"template_id,omitempty"`
-	ProjectID       *string `json:"project_id,omitempty"`
+	ProjectID       *int    `json:"project_id,omitempty"`
 	Name            *string `json:"name,omitempty"`
 	Description     *string `json:"description,omitempty"`
 	Owner           *string `json:"owner,omitempty"`

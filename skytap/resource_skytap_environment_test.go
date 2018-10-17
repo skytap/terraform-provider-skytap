@@ -45,7 +45,7 @@ func testSweepSkytapEnvironment(region string) error {
 	return nil
 }
 
-func TestAccSkytapEnvironment_Basic(t *testing.T) {
+func TestAccSkytapEnvironmentBasic(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
