@@ -14,10 +14,10 @@ const (
 // ProjectsService is the contract for the services provided on the Skytap Project resource
 type ProjectsService interface {
 	List(ctx context.Context) (*ProjectListResult, error)
-	Get(ctx context.Context, id string) (*Project, error)
+	Get(ctx context.Context, id int) (*Project, error)
 	Create(ctx context.Context, project *Project) (*Project, error)
-	Update(ctx context.Context, id string, project *Project) (*Project, error)
-	Delete(ctx context.Context, id string) error
+	Update(ctx context.Context, id int, project *Project) (*Project, error)
+	Delete(ctx context.Context, id int) error
 }
 
 // ProjectsServiceClient is the ProjectsService implementation
@@ -27,7 +27,7 @@ type ProjectsServiceClient struct {
 
 // Project resource struct definitions
 type Project struct {
-	ID                 *string      `json:"id,omitempty"`
+	ID                 *int         `json:"id,omitempty,string"`
 	Name               *string      `json:"name,omitempty"`
 	Summary            *string      `json:"summary,omitempty"`
 	AutoAddRoleName    *ProjectRole `json:"auto_add_role_name,omitempty"`
@@ -72,8 +72,8 @@ func (s *ProjectsServiceClient) List(ctx context.Context) (*ProjectListResult, e
 }
 
 // Get a project
-func (s *ProjectsServiceClient) Get(ctx context.Context, id string) (*Project, error) {
-	path := fmt.Sprintf("%s/%s", projectsBasePath, id)
+func (s *ProjectsServiceClient) Get(ctx context.Context, id int) (*Project, error) {
+	path := fmt.Sprintf("%s/%d", projectsBasePath, id)
 
 	req, err := s.client.newRequest(ctx, "GET", path, nil)
 	if err != nil {
@@ -114,8 +114,8 @@ func (s *ProjectsServiceClient) Create(ctx context.Context, project *Project) (*
 }
 
 // Update a project
-func (s *ProjectsServiceClient) Update(ctx context.Context, id string, project *Project) (*Project, error) {
-	path := fmt.Sprintf("%s/%s", projectsLegacyBasePath, id)
+func (s *ProjectsServiceClient) Update(ctx context.Context, id int, project *Project) (*Project, error) {
+	path := fmt.Sprintf("%s/%d", projectsLegacyBasePath, id)
 
 	req, err := s.client.newRequest(ctx, "PUT", path, project)
 	if err != nil {
@@ -132,8 +132,8 @@ func (s *ProjectsServiceClient) Update(ctx context.Context, id string, project *
 }
 
 // Delete a project
-func (s *ProjectsServiceClient) Delete(ctx context.Context, id string) error {
-	path := fmt.Sprintf("%s/%s", projectsLegacyBasePath, id)
+func (s *ProjectsServiceClient) Delete(ctx context.Context, id int) error {
+	path := fmt.Sprintf("%s/%d", projectsLegacyBasePath, id)
 
 	req, err := s.client.newRequest(ctx, "DELETE", path, nil)
 	if err != nil {

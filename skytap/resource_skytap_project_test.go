@@ -3,6 +3,7 @@ package skytap
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/acctest"
@@ -85,13 +86,19 @@ func testAccCheckSkytapProjectExists(name string) resource.TestCheckFunc {
 		ctx := testAccProvider.Meta().(*SkytapClient).StopContext
 
 		// Retrieve our project by referencing it's state ID for API lookup
-		_, err := client.Get(ctx, rs.Primary.ID)
+
+		id, err := strconv.Atoi(rs.Primary.ID)
+		if err != nil {
+			return errors.Errorf("project (%s) is not an integer: %v", rs.Primary.ID, err)
+		}
+
+		_, err = client.Get(ctx, id)
 		if err != nil {
 			if utils.ResponseErrorIsNotFound(err) {
-				return errors.Errorf("project (%s) was not found - does not exist", rs.Primary.ID)
+				return errors.Errorf("project (%d) was not found - does not exist", id)
 			}
 
-			return fmt.Errorf("error retrieving project (%s): %v", rs.Primary.ID, err)
+			return fmt.Errorf("error retrieving project (%d): %v", id, err)
 		}
 
 		return nil
@@ -112,16 +119,21 @@ func testAccCheckSkytapProjectDestroy(s *terraform.State) error {
 		}
 
 		// Retrieve our project by referencing it's state ID for API lookup
-		_, err := client.Get(ctx, rs.Primary.ID)
+		id, err := strconv.Atoi(rs.Primary.ID)
+		if err != nil {
+			return fmt.Errorf("project (%s) is not an integer: %v", rs.Primary.ID, err)
+		}
+
+		_, err = client.Get(ctx, id)
 		if err != nil {
 			if utils.ResponseErrorIsNotFound(err) {
 				return nil
 			}
 
-			return fmt.Errorf("error waiting for project (%s) to be destroyed: %s", rs.Primary.ID, err)
+			return fmt.Errorf("error waiting for project (%d) to be destroyed: %s", id, err)
 		}
 
-		return fmt.Errorf("project still exists: %s", rs.Primary.ID)
+		return fmt.Errorf("project still exists: %d", id)
 	}
 
 	return nil

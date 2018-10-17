@@ -3,6 +3,7 @@ package skytap
 import (
 	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
@@ -68,7 +69,7 @@ func dataSourceSkytapProjectRead(d *schema.ResourceData, meta interface{}) error
 
 	project := projects[0]
 
-	d.SetId(*project.ID)
+	d.SetId(strconv.Itoa(*project.ID))
 	d.Set("name", project.Name)
 	d.Set("summary", project.Summary)
 	d.Set("auto_add_role_name", project.AutoAddRoleName)

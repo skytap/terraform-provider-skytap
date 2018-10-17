@@ -3,6 +3,7 @@ package skytap
 import (
 	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
@@ -83,7 +84,7 @@ func resourceSkytapProjectCreate(d *schema.ResourceData, meta interface{}) error
 		return errors.Errorf("error creating project: %v", err)
 	}
 
-	d.SetId(*project.ID)
+	d.SetId(strconv.Itoa(*project.ID))
 
 	return resourceSkytapProjectRead(d, meta)
 }
@@ -92,18 +93,21 @@ func resourceSkytapProjectRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*SkytapClient).projectsClient
 	ctx := meta.(*SkytapClient).StopContext
 
-	id := d.Id()
+	id, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return fmt.Errorf("project (%s) is not an integer: %v", d.Id(), err)
+	}
 
-	log.Printf("[INFO] retrieving project: %s", id)
+	log.Printf("[INFO] retrieving project: %d", id)
 	project, err := client.Get(ctx, id)
 	if err != nil {
 		if utils.ResponseErrorIsNotFound(err) {
-			log.Printf("[DEBUG] project (%s) was not found - removing from state", id)
+			log.Printf("[DEBUG] project (%d) was not found - removing from state", id)
 			d.SetId("")
 			return nil
 		}
 
-		return fmt.Errorf("error retrieving project (%s): %v", id, err)
+		return fmt.Errorf("error retrieving project (%d): %v", id, err)
 	}
 
 	d.Set("name", project.Name)
@@ -118,7 +122,11 @@ func resourceSkytapProjectUpdate(d *schema.ResourceData, meta interface{}) error
 	client := meta.(*SkytapClient).projectsClient
 	ctx := meta.(*SkytapClient).StopContext
 
-	id := d.Id()
+	id, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return errors.Errorf("project (%s) is not an integer: %v", d.Id(), err)
+	}
+
 	name := d.Get("name").(string)
 	showProjectMembers := d.Get("show_project_members").(bool)
 
@@ -137,9 +145,9 @@ func resourceSkytapProjectUpdate(d *schema.ResourceData, meta interface{}) error
 	}
 
 	log.Printf("[DEBUG] project update options: %#v", opts)
-	_, err := client.Update(ctx, id, &opts)
+	_, err = client.Update(ctx, id, &opts)
 	if err != nil {
-		return errors.Errorf("error updating project (%s): %v", id, err)
+		return errors.Errorf("error updating project (%d): %v", id, err)
 	}
 
 	return resourceSkytapProjectRead(d, meta)
@@ -149,17 +157,20 @@ func resourceSkytapProjectDelete(d *schema.ResourceData, meta interface{}) error
 	client := meta.(*SkytapClient).projectsClient
 	ctx := meta.(*SkytapClient).StopContext
 
-	id := d.Id()
+	id, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return fmt.Errorf("project (%s) is not an integer: %v", d.Id(), err)
+	}
 
-	log.Printf("[INFO] destroying project: %s", id)
-	err := client.Delete(ctx, id)
+	log.Printf("[INFO] destroying project: %d", id)
+	err = client.Delete(ctx, id)
 	if err != nil {
 		if utils.ResponseErrorIsNotFound(err) {
-			log.Printf("[DEBUG] project (%s) was not found - assuming removed", id)
+			log.Printf("[DEBUG] project (%d) was not found - assuming removed", id)
 			return nil
 		}
 
-		return fmt.Errorf("error deleting project (%s): %v", id, err)
+		return fmt.Errorf("error deleting project (%d): %v", id, err)
 	}
 
 	return err

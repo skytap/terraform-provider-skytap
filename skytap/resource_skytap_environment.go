@@ -28,7 +28,7 @@ func resourceSkytapEnvironment() *schema.Resource {
 			},
 
 			"project_id": {
-				Type:         schema.TypeString,
+				Type:         schema.TypeInt,
 				Optional:     true,
 				ValidateFunc: validation.NoZeroValues,
 			},
@@ -109,7 +109,7 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	if v, ok := d.GetOk("project_id"); ok {
-		opts.ProjectID = utils.String(v.(string))
+		opts.ProjectID = utils.Int(v.(int))
 	}
 
 	if v, ok := d.GetOk("description"); ok {
