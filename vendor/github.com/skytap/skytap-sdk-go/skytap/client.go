@@ -17,7 +17,7 @@ const (
 	version   = "1.0.0"
 	mediaType = "application/json"
 
-	headerRequestId = "X-Request-Id"
+	headerRequestID = "X-Request-ID"
 )
 
 // Client is a client to manage and configure the skytap cloud
@@ -26,7 +26,7 @@ type Client struct {
 	hc *http.Client
 
 	// The base URL to be used when issuing requests
-	BaseUrl *url.URL
+	BaseURL *url.URL
 
 	// User agent used when issuing requests
 	UserAgent string
@@ -39,12 +39,13 @@ type Client struct {
 	Environments EnvironmentsService
 }
 
+// DefaultListParameters are the default pager settings
 var DefaultListParameters = &ListParameters{
-	Count:  IntPtr(100),
-	Offset: IntPtr(0),
+	Count:  stIntPtr(100),
+	Offset: stIntPtr(0),
 }
 
-// Client scoped common structs
+// ListParameters is a Client scoped common struct for listing
 type ListParameters struct {
 	// For paginated result sets, number of results to retrieve.
 	Count *int
@@ -56,26 +57,29 @@ type ListParameters struct {
 	Filters []ListFilter
 }
 
+// ListFilter is the struct for list filtering
 type ListFilter struct {
 	Name  *string
 	Value *string
 }
 
+// ErrorResponse is the general purpose struct to hold error data
 type ErrorResponse struct {
 	// HTTP response that caused this error
 	Response *http.Response
 
-	// RequestId returned from the API.
-	RequestId *string
+	// RequestID returned from the API.
+	RequestID *string
 
 	// Error message
 	Message *string `json:"error,omitempty"`
 }
 
+// Error returns a formatted error
 func (r *ErrorResponse) Error() string {
-	if r.RequestId != nil {
+	if r.RequestID != nil {
 		return fmt.Sprintf("%v %v: %d (request %q) %v",
-			r.Response.Request.Method, r.Response.Request.URL, r.Response.StatusCode, *r.RequestId, *r.Message)
+			r.Response.Request.Method, r.Response.Request.URL, r.Response.StatusCode, *r.RequestID, *r.Message)
 	}
 
 	return fmt.Sprintf("%v %v: %d %v",
@@ -92,12 +96,12 @@ func NewClient(settings Settings) (*Client, error) {
 		hc: http.DefaultClient,
 	}
 
-	baseUrl, err := url.Parse(settings.baseUrl)
+	baseURL, err := url.Parse(settings.baseURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse base url: %v", baseUrl)
+		return nil, fmt.Errorf("failed to parse base url: %v", baseURL)
 	}
 
-	client.BaseUrl = baseUrl
+	client.BaseURL = baseURL
 	client.UserAgent = settings.userAgent
 	client.Credentials = settings.credentials
 
@@ -113,7 +117,7 @@ func (c *Client) newRequest(ctx context.Context, method, path string, body inter
 		return nil, err
 	}
 
-	u := c.BaseUrl.ResolveReference(rel)
+	u := c.BaseURL.ResolveReference(rel)
 	var buf io.ReadWriter
 	if body != nil {
 		buf = new(bytes.Buffer)
@@ -219,12 +223,12 @@ func checkResponse(r *http.Response) error {
 	if err == nil && len(data) > 0 {
 		err := json.Unmarshal(data, errorResponse)
 		if err != nil {
-			errorResponse.Message = StringPtr(string(data))
+			errorResponse.Message = stStringPtr(string(data))
 		}
 	}
 
-	if requestId := r.Header.Get(headerRequestId); requestId != "" {
-		errorResponse.RequestId = StringPtr(requestId)
+	if requestID := r.Header.Get(headerRequestID); requestID != "" {
+		errorResponse.RequestID = stStringPtr(requestID)
 	}
 
 	return errorResponse

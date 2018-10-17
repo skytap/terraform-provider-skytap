@@ -5,7 +5,7 @@ import (
 	"github.com/hashicorp/terraform/terraform"
 )
 
-// Provider returns a schema.Provider for SkyTap.
+// Provider returns a schema.Provider for Skytap.
 func Provider() terraform.ResourceProvider {
 	p := &schema.Provider{
 		Schema: map[string]*schema.Schema{
@@ -14,12 +14,6 @@ func Provider() terraform.ResourceProvider {
 				Required:    true,
 				DefaultFunc: schema.EnvDefaultFunc("SKYTAP_USERNAME", nil),
 				Description: "Username for the skytap account.",
-			},
-			"password": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("SKYTAP_PASSWORD", nil),
-				Description: "Password for the skytap account.",
 			},
 			"api_token": {
 				Type:        schema.TypeString,
@@ -48,8 +42,7 @@ func providerConfigure(p *schema.Provider) schema.ConfigureFunc {
 	return func(d *schema.ResourceData) (interface{}, error) {
 		config := &Config{
 			Username: d.Get("username").(string),
-			Password: d.Get("password").(string),
-			ApiToken: d.Get("api_token").(string),
+			APIToken: d.Get("api_token").(string),
 		}
 
 		client, err := config.Client()

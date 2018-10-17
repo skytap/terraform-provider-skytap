@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccDataSourceSkytapProject_Basic(t *testing.T) {
+func TestAccDataSourceSkytapProjectBasic(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
@@ -17,7 +17,7 @@ func TestAccDataSourceSkytapProject_Basic(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapProjectDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceSkytapProjectConfig_basic(rInt),
+				Config: testAccDataSourceSkytapProjectConfigBasic(rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapProjectExists("data.skytap_project.bar"),
 					resource.TestCheckResourceAttr("data.skytap_project.bar", "name", fmt.Sprintf("tftest-project-data-%d", rInt)),
@@ -30,7 +30,7 @@ func TestAccDataSourceSkytapProject_Basic(t *testing.T) {
 	})
 }
 
-func testAccDataSourceSkytapProjectConfig_basic(rInt int) string {
+func testAccDataSourceSkytapProjectConfigBasic(rInt int) string {
 	return fmt.Sprintf(`
 resource "skytap_project" "foo" {
 	name = "tftest-project-data-%d"

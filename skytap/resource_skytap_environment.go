@@ -91,25 +91,25 @@ func resourceSkytapEnvironment() *schema.Resource {
 }
 
 func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*SkytapClient).environmentsClient
-	ctx := meta.(*SkytapClient).StopContext
+	client := meta.(*Skytap).environmentsClient
+	ctx := meta.(*Skytap).StopContext
 
-	log.Printf("[INFO] preparing arguments for creating the SkyTap Environment")
+	log.Printf("[INFO] preparing arguments for creating the Skytap Environment")
 
-	templateId := d.Get("template_id").(string)
+	templateID := d.Get("template_id").(string)
 	name := d.Get("name").(string)
 	outboundTraffic := d.Get("outbound_traffic").(bool)
 	routable := d.Get("routable").(bool)
 
 	opts := skytap.CreateEnvironmentRequest{
-		TemplateId:      &templateId,
+		TemplateID:      &templateID,
 		Name:            &name,
 		OutboundTraffic: &outboundTraffic,
 		Routable:        &routable,
 	}
 
 	if v, ok := d.GetOk("project_id"); ok {
-		opts.ProjectId = utils.String(v.(string))
+		opts.ProjectID = utils.String(v.(string))
 	}
 
 	if v, ok := d.GetOk("description"); ok {
@@ -148,8 +148,8 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceSkytapEnvironmentRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*SkytapClient).environmentsClient
-	ctx := meta.(*SkytapClient).StopContext
+	client := meta.(*Skytap).environmentsClient
+	ctx := meta.(*Skytap).StopContext
 
 	id := d.Id()
 
@@ -179,8 +179,8 @@ func resourceSkytapEnvironmentRead(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*SkytapClient).environmentsClient
-	ctx := meta.(*SkytapClient).StopContext
+	client := meta.(*Skytap).environmentsClient
+	ctx := meta.(*Skytap).StopContext
 
 	id := d.Id()
 
@@ -228,8 +228,8 @@ func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceSkytapEnvironmentDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*SkytapClient).environmentsClient
-	ctx := meta.(*SkytapClient).StopContext
+	client := meta.(*Skytap).environmentsClient
+	ctx := meta.(*Skytap).StopContext
 
 	id := d.Id()
 

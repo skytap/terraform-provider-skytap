@@ -37,7 +37,7 @@ func testSweepSkytapProject(region string) error {
 	for _, p := range projects.Value {
 		if shouldSweepAcceptanceTestResource(*p.Name) {
 			log.Printf("destroying project %s", *p.Name)
-			if err := client.Delete(ctx, *p.Id); err != nil {
+			if err := client.Delete(ctx, *p.ID); err != nil {
 				return err
 			}
 		}
@@ -46,7 +46,7 @@ func testSweepSkytapProject(region string) error {
 	return nil
 }
 
-func TestAccSkytapProject_Basic(t *testing.T) {
+func TestAccSkytapProjectBasic(t *testing.T) {
 	rInt := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
@@ -55,7 +55,7 @@ func TestAccSkytapProject_Basic(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapProjectDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapProjectConfig_basic(rInt),
+				Config: testAccSkytapProjectConfigBasic(rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapProjectExists("skytap_project.foo"),
 					resource.TestCheckResourceAttr("skytap_project.foo", "name", fmt.Sprintf("tftest-project-%d", rInt)),
@@ -81,8 +81,8 @@ func testAccCheckSkytapProjectExists(name string) resource.TestCheckFunc {
 		}
 
 		// retrieve the connection established in Provider configuration
-		client := testAccProvider.Meta().(*SkytapClient).projectsClient
-		ctx := testAccProvider.Meta().(*SkytapClient).StopContext
+		client := testAccProvider.Meta().(*Skytap).projectsClient
+		ctx := testAccProvider.Meta().(*Skytap).StopContext
 
 		// Retrieve our project by referencing it's state ID for API lookup
 		_, err := client.Get(ctx, rs.Primary.ID)
@@ -101,8 +101,8 @@ func testAccCheckSkytapProjectExists(name string) resource.TestCheckFunc {
 // Verifies the Project has been destroyed
 func testAccCheckSkytapProjectDestroy(s *terraform.State) error {
 	// retrieve the connection established in Provider configuration
-	client := testAccProvider.Meta().(*SkytapClient).projectsClient
-	ctx := testAccProvider.Meta().(*SkytapClient).StopContext
+	client := testAccProvider.Meta().(*Skytap).projectsClient
+	ctx := testAccProvider.Meta().(*Skytap).StopContext
 
 	// loop through the resources in state, verifying each project
 	// is destroyed
@@ -127,7 +127,7 @@ func testAccCheckSkytapProjectDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccSkytapProjectConfig_basic(rInt int) string {
+func testAccSkytapProjectConfigBasic(rInt int) string {
 	return fmt.Sprintf(`
 resource "skytap_project" "foo" {
 	name = "tftest-project-%d"

@@ -44,10 +44,10 @@ func dataSourceSkytapProject() *schema.Resource {
 }
 
 func dataSourceSkytapProjectRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*SkytapClient).projectsClient
-	ctx := meta.(*SkytapClient).StopContext
+	client := meta.(*Skytap).projectsClient
+	ctx := meta.(*Skytap).StopContext
 
-	log.Printf("[INFO] preparing arguments for finding the SkyTap Project")
+	log.Printf("[INFO] preparing arguments for finding the Skytap Project")
 
 	name := d.Get("name").(string)
 
@@ -68,7 +68,7 @@ func dataSourceSkytapProjectRead(d *schema.ResourceData, meta interface{}) error
 
 	project := projects[0]
 
-	d.SetId(*project.Id)
+	d.SetId(*project.ID)
 	d.Set("name", project.Name)
 	d.Set("summary", project.Summary)
 	d.Set("auto_add_role_name", project.AutoAddRoleName)

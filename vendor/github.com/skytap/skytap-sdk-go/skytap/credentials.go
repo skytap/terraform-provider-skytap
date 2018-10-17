@@ -14,50 +14,39 @@ type CredentialsProvider interface {
 	Retrieve(ctx context.Context) (string, error)
 }
 
+// NoOpCredentials is used when no credentials are required
 type NoOpCredentials struct{}
 
+// Retrieve the credentials
 func (c *NoOpCredentials) Retrieve(ctx context.Context) (string, error) {
 	return "", nil
 }
 
+// NewNoOpCredentials creates a new no op credentials instance
 func NewNoOpCredentials() *NoOpCredentials {
 	return &NoOpCredentials{}
 }
 
-type PasswordCredentials struct {
+// APITokenCredentials is ued when the credentials used are the username and api token data
+type APITokenCredentials struct {
 	Username string
-	Password string
+	APIToken string
 }
 
-func (c *PasswordCredentials) Retrieve(ctx context.Context) (string, error) {
-	return buildBasicAuth(c.Username, c.Password), nil
+// Retrieve the username and api token data
+func (c *APITokenCredentials) Retrieve(ctx context.Context) (string, error) {
+	return buildBasicAuth(c.Username, c.APIToken), nil
 }
 
-func NewPasswordCredentials(username, password string) *PasswordCredentials {
-	return &PasswordCredentials{
+// NewAPITokenCredentials creates a new username and api token instance
+func NewAPITokenCredentials(username, apiToken string) *APITokenCredentials {
+	return &APITokenCredentials{
 		Username: username,
-		Password: password,
-	}
-}
-
-type ApiTokenCredentials struct {
-	Username string
-	ApiToken string
-}
-
-func (c *ApiTokenCredentials) Retrieve(ctx context.Context) (string, error) {
-	return buildBasicAuth(c.Username, c.ApiToken), nil
-}
-
-func NewApiTokenCredentials(username, apiToken string) *ApiTokenCredentials {
-	return &ApiTokenCredentials{
-		Username: username,
-		ApiToken: apiToken,
+		APIToken: apiToken,
 	}
 }
 
 // Helper functions
-
 func buildBasicAuth(username, secret string) string {
 	auth := username + ":" + secret
 	return fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte(auth)))
