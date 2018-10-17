@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 )
 
-func TestAccSkytapProjectImportBasic(t *testing.T) {
+func TestAccSkytapProject_importBasic(t *testing.T) {
 	resourceName := "skytap_project.foo"
 	ri := acctest.RandInt()
 
@@ -17,7 +17,7 @@ func TestAccSkytapProjectImportBasic(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapProjectDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapProjectConfigBasic(ri),
+				Config: testAccSkytapProjectConfig_basic(ri),
 			},
 			{
 				ResourceName:      resourceName,

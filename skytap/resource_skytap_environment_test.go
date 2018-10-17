@@ -54,7 +54,7 @@ func TestAccSkytapEnvironment_Basic(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapEnvironmentConfigBasic(rInt),
+				Config: testAccSkytapEnvironmentConfig_basic(rInt),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapEnvironmentExists("skytap_environment.foo"),
 					resource.TestCheckResourceAttr("skytap_environment.foo", "name", fmt.Sprintf("tftest-environment-%d", rInt)),
@@ -86,8 +86,8 @@ func testAccCheckSkytapEnvironmentExists(name string) resource.TestCheckFunc {
 		}
 
 		// retrieve the connection established in Provider configuration
-		client := testAccProvider.Meta().(*Skytap).environmentsClient
-		ctx := testAccProvider.Meta().(*Skytap).StopContext
+		client := testAccProvider.Meta().(*SkytapClient).environmentsClient
+		ctx := testAccProvider.Meta().(*SkytapClient).StopContext
 
 		// Retrieve our environment by referencing it's state ID for API lookup
 		_, err := client.Get(ctx, rs.Primary.ID)
@@ -106,8 +106,8 @@ func testAccCheckSkytapEnvironmentExists(name string) resource.TestCheckFunc {
 // Verifies the Environment has been destroyed
 func testAccCheckSkytapEnvironmentDestroy(s *terraform.State) error {
 	// retrieve the connection established in Provider configuration
-	client := testAccProvider.Meta().(*Skytap).environmentsClient
-	ctx := testAccProvider.Meta().(*Skytap).StopContext
+	client := testAccProvider.Meta().(*SkytapClient).environmentsClient
+	ctx := testAccProvider.Meta().(*SkytapClient).StopContext
 
 	// loop through the resources in state, verifying each environment
 	// is destroyed
@@ -132,7 +132,7 @@ func testAccCheckSkytapEnvironmentDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccSkytapEnvironmentConfigBasic(rInt int) string {
+func testAccSkytapEnvironmentConfig_basic(rInt int) string {
 	return fmt.Sprintf(`
 resource "skytap_environment" "foo" {
 	template_id = "1452333"

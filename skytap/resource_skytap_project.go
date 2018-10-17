@@ -55,8 +55,8 @@ func resourceSkytapProject() *schema.Resource {
 }
 
 func resourceSkytapProjectCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*Skytap).projectsClient
-	ctx := meta.(*Skytap).StopContext
+	client := meta.(*SkytapClient).projectsClient
+	ctx := meta.(*SkytapClient).StopContext
 
 	log.Printf("[INFO] preparing arguments for creating the Skytap Project")
 
@@ -89,8 +89,8 @@ func resourceSkytapProjectCreate(d *schema.ResourceData, meta interface{}) error
 }
 
 func resourceSkytapProjectRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*Skytap).projectsClient
-	ctx := meta.(*Skytap).StopContext
+	client := meta.(*SkytapClient).projectsClient
+	ctx := meta.(*SkytapClient).StopContext
 
 	id := d.Id()
 
@@ -115,8 +115,8 @@ func resourceSkytapProjectRead(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceSkytapProjectUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*Skytap).projectsClient
-	ctx := meta.(*Skytap).StopContext
+	client := meta.(*SkytapClient).projectsClient
+	ctx := meta.(*SkytapClient).StopContext
 
 	id := d.Id()
 	name := d.Get("name").(string)
@@ -146,8 +146,8 @@ func resourceSkytapProjectUpdate(d *schema.ResourceData, meta interface{}) error
 }
 
 func resourceSkytapProjectDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*Skytap).projectsClient
-	ctx := meta.(*Skytap).StopContext
+	client := meta.(*SkytapClient).projectsClient
+	ctx := meta.(*SkytapClient).StopContext
 
 	id := d.Id()
 

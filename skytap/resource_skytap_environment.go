@@ -91,8 +91,8 @@ func resourceSkytapEnvironment() *schema.Resource {
 }
 
 func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*Skytap).environmentsClient
-	ctx := meta.(*Skytap).StopContext
+	client := meta.(*SkytapClient).environmentsClient
+	ctx := meta.(*SkytapClient).StopContext
 
 	log.Printf("[INFO] preparing arguments for creating the Skytap Environment")
 
@@ -148,8 +148,8 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceSkytapEnvironmentRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*Skytap).environmentsClient
-	ctx := meta.(*Skytap).StopContext
+	client := meta.(*SkytapClient).environmentsClient
+	ctx := meta.(*SkytapClient).StopContext
 
 	id := d.Id()
 
@@ -179,8 +179,8 @@ func resourceSkytapEnvironmentRead(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*Skytap).environmentsClient
-	ctx := meta.(*Skytap).StopContext
+	client := meta.(*SkytapClient).environmentsClient
+	ctx := meta.(*SkytapClient).StopContext
 
 	id := d.Id()
 
@@ -228,8 +228,8 @@ func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) e
 }
 
 func resourceSkytapEnvironmentDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*Skytap).environmentsClient
-	ctx := meta.(*Skytap).StopContext
+	client := meta.(*SkytapClient).environmentsClient
+	ctx := meta.(*SkytapClient).StopContext
 
 	id := d.Id()
 

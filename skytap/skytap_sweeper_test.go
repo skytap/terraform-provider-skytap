@@ -15,7 +15,7 @@ func TestMain(m *testing.M) {
 	resource.TestMain(m)
 }
 
-func sharedClientForRegion(region string) (*Skytap, error) {
+func sharedClientForRegion(region string) (*SkytapClient, error) {
 	username := os.Getenv("SKYTAP_USERNAME")
 	apiToken := os.Getenv("SKYTAP_API_TOKEN")
 

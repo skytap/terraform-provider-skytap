@@ -13,16 +13,16 @@ type Config struct {
 	APIToken string
 }
 
-// Skytap is the Skytap client implementation
-type Skytap struct {
+// SkytapClient is the Skytap client implementation
+type SkytapClient struct {
 	StopContext context.Context
 
 	projectsClient     skytap.ProjectsService
 	environmentsClient skytap.EnvironmentsService
 }
 
-// Client creates a Skytap client
-func (c *Config) Client() (*Skytap, error) {
+// Client creates a SkytapClient client
+func (c *Config) Client() (*SkytapClient, error) {
 	var credentialsProvider skytap.CredentialsProvider
 	if c.APIToken != "" {
 		credentialsProvider = skytap.NewAPITokenCredentials(c.Username, c.APIToken)
@@ -35,7 +35,7 @@ func (c *Config) Client() (*Skytap, error) {
 		return nil, errors.Errorf("failed to initialize the Skytap client: %v", err)
 	}
 
-	skytapClient := Skytap{
+	skytapClient := SkytapClient{
 		projectsClient:     client.Projects,
 		environmentsClient: client.Environments,
 	}
