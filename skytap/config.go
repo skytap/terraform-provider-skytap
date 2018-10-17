@@ -7,12 +7,13 @@ import (
 	"github.com/skytap/skytap-sdk-go/skytap"
 )
 
+// Config describes the configuration
 type Config struct {
 	Username string
-	Password string
-	ApiToken string
+	APIToken string
 }
 
+// SkytapClient is the Skytap client implementation
 type SkytapClient struct {
 	StopContext context.Context
 
@@ -20,19 +21,18 @@ type SkytapClient struct {
 	environmentsClient skytap.EnvironmentsService
 }
 
+// Client creates a SkytapClient client
 func (c *Config) Client() (*SkytapClient, error) {
 	var credentialsProvider skytap.CredentialsProvider
-	if c.ApiToken != "" {
-		credentialsProvider = skytap.NewApiTokenCredentials(c.Username, c.ApiToken)
-	} else if c.Password != "" {
-		credentialsProvider = skytap.NewPasswordCredentials(c.Username, c.Password)
+	if c.APIToken != "" {
+		credentialsProvider = skytap.NewAPITokenCredentials(c.Username, c.APIToken)
 	} else {
-		return nil, errors.Errorf("either a password or an Api token must be provided in order to successfully authenticate to SkyTap")
+		return nil, errors.Errorf("An API token must be provided in order to successfully authenticate to Skytap")
 	}
 
 	client, err := skytap.NewClient(skytap.NewDefaultSettings(skytap.WithCredentialsProvider(credentialsProvider)))
 	if err != nil {
-		return nil, errors.Errorf("failed to initialize the SkyTap client: %v", err)
+		return nil, errors.Errorf("failed to initialize the Skytap client: %v", err)
 	}
 
 	skytapClient := SkytapClient{

@@ -25,7 +25,7 @@ func sharedClientForRegion(region string) (*SkytapClient, error) {
 
 	config := &Config{
 		Username: username,
-		ApiToken: apiToken,
+		APIToken: apiToken,
 	}
 
 	// configures a default client for the region, using the above env vars

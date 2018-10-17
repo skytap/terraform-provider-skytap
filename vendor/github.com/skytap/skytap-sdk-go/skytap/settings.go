@@ -5,19 +5,23 @@ import (
 )
 
 const (
-	DefaultBaseURL   = "https://cloud.skytap.com/"
+	// DefaultBaseURL is the base URL if not explicitly set
+	DefaultBaseURL = "https://cloud.skytap.com/"
+	// DefaultUserAgent is the default user agent if not explicitly set
 	DefaultUserAgent = "skytap-sdk-go/" + version
 )
 
+// Settings holds the base URL, user agent and credential data
 type Settings struct {
-	baseUrl   string
+	baseURL   string
 	userAgent string
 
 	credentials CredentialsProvider
 }
 
+// Validate the settings
 func (s *Settings) Validate() error {
-	if s.baseUrl == "" {
+	if s.baseURL == "" {
 		return fmt.Errorf("the base URL must be provided")
 	}
 	if s.userAgent == "" {
@@ -30,9 +34,10 @@ func (s *Settings) Validate() error {
 	return nil
 }
 
+// NewDefaultSettings creates a new Settings based upon the input clientSettings
 func NewDefaultSettings(clientSettings ...ClientSetting) Settings {
 	settings := Settings{
-		baseUrl:     DefaultBaseURL,
+		baseURL:     DefaultBaseURL,
 		userAgent:   DefaultUserAgent,
 		credentials: NewNoOpCredentials(),
 	}
@@ -45,16 +50,17 @@ func NewDefaultSettings(clientSettings ...ClientSetting) Settings {
 	return settings
 }
 
+// ClientSetting abstracts an individual setting
 type ClientSetting interface {
 	Apply(*Settings)
 }
 
-type withBaseUrl string
+type withBaseURL string
 type withUserAgent string
 type withCredentialsProvider struct{ cp CredentialsProvider }
 
-func (w withBaseUrl) Apply(s *Settings) {
-	s.baseUrl = string(w)
+func (w withBaseURL) Apply(s *Settings) {
+	s.baseURL = string(w)
 }
 
 func (w withUserAgent) Apply(s *Settings) {
@@ -65,14 +71,17 @@ func (w withCredentialsProvider) Apply(s *Settings) {
 	s.credentials = w.cp
 }
 
-func WithBaseUrl(BaseUrl string) ClientSetting {
-	return withBaseUrl(BaseUrl)
+// WithBaseURL accepts a base URL
+func WithBaseURL(BaseURL string) ClientSetting {
+	return withBaseURL(BaseURL)
 }
 
-func WithUserAgent(BaseUrl string) ClientSetting {
-	return withUserAgent(BaseUrl)
+// WithUserAgent accepts a user agent
+func WithUserAgent(UserAgent string) ClientSetting {
+	return withUserAgent(UserAgent)
 }
 
+// WithCredentialsProvider accepts an abstracted set of credentials
 func WithCredentialsProvider(credentialsProvider CredentialsProvider) ClientSetting {
 	return withCredentialsProvider{credentialsProvider}
 }

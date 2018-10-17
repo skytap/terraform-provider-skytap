@@ -5,11 +5,13 @@ import (
 	"fmt"
 )
 
+// Default URL paths
 const (
 	projectsLegacyBasePath = "/projects"
 	projectsBasePath       = "/v2/projects"
 )
 
+// ProjectsService is the contract for the services provided on the Skytap Project resource
 type ProjectsService interface {
 	List(ctx context.Context) (*ProjectListResult, error)
 	Get(ctx context.Context, id string) (*Project, error)
@@ -18,22 +20,24 @@ type ProjectsService interface {
 	Delete(ctx context.Context, id string) error
 }
 
-// Project service implementation
+// ProjectsServiceClient is the ProjectsService implementation
 type ProjectsServiceClient struct {
 	client *Client
 }
 
 // Project resource struct definitions
 type Project struct {
-	Id                 *string      `json:"id,omitempty"`
+	ID                 *string      `json:"id,omitempty"`
 	Name               *string      `json:"name,omitempty"`
 	Summary            *string      `json:"summary,omitempty"`
 	AutoAddRoleName    *ProjectRole `json:"auto_add_role_name,omitempty"`
 	ShowProjectMembers *bool        `json:"show_project_members,omitempty"`
 }
 
+// ProjectRole is the enumeration of the different possible project roles
 type ProjectRole string
 
+// The different project roles
 const (
 	ProjectRoleViewer      ProjectRole = "viewer"
 	ProjectRoleParticipant ProjectRole = "participant"
@@ -41,11 +45,12 @@ const (
 	ProjectRoleManager     ProjectRole = "manager"
 )
 
-// Request specific structs
+// ProjectListResult is the listing request specific struct
 type ProjectListResult struct {
 	Value []Project
 }
 
+// List the projects
 func (s *ProjectsServiceClient) List(ctx context.Context) (*ProjectListResult, error) {
 	req, err := s.client.newRequest(ctx, "GET", projectsBasePath, nil)
 	if err != nil {
@@ -66,6 +71,7 @@ func (s *ProjectsServiceClient) List(ctx context.Context) (*ProjectListResult, e
 	return &projectListResponse, nil
 }
 
+// Get a project
 func (s *ProjectsServiceClient) Get(ctx context.Context, id string) (*Project, error) {
 	path := fmt.Sprintf("%s/%s", projectsBasePath, id)
 
@@ -83,6 +89,7 @@ func (s *ProjectsServiceClient) Get(ctx context.Context, id string) (*Project, e
 	return &project, nil
 }
 
+// Create a project
 func (s *ProjectsServiceClient) Create(ctx context.Context, project *Project) (*Project, error) {
 	req, err := s.client.newRequest(ctx, "POST", projectsLegacyBasePath, project)
 	if err != nil {
@@ -98,7 +105,7 @@ func (s *ProjectsServiceClient) Create(ctx context.Context, project *Project) (*
 	createdProject.Summary = project.Summary
 
 	// update project after creation to establish the resource information.
-	updatedProject, err := s.Update(ctx, *createdProject.Id, &createdProject)
+	updatedProject, err := s.Update(ctx, *createdProject.ID, &createdProject)
 	if err != nil {
 		return nil, err
 	}
@@ -106,6 +113,7 @@ func (s *ProjectsServiceClient) Create(ctx context.Context, project *Project) (*
 	return updatedProject, nil
 }
 
+// Update a project
 func (s *ProjectsServiceClient) Update(ctx context.Context, id string, project *Project) (*Project, error) {
 	path := fmt.Sprintf("%s/%s", projectsLegacyBasePath, id)
 
@@ -123,6 +131,7 @@ func (s *ProjectsServiceClient) Update(ctx context.Context, id string, project *
 	return &updatedProject, nil
 }
 
+// Delete a project
 func (s *ProjectsServiceClient) Delete(ctx context.Context, id string) error {
 	path := fmt.Sprintf("%s/%s", projectsLegacyBasePath, id)
 

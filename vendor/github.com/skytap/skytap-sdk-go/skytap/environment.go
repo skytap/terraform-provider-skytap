@@ -5,11 +5,13 @@ import (
 	"fmt"
 )
 
+// Default URL paths
 const (
 	environmentLegacyBasePath = "/configurations"
 	environmentBasePath       = "/v2/configurations"
 )
 
+// EnvironmentsService is the contract for the services provided on the Skytap Environment resource
 type EnvironmentsService interface {
 	List(ctx context.Context) (*EnvironmentListResult, error)
 	Get(ctx context.Context, id string) (*Environment, error)
@@ -18,12 +20,12 @@ type EnvironmentsService interface {
 	Delete(ctx context.Context, id string) error
 }
 
-// Environment service implementation
+// EnvironmentsServiceClient is the EnvironmentsService implementation
 type EnvironmentsServiceClient struct {
 	client *Client
 }
 
-// Environment resource struct definitions
+// Environment resource struct definitions.
 type Environment struct {
 	ID                      *string              `json:"id"`
 	URL                     *string              `json:"url"`
@@ -45,7 +47,7 @@ type Environment struct {
 	CreatedAt               *string              `json:"created_at"`
 	Region                  *string              `json:"region"`
 	RegionBackend           *string              `json:"region_backend"`
-	Svms                    *int                 `json:"svms"`
+	SVMs                    *int                 `json:"svms"`
 	CanSaveAsTemplate       *bool                `json:"can_save_as_template"`
 	CanCopy                 *bool                `json:"can_copy"`
 	CanDelete               *bool                `json:"can_delete"`
@@ -72,41 +74,45 @@ type Environment struct {
 	VpnCount                *int                 `json:"vpn_count"`
 	OutboundTraffic         *bool                `json:"outbound_traffic"`
 	Routable                *bool                `json:"routable"`
-	Vms                     []Vm                 `json:"vms"`
+	VMs                     []VM                 `json:"vms"`
 	Networks                []Network            `json:"networks"`
 	ContainersCount         *int                 `json:"containers_count"`
 	ContainerHostsCount     *int                 `json:"container_hosts_count"`
 	PlatformErrors          []string             `json:"platform_errors"`
-	SvmsByArchitecture      *SvmsByArchitecture  `json:"svms_by_architecture"`
+	SVMsByArchitecture      *SVMsByArchitecture  `json:"svms_by_architecture"`
 	AllVmsSupportSuspend    *bool                `json:"all_vms_support_suspend"`
 	ShutdownOnIdle          *int                 `json:"shutdown_on_idle"`
 	ShutdownAtTime          *string              `json:"shutdown_at_time"`
 	AutoShutdownDescription *string              `json:"auto_shutdown_description"`
 }
 
+// Tag describes environment tag data
 type Tag struct {
-	Id    *string `json:"id"`
+	ID    *string `json:"id"`
 	Value *string `json:"value"`
 }
 
+// Stage describes the VM stage sequence
 type Stage struct {
 	DelayAfterFinishSeconds *int     `json:"delay_after_finish_seconds"`
 	Index                   *int     `json:"index"`
-	VMIds                   []string `json:"vm_ids"`
+	VMIDs                   []string `json:"vm_ids"`
 }
 
+// StagedExecution describes the status of a running VM sequence
 type StagedExecution struct {
 	ActionType                          *string  `json:"action_type"`
 	CurrentStageDelayAfterFinishSeconds *int     `json:"current_stage_delay_after_finish_seconds"`
 	CurrentStageIndex                   *int     `json:"current_stage_index"`
 	CurrentStageFinishedAt              *string  `json:"current_stage_finished_at"`
-	VMIds                               []string `json:"vm_ids"`
+	VMIDs                               []string `json:"vm_ids"`
 }
 
-type Vm struct {
+// VM describes a virtual machines in the environment. It is legal to have 0 entries in this array
+type VM struct {
 	ID                     *string      `json:"id"`
 	Name                   *string      `json:"name"`
-	Runstate               *VmRunstate  `json:"runstate"`
+	Runstate               *VMRunstate  `json:"runstate"`
 	RateLimited            *bool        `json:"rate_limited"`
 	Hardware               *Hardware    `json:"hardware"`
 	Error                  *bool        `json:"error"`
@@ -129,14 +135,15 @@ type Vm struct {
 	ConfigurationURL       *string      `json:"configuration_url"`
 }
 
+// Hardware describes the VM's hardware configuration
 type Hardware struct {
-	Cpus                 *int    `json:"cpus"`
+	CPUs                 *int    `json:"cpus"`
 	SupportsMulticore    *bool   `json:"supports_multicore"`
 	CpusPerSocket        *int    `json:"cpus_per_socket"`
 	RAM                  *int    `json:"ram"`
-	Svms                 *int    `json:"svms"`
+	SVMs                 *int    `json:"svms"`
 	GuestOS              *string `json:"guestOS"`
-	MaxCpus              *int    `json:"max_cpus"`
+	MaxCPUs              *int    `json:"max_cpus"`
 	MinRAM               *int    `json:"min_ram"`
 	MaxRAM               *int    `json:"max_ram"`
 	VncKeymap            *string `json:"vnc_keymap"`
@@ -146,29 +153,31 @@ type Hardware struct {
 	Upgradable           *bool   `json:"upgradable"`
 	InstanceType         *string `json:"instance_type"`
 	TimeSyncEnabled      *bool   `json:"time_sync_enabled"`
-	RtcStartTime         *string `json:"rtc_start_time"`
+	RTCStartTime         *string `json:"rtc_start_time"`
 	CopyPasteEnabled     *bool   `json:"copy_paste_enabled"`
 	NestedVirtualization *bool   `json:"nested_virtualization"`
 	Architecture         *string `json:"architecture"`
 }
 
+// Disk describes the VM's hard drive configuration
 type Disk struct {
 	ID         *string `json:"id"`
 	Size       *int    `json:"size"`
 	Type       *string `json:"type"`
 	Controller *string `json:"controller"`
-	Lun        *string `json:"lun"`
+	LUN        *string `json:"lun"`
 }
 
+// Interface describes the VM's virtual network interface configuration
 type Interface struct {
 	ID                  *string              `json:"id"`
 	IP                  *string              `json:"ip"`
 	Hostname            *string              `json:"hostname"`
-	Mac                 *string              `json:"mac"`
+	MAC                 *string              `json:"mac"`
 	ServicesCount       *int                 `json:"services_count"`
 	Services            []Service            `json:"services"`
-	PublicIpsCount      *int                 `json:"public_ips_count"`
-	PublicIps           []map[string]string  `json:"public_ips"`
+	PublicIPsCount      *int                 `json:"public_ips_count"`
+	PublicIPs           []map[string]string  `json:"public_ips"`
 	VMID                *string              `json:"vm_id"`
 	VMName              *string              `json:"vm_name"`
 	Status              *string              `json:"status"`
@@ -177,11 +186,12 @@ type Interface struct {
 	NetworkURL          *string              `json:"network_url"`
 	NetworkType         *string              `json:"network_type"`
 	NetworkSubnet       *string              `json:"network_subnet"`
-	NicType             *string              `json:"nic_type"`
-	SecondaryIps        []SecondaryIp        `json:"secondary_ips"`
-	PublicIPAttachments []PublicIpAttachment `json:"public_ip_attachments"`
+	NICType             *string              `json:"nic_type"`
+	SecondaryIPs        []SecondaryIP        `json:"secondary_ips"`
+	PublicIPAttachments []PublicIPAttachment `json:"public_ip_attachments"`
 }
 
+// Service describes a service provided on the connected network
 type Service struct {
 	ID           *string `json:"id"`
 	InternalPort *int    `json:"internal_port"`
@@ -189,12 +199,14 @@ type Service struct {
 	ExternalPort *int    `json:"external_port"`
 }
 
-type SecondaryIp struct {
+// SecondaryIP holds secondary IP address data
+type SecondaryIP struct {
 	ID      *string `json:"id"`
 	Address *string `json:"address"`
 }
 
-type PublicIpAttachment struct {
+// PublicIPAttachment describes the public IP address data
+type PublicIPAttachment struct {
 	ID                    *int    `json:"id"`
 	PublicIPAttachmentKey *int    `json:"public_ip_attachment_key"`
 	Address               *string `json:"address"`
@@ -204,6 +216,7 @@ type PublicIpAttachment struct {
 	PublicIPKey           *string `json:"public_ip_key"`
 }
 
+// Note describes a note on the VM
 type Note struct {
 	ID        *string `json:"id"`
 	UserID    *int    `json:"user_id"`
@@ -213,6 +226,7 @@ type Note struct {
 	Text      *string `json:"text"`
 }
 
+// User describes the user who made the note
 type User struct {
 	ID        *string `json:"id"`
 	URL       *string `json:"url"`
@@ -224,6 +238,7 @@ type User struct {
 	Deleted   *bool   `json:"deleted"`
 }
 
+// Label describes a label attached to the VM
 type Label struct {
 	ID                       *string `json:"id"`
 	Value                    *string `json:"value"`
@@ -232,14 +247,18 @@ type Label struct {
 	LabelCategorySingleValue *bool   `json:"label_category_single_value"`
 }
 
+// Credential describes credentials stored on the VM and available from the Credentials page in the UI
 type Credential struct {
 	ID   *string `json:"id"`
 	Text *string `json:"text"`
 }
 
+// Container describes the containers running on the VM. If null, the VM is not a container host.
+// To make the VM a container host, see Make the VM a container host.
+// If the VM is a container host, this object contains the following fields:
 type Container struct {
 	ID              *int        `json:"id"`
-	Cid             *string     `json:"cid"`
+	CID             *string     `json:"cid"`
 	Name            *string     `json:"name"`
 	Image           *string     `json:"image"`
 	CreatedAt       *string     `json:"created_at"`
@@ -250,10 +269,13 @@ type Container struct {
 	Privileged      *bool       `json:"privileged"`
 	VMID            *int        `json:"vm_id"`
 	VMName          *string     `json:"vm_name"`
-	VMRunstate      *VmRunstate `json:"vm_runstate"`
+	VMRunstate      *VMRunstate `json:"vm_runstate"`
 	ConfigurationID *int        `json:"configuration_id"`
 }
 
+// Network is a network in the environment.
+// Every environment can have multiple networks;
+// the number of total networks that can be created is restricted by your customer account’s network quota.
 type Network struct {
 	ID                  *string         `json:"id"`
 	URL                 *string         `json:"url"`
@@ -267,18 +289,21 @@ type Network struct {
 	SecondaryNameserver *string         `json:"secondary_nameserver"`
 	Region              *string         `json:"region"`
 	Domain              *string         `json:"domain"`
-	VpnAttachments      []VpnAttachment `json:"vpn_attachments"`
+	VPNAttachments      []VPNAttachment `json:"vpn_attachments"`
 	Tunnelable          *bool           `json:"tunnelable"`
 	Tunnels             []Tunnel        `json:"tunnels"`
 }
 
-type VpnAttachment struct {
+// VPNAttachment are representations of the relationships between this network
+// and any VPN or Private Network Connections it is attached to, including whether the network is currently connected.
+type VPNAttachment struct {
 	ID        *string               `json:"id"`
 	Connected *bool                 `json:"connected"`
 	Network   *VpnAttachmentNetwork `json:"network"`
-	Vpn       *Vpn                  `json:"vpn"`
+	VPN       *VPN                  `json:"vpn"`
 }
 
+// VpnAttachmentNetwork describes the attachment network
 type VpnAttachmentNetwork struct {
 	ID              *string `json:"id"`
 	Subnet          *string `json:"subnet"`
@@ -286,7 +311,8 @@ type VpnAttachmentNetwork struct {
 	ConfigurationID *string `json:"configuration_id"`
 }
 
-type Vpn struct {
+// VPN described a virtual machine attached to an environment.
+type VPN struct {
 	ID            *string `json:"id"`
 	Name          *string `json:"name"`
 	Enabled       *bool   `json:"enabled"`
@@ -296,6 +322,7 @@ type Vpn struct {
 	CanReconnect  *bool   `json:"can_reconnect"`
 }
 
+// Tunnel is a list of connections between this network and other networks
 type Tunnel struct {
 	ID            *string  `json:"id"`
 	Status        *string  `json:"status"`
@@ -304,44 +331,52 @@ type Tunnel struct {
 	TargetNetwork *Network `json:"target_network"`
 }
 
-type SvmsByArchitecture struct {
+// SVMsByArchitecture lists the number of x86 and power SVMs consumed by VMs in the environment
+type SVMsByArchitecture struct {
 	X86   *int `json:"x86"`
 	Power *int `json:"power"`
 }
 
+// EnvironmentRunstate enumerates the possible environment running states
 type EnvironmentRunstate string
 
+// The environment running states
 const (
 	EnvironmentRunstateStopped   EnvironmentRunstate = "stopped"
 	EnvironmentRunstateSuspended EnvironmentRunstate = "suspended"
 	EnvironmentRunstateRunning   EnvironmentRunstate = "running"
 )
 
-type VmRunstate string
+// VMRunstate enumerates the possible VM running states
+type VMRunstate string
 
+// The VM running states
 const (
-	VmRunstateStopped   VmRunstate = "stopped"
-	VmRunstateSuspended VmRunstate = "suspended"
-	VmRunstateRunning   VmRunstate = "running"
-	VmRunstateReset     VmRunstate = "reset"
-	VmRunstateHalted    VmRunstate = "halted"
+	VMRunstateStopped   VMRunstate = "stopped"
+	VMRunstateSuspended VMRunstate = "suspended"
+	VMRunstateRunning   VMRunstate = "running"
+	VMRunstateReset     VMRunstate = "reset"
+	VMRunstateHalted    VMRunstate = "halted"
 )
 
+// Architecture is the system architecture
 type Architecture int
 
+// The architecture types
 const (
 	ArchitectureX86   Architecture = 0
 	ArchitecturePower Architecture = 1
 )
 
-// Request specific structs
+// EnvironmentListResult is the list request specific struct
 type EnvironmentListResult struct {
 	Value []Environment
 }
 
+// CreateEnvironmentRequest describes the update the environment data
 type CreateEnvironmentRequest struct {
-	TemplateId      *string `json:"template_id,omitempty"`
-	ProjectId       *string `json:"project_id,omitempty"`
+	TemplateID      *string `json:"template_id,omitempty"`
+	ProjectID       *string `json:"project_id,omitempty"`
 	Name            *string `json:"name,omitempty"`
 	Description     *string `json:"description,omitempty"`
 	Owner           *string `json:"owner,omitempty"`
@@ -353,6 +388,7 @@ type CreateEnvironmentRequest struct {
 	ShutdownAtTime  *string `json:"shutdown_at_time,omitempty"`
 }
 
+// UpdateEnvironmentRequest describes the update the environment data
 type UpdateEnvironmentRequest struct {
 	Name            *string `json:"name,omitempty"`
 	Description     *string `json:"description,omitempty"`
@@ -365,6 +401,7 @@ type UpdateEnvironmentRequest struct {
 	ShutdownAtTime  *string `json:"shutdown_at_time,omitempty"`
 }
 
+// List the environments
 func (s *EnvironmentsServiceClient) List(ctx context.Context) (*EnvironmentListResult, error) {
 	req, err := s.client.newRequest(ctx, "GET", environmentBasePath, nil)
 	if err != nil {
@@ -385,6 +422,7 @@ func (s *EnvironmentsServiceClient) List(ctx context.Context) (*EnvironmentListR
 	return &environmentsListResponse, nil
 }
 
+// Get an environment
 func (s *EnvironmentsServiceClient) Get(ctx context.Context, id string) (*Environment, error) {
 	path := fmt.Sprintf("%s/%s", environmentBasePath, id)
 
@@ -402,6 +440,7 @@ func (s *EnvironmentsServiceClient) Get(ctx context.Context, id string) (*Enviro
 	return &environment, nil
 }
 
+// Create an environment
 func (s *EnvironmentsServiceClient) Create(ctx context.Context, request *CreateEnvironmentRequest) (*Environment, error) {
 	req, err := s.client.newRequest(ctx, "POST", environmentLegacyBasePath, request)
 	if err != nil {
@@ -427,7 +466,7 @@ func (s *EnvironmentsServiceClient) Create(ctx context.Context, request *CreateE
 	}
 
 	// update environment after creation to establish the resource information.
-	environment, err := s.Update(ctx, String(createdEnvironment.ID), updateOpts)
+	environment, err := s.Update(ctx, stString(createdEnvironment.ID), updateOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -435,6 +474,7 @@ func (s *EnvironmentsServiceClient) Create(ctx context.Context, request *CreateE
 	return environment, nil
 }
 
+// Update an environment
 func (s *EnvironmentsServiceClient) Update(ctx context.Context, id string, updateEnvironment *UpdateEnvironmentRequest) (*Environment, error) {
 	path := fmt.Sprintf("%s/%s", environmentBasePath, id)
 
@@ -452,6 +492,7 @@ func (s *EnvironmentsServiceClient) Update(ctx context.Context, id string, updat
 	return &environment, nil
 }
 
+// Delete an environment
 func (s *EnvironmentsServiceClient) Delete(ctx context.Context, id string) error {
 	path := fmt.Sprintf("%s/%s", environmentLegacyBasePath, id)
 

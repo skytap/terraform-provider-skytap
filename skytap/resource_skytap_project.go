@@ -58,7 +58,7 @@ func resourceSkytapProjectCreate(d *schema.ResourceData, meta interface{}) error
 	client := meta.(*SkytapClient).projectsClient
 	ctx := meta.(*SkytapClient).StopContext
 
-	log.Printf("[INFO] preparing arguments for creating the SkyTap Project")
+	log.Printf("[INFO] preparing arguments for creating the Skytap Project")
 
 	name := d.Get("name").(string)
 	showProjectMembers := d.Get("show_project_members").(bool)
@@ -83,7 +83,7 @@ func resourceSkytapProjectCreate(d *schema.ResourceData, meta interface{}) error
 		return errors.Errorf("error creating project: %v", err)
 	}
 
-	d.SetId(*project.Id)
+	d.SetId(*project.ID)
 
 	return resourceSkytapProjectRead(d, meta)
 }

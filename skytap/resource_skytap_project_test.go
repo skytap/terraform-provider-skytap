@@ -37,7 +37,7 @@ func testSweepSkytapProject(region string) error {
 	for _, p := range projects.Value {
 		if shouldSweepAcceptanceTestResource(*p.Name) {
 			log.Printf("destroying project %s", *p.Name)
-			if err := client.Delete(ctx, *p.Id); err != nil {
+			if err := client.Delete(ctx, *p.ID); err != nil {
 				return err
 			}
 		}
