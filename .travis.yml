@@ -18,10 +18,8 @@ install:
 # See: https://github.com/golang/go/issues/12933
 - bash scripts/gogetcookie.sh
 - go get github.com/kardianos/govendor
-- go get -u golang.org/x/lint/golint
 
 script:
-- make lint
 - make test
 - make vendor-status
 - make vet
