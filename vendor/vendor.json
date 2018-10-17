@@ -757,10 +757,13 @@
 			"revisionTime": "2018-09-10T08:07:58Z"
 		},
 		{
-			"checksumSHA1": "tfggqcY1X3jBTT18foDy7YDGVMY=",
+			"checksumSHA1": "TeohhUi9zDsXXV9gauvF/UX4nL0=",
+			"origin": "github.com/opencredo/skytap-sdk-go/skytap",
 			"path": "github.com/skytap/skytap-sdk-go/skytap",
-			"revision": "80a2ede41fdd36aadc9aa6149fd8eac0bbab0568",
-			"revisionTime": "2018-10-15T01:14:38Z"
+			"revision": "6b148d9c4e108bbcd1d5c9276522097871bf4dde",
+			"revisionTime": "2018-10-16T12:52:41Z",
+			"version": "v2",
+			"versionExact": "v2"
 		},
 		{
 			"checksumSHA1": "c6pbpF7eowwO59phRTpF8cQ80Z0=",
