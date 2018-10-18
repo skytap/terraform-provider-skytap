@@ -41,8 +41,8 @@ type Client struct {
 
 // DefaultListParameters are the default pager settings
 var DefaultListParameters = &ListParameters{
-	Count:  stIntPtr(100),
-	Offset: stIntPtr(0),
+	Count:  intToPtr(100),
+	Offset: intToPtr(0),
 }
 
 // ListParameters is a Client scoped common struct for listing
@@ -223,12 +223,12 @@ func checkResponse(r *http.Response) error {
 	if err == nil && len(data) > 0 {
 		err := json.Unmarshal(data, errorResponse)
 		if err != nil {
-			errorResponse.Message = stStringPtr(string(data))
+			errorResponse.Message = strToPtr(string(data))
 		}
 	}
 
 	if requestID := r.Header.Get(headerRequestID); requestID != "" {
-		errorResponse.RequestID = stStringPtr(requestID)
+		errorResponse.RequestID = strToPtr(requestID)
 	}
 
 	return errorResponse

@@ -32,13 +32,13 @@ func dataSourceSkytapProject() *schema.Resource {
 			"auto_add_role_name": {
 				Type:        schema.TypeString,
 				Computed:    true,
-				Description: "role to automatically assign to every new user added to the project",
+				Description: "role automatically assigned to every new user added to the project",
 			},
 
 			"show_project_members": {
 				Type:        schema.TypeBool,
 				Computed:    true,
-				Description: "whether project members can view a list of other project members",
+				Description: "whether project members can view a list of the other project members",
 			},
 		},
 	}

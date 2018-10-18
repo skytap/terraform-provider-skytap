@@ -466,7 +466,7 @@ func (s *EnvironmentsServiceClient) Create(ctx context.Context, request *CreateE
 	}
 
 	// update environment after creation to establish the resource information.
-	environment, err := s.Update(ctx, stString(createdEnvironment.ID), updateOpts)
+	environment, err := s.Update(ctx, ptrToStr(createdEnvironment.ID), updateOpts)
 	if err != nil {
 		return nil, err
 	}
