@@ -135,7 +135,7 @@ func testAccCheckSkytapEnvironmentDestroy(s *terraform.State) error {
 func testAccSkytapEnvironmentConfig_basic(rInt int) string {
 	return fmt.Sprintf(`
 resource "skytap_environment" "foo" {
-	template_id = "1452333"
+	template_id = "1448141"
 	name = "tftest-environment-%d"
 	description = "This is an environment created by the skytap terraform provider acceptance test"
 }`, rInt)
