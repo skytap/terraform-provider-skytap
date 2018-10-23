@@ -57,7 +57,7 @@ func dataSourceSkytapProjectRead(d *schema.ResourceData, meta interface{}) error
 		return fmt.Errorf("error retrieving projects: %s", err)
 	}
 
-	projects := filterDataSourceSkytapSnapshotsByName(projectsResult.Value, name)
+	projects := filterDataSourceSkytapProjectsByName(projectsResult.Value, name)
 
 	if len(projects) == 0 {
 		return fmt.Errorf("no project found with name %s", name)
@@ -78,7 +78,7 @@ func dataSourceSkytapProjectRead(d *schema.ResourceData, meta interface{}) error
 	return nil
 }
 
-func filterDataSourceSkytapSnapshotsByName(projects []skytap.Project, name string) []skytap.Project {
+func filterDataSourceSkytapProjectsByName(projects []skytap.Project, name string) []skytap.Project {
 	var result []skytap.Project
 	for _, p := range projects {
 		if *p.Name == name {

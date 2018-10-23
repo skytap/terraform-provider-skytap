@@ -24,7 +24,8 @@ func Provider() terraform.ResourceProvider {
 		},
 
 		DataSourcesMap: map[string]*schema.Resource{
-			"skytap_project": dataSourceSkytapProject(),
+			"skytap_project":  dataSourceSkytapProject(),
+			"skytap_template": dataSourceSkytapTemplate(),
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
