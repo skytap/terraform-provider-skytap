@@ -7,17 +7,23 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
 	version   = "1.0.0"
 	mediaType = "application/json"
 
-	headerRequestID = "X-Request-ID"
+	headerRequestID  = "X-Request-ID"
+	headerRetryAfter = "Retry-After"
+
+	defRetryAfter = 10
+	defRetryCount = 6
 )
 
 // Client is a client to manage and configure the skytap cloud
@@ -37,6 +43,10 @@ type Client struct {
 	// Services used for communicating with the API
 	Projects     ProjectsService
 	Environments EnvironmentsService
+	Templates    TemplatesService
+
+	retryAfter int
+	retryCount int
 }
 
 // DefaultListParameters are the default pager settings
@@ -65,6 +75,7 @@ type ListFilter struct {
 
 // ErrorResponse is the general purpose struct to hold error data
 type ErrorResponse struct {
+	error
 	// HTTP response that caused this error
 	Response *http.Response
 
@@ -73,6 +84,12 @@ type ErrorResponse struct {
 
 	// Error message
 	Message *string `json:"error,omitempty"`
+
+	// RetryAfter is sometimes returned by the server
+	RetryAfter *int
+
+	// RequiresRetry indicates whether a retry is required
+	RequiresRetry bool
 }
 
 // Error returns a formatted error
@@ -107,6 +124,10 @@ func NewClient(settings Settings) (*Client, error) {
 
 	client.Projects = &ProjectsServiceClient{&client}
 	client.Environments = &EnvironmentsServiceClient{&client}
+	client.Templates = &TemplatesServiceClient{&client}
+
+	client.retryAfter = defRetryAfter
+	client.retryCount = defRetryCount
 
 	return &client, nil
 }
@@ -152,32 +173,45 @@ func (c *Client) newRequest(ctx context.Context, method, path string, body inter
 }
 
 func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*http.Response, error) {
-	resp, err := c.hc.Do(req.WithContext(ctx))
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
+	var resp *http.Response
+	var err error
+	var makeRequest = true
 
-	err = checkResponse(resp)
-	if err != nil {
-		return resp, err
-	}
+	for i := 0; i < c.retryCount+1 && makeRequest; i++ {
+		resp, err = c.hc.Do(req.WithContext(ctx))
 
-	if v != nil {
-		if w, ok := v.(io.Writer); ok {
-			_, err = io.Copy(w, resp.Body)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			err = json.NewDecoder(resp.Body).Decode(v)
-			if err != nil {
-				return nil, err
-			}
+		if err != nil {
+			break
 		}
+
+		err = c.checkResponse(resp)
+
+		if err == nil {
+			readResponseBody(resp, v)
+			makeRequest = false
+		} else if err.(*ErrorResponse).RequiresRetry {
+			seconds := *err.(*ErrorResponse).RetryAfter
+			log.Printf("retrying after %d second(s)\n", seconds)
+			time.Sleep(time.Duration(seconds) * time.Second)
+		} else {
+			makeRequest = false
+		}
+		resp.Body.Close()
 	}
 
 	return resp, err
+}
+
+func readResponseBody(resp *http.Response, v interface{}) error {
+	var err error
+	if v != nil {
+		if w, ok := v.(io.Writer); ok {
+			_, err = io.Copy(w, resp.Body)
+		} else {
+			err = json.NewDecoder(resp.Body).Decode(v)
+		}
+	}
+	return err
 }
 
 func (c *Client) setRequestListParameters(req *http.Request, params *ListParameters) error {
@@ -213,8 +247,8 @@ func (c *Client) setRequestListParameters(req *http.Request, params *ListParamet
 // checkResponse checks the API response for errors, and returns them if present. A response is considered an
 // error if it has a status code outside the 200 range. API error responses are expected to have either no response
 // body, or a JSON response body that maps to ErrorResponse.
-func checkResponse(r *http.Response) error {
-	if c := r.StatusCode; c >= 200 && c <= 299 {
+func (c *Client) checkResponse(r *http.Response) error {
+	if code := r.StatusCode; code >= http.StatusOK && code <= 299 {
 		return nil
 	}
 
@@ -229,6 +263,22 @@ func checkResponse(r *http.Response) error {
 
 	if requestID := r.Header.Get(headerRequestID); requestID != "" {
 		errorResponse.RequestID = strToPtr(requestID)
+	}
+
+	if code := r.StatusCode; code == http.StatusLocked ||
+		code == http.StatusTooManyRequests ||
+		code >= http.StatusInternalServerError && code <= 599 {
+		if retryAfter := r.Header.Get(headerRetryAfter); retryAfter != "" {
+			val, err := strconv.Atoi(retryAfter)
+			if err == nil {
+				errorResponse.RetryAfter = intToPtr(val)
+			} else {
+				errorResponse.RetryAfter = intToPtr(c.retryAfter)
+			}
+		} else {
+			errorResponse.RetryAfter = intToPtr(c.retryAfter)
+		}
+		errorResponse.RequiresRetry = true
 	}
 
 	return errorResponse
