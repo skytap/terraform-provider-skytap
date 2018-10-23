@@ -59,7 +59,7 @@ type Environment struct {
 	CanTag                  *bool                `json:"can_tag"`
 	Tags                    []Tag                `json:"tags"`
 	TagList                 *string              `json:"tag_list"`
-	Alerts                  []string             `json:"alerts"`
+	Alerts                  []Alert              `json:"alerts"`
 	PublishedServiceCount   *int                 `json:"published_service_count"`
 	PublicIPCount           *int                 `json:"public_ip_count"`
 	AutoSuspendDescription  *string              `json:"auto_suspend_description"`
@@ -90,6 +90,17 @@ type Environment struct {
 type Tag struct {
 	ID    *string `json:"id"`
 	Value *string `json:"value"`
+}
+
+// Alert describes an environment alert
+type Alert struct {
+	ID                   string `json:"id"`
+	DisplayType          string `json:"display_type"`
+	Dismissable          bool   `json:"dismissable"`
+	Message              string `json:"message"`
+	DisplayOnGeneral     bool   `json:"display_on_general"`
+	DisplayOnLogin       bool   `json:"display_on_login"`
+	DisplayOnSmartclient bool   `json:"display_on_smartclient"`
 }
 
 // Stage describes the VM stage sequence
@@ -345,6 +356,7 @@ const (
 	EnvironmentRunstateStopped   EnvironmentRunstate = "stopped"
 	EnvironmentRunstateSuspended EnvironmentRunstate = "suspended"
 	EnvironmentRunstateRunning   EnvironmentRunstate = "running"
+	EnvironmentRunstateBusy      EnvironmentRunstate = "busy"
 )
 
 // VMRunstate enumerates the possible VM running states
@@ -357,6 +369,7 @@ const (
 	VMRunstateRunning   VMRunstate = "running"
 	VMRunstateReset     VMRunstate = "reset"
 	VMRunstateHalted    VMRunstate = "halted"
+	VMRunstateBusy      VMRunstate = "busy"
 )
 
 // Architecture is the system architecture
