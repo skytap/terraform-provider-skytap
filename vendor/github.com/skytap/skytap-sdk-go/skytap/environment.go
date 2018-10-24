@@ -403,15 +403,16 @@ type CreateEnvironmentRequest struct {
 
 // UpdateEnvironmentRequest describes the update the environment data
 type UpdateEnvironmentRequest struct {
-	Name            *string `json:"name,omitempty"`
-	Description     *string `json:"description,omitempty"`
-	Owner           *string `json:"owner,omitempty"`
-	OutboundTraffic *bool   `json:"outbound_traffic,omitempty"`
-	Routable        *bool   `json:"routable,omitempty"`
-	SuspendOnIdle   *int    `json:"suspend_on_idle,omitempty"`
-	SuspendAtTime   *string `json:"suspend_at_time,omitempty"`
-	ShutdownOnIdle  *int    `json:"shutdown_on_idle,omitempty"`
-	ShutdownAtTime  *string `json:"shutdown_at_time,omitempty"`
+	Name            *string              `json:"name,omitempty"`
+	Description     *string              `json:"description,omitempty"`
+	Owner           *string              `json:"owner,omitempty"`
+	OutboundTraffic *bool                `json:"outbound_traffic,omitempty"`
+	Routable        *bool                `json:"routable,omitempty"`
+	SuspendOnIdle   *int                 `json:"suspend_on_idle,omitempty"`
+	SuspendAtTime   *string              `json:"suspend_at_time,omitempty"`
+	ShutdownOnIdle  *int                 `json:"shutdown_on_idle,omitempty"`
+	ShutdownAtTime  *string              `json:"shutdown_at_time,omitempty"`
+	Runstate        *EnvironmentRunstate `json:"runstate,omitempty"`
 }
 
 // List the environments
@@ -466,6 +467,8 @@ func (s *EnvironmentsServiceClient) Create(ctx context.Context, request *CreateE
 		return nil, err
 	}
 
+	runstate := EnvironmentRunstateRunning
+
 	updateOpts := &UpdateEnvironmentRequest{
 		Name:            request.Name,
 		Description:     request.Description,
@@ -476,6 +479,7 @@ func (s *EnvironmentsServiceClient) Create(ctx context.Context, request *CreateE
 		SuspendAtTime:   request.SuspendAtTime,
 		ShutdownOnIdle:  request.ShutdownOnIdle,
 		ShutdownAtTime:  request.ShutdownAtTime,
+		Runstate:        &runstate,
 	}
 
 	// update environment after creation to establish the resource information.
