@@ -41,7 +41,7 @@ func resourceSkytapEnvironment() *schema.Resource {
 
 			"description": {
 				Type:         schema.TypeString,
-				Optional:     true,
+				Required:     true,
 				ValidateFunc: validation.NoZeroValues,
 			},
 
