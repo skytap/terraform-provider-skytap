@@ -28,8 +28,9 @@ resource "skytap_environment" "environment" {
 
 The following arguments are supported:
 
-* `template_id` - (Required) ID of the template you want to create an environment from.
-* `project_id` - (Optional) ID of the project you want to add the environment to.
+* `template_id` - (Required, Force New) ID of the template you want to create an environment from. 
+If updating with a new one then the environment will be recreated.
+* `project_id` - (Optional) ID of the project you want to add the environment to. Will have no affect when updating.
 * `name` - (Optional) User-defined name of the environment. Limited to 255 characters. UTF-8 character type. 
 Will default to source template’s name if null is provided.
 * `description` - (Optional) User-defined description of the environment. Limited to 1000 characters. Null allowed. 
