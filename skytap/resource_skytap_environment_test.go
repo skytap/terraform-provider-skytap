@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/pkg/errors"
+	"github.com/skytap/skytap-sdk-go/skytap"
 	"github.com/skytap/terraform-provider-skytap/skytap/utils"
 	"log"
 	"testing"
@@ -46,7 +47,8 @@ func testSweepSkytapEnvironment(region string) error {
 }
 
 func TestAccSkytapEnvironment_Basic(t *testing.T) {
-	rInt := acctest.RandInt()
+	uniqueSuffix := acctest.RandInt()
+	var environment skytap.Environment
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -54,11 +56,11 @@ func TestAccSkytapEnvironment_Basic(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapEnvironmentConfig_basic(rInt),
+				Config: testAccSkytapEnvironmentConfig_basic(uniqueSuffix, "1448141"),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSkytapEnvironmentExists("skytap_environment.foo"),
-					resource.TestCheckResourceAttr("skytap_environment.foo", "name", fmt.Sprintf("tftest-environment-%d", rInt)),
-					resource.TestCheckResourceAttrSet("skytap_environment.foo", "description"),
+					testAccCheckSkytapEnvironmentExists("skytap_environment.foo", &environment),
+					resource.TestCheckResourceAttr("skytap_environment.foo", "name", fmt.Sprintf("tftest-environment-%d", uniqueSuffix)),
+					resource.TestCheckResourceAttr("skytap_environment.foo", "description", "This is an environment created by the skytap terraform provider acceptance test"),
 					resource.TestCheckResourceAttrSet("skytap_environment.foo", "template_id"),
 					resource.TestCheckNoResourceAttr("skytap_environment.foo", "project_id"),
 					resource.TestCheckResourceAttr("skytap_environment.foo", "outbound_traffic", "false"),
@@ -73,32 +75,70 @@ func TestAccSkytapEnvironment_Basic(t *testing.T) {
 	})
 }
 
+func TestAccSkytapEnvironment_UpdateTemplate(t *testing.T) {
+	rInt := acctest.RandInt()
+	var environment skytap.Environment
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSkytapEnvironmentConfig_basic(rInt, "1448141"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapEnvironmentExists("skytap_environment.foo", &environment),
+				),
+			},
+			{
+				Config: testAccSkytapEnvironmentConfig_basic(rInt, "1442921"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapEnvironmentAfterTemplateChanged("skytap_environment.foo", &environment),
+				),
+			},
+		},
+	})
+}
+
 // Verifies the Environment exists
-func testAccCheckSkytapEnvironmentExists(name string) resource.TestCheckFunc {
+func testAccCheckSkytapEnvironmentExists(name string, environment *skytap.Environment) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[name]
-		if !ok {
-			return fmt.Errorf("not found: %q", name)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("no Environment ID is set")
-		}
-
-		// retrieve the connection established in Provider configuration
-		client := testAccProvider.Meta().(*SkytapClient).environmentsClient
-		ctx := testAccProvider.Meta().(*SkytapClient).StopContext
-
-		// Retrieve our environment by referencing it's state ID for API lookup
-		_, err := client.Get(ctx, rs.Primary.ID)
+		rs, err := getResource(s, name)
 		if err != nil {
-			if utils.ResponseErrorIsNotFound(err) {
-				return errors.Errorf("environment (%s) was not found - does not exist", rs.Primary.ID)
-			}
-
-			return fmt.Errorf("error retrieving environment (%s): %v", rs.Primary.ID, err)
+			return err
 		}
 
+		// Get the environment
+		env, err := getEnvironment(rs)
+		if err != nil {
+			return err
+		}
+
+		*environment = *env
+		log.Printf("[DEBUG] environment (%s)\n", *environment.ID)
+
+		return nil
+	}
+}
+
+// Verifies the Environment is brand new
+func testAccCheckSkytapEnvironmentAfterTemplateChanged(name string, environmentOld *skytap.Environment) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, err := getResource(s, name)
+		if err != nil {
+			return err
+		}
+
+		// Get the environment
+		environmentNew, err := getEnvironment(rs)
+		if err != nil {
+			return err
+		}
+
+		log.Printf("[DEBUG] old environment (%s) and new environment (%s)\n", *environmentOld.ID, *environmentNew.ID)
+		if *environmentOld.ID == *environmentNew.ID {
+			return errors.Errorf("the old environment (%s) has been updated", rs.Primary.ID)
+		}
 		return nil
 	}
 }
@@ -132,11 +172,42 @@ func testAccCheckSkytapEnvironmentDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccSkytapEnvironmentConfig_basic(rInt int) string {
+func testAccSkytapEnvironmentConfig_basic(uniqueSuffix int, templateID string) string {
 	return fmt.Sprintf(`
 resource "skytap_environment" "foo" {
-	template_id = "1448141"
+	template_id = %s
 	name = "tftest-environment-%d"
 	description = "This is an environment created by the skytap terraform provider acceptance test"
-}`, rInt)
+}`, templateID, uniqueSuffix)
+}
+
+func getEnvironment(rs *terraform.ResourceState) (*skytap.Environment, error) {
+	var err error
+	// retrieve the connection established in Provider configuration
+	client := testAccProvider.Meta().(*SkytapClient).environmentsClient
+	ctx := testAccProvider.Meta().(*SkytapClient).StopContext
+
+	// Retrieve our environment by referencing it's state ID for API lookup
+	environment, errClient := client.Get(ctx, rs.Primary.ID)
+	if errClient != nil {
+		if utils.ResponseErrorIsNotFound(err) {
+			err = errors.Errorf("environment (%s) was not found - does not exist", rs.Primary.ID)
+		}
+
+		err = fmt.Errorf("error retrieving environment (%s): %v", rs.Primary.ID, err)
+	}
+	return environment, err
+}
+
+func getResource(s *terraform.State, name string) (*terraform.ResourceState, error) {
+	rs, ok := s.RootModule().Resources[name]
+	var err error
+	if !ok {
+		err = fmt.Errorf("not found: %q", name)
+	}
+
+	if rs.Primary.ID == "" {
+		err = fmt.Errorf("no resource ID is set")
+	}
+	return rs, err
 }

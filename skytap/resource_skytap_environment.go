@@ -28,6 +28,7 @@ func resourceSkytapEnvironment() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validation.NoZeroValues,
+				ForceNew:     true,
 			},
 
 			"project_id": {
