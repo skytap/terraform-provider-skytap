@@ -21,4 +21,3 @@ func TestNetworkType(t *testing.T) {
 	v := skytap.NetworkTypeAutomatic
 	assert.Equal(t, v, *NetworkType(v))
 }
-

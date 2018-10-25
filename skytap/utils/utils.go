@@ -13,6 +13,6 @@ func Int(v int) *int {
 }
 
 // NetworkType returns a pointer to a NetworkType literal
-func NetworkType(networkType skytap.NetworkType) * skytap.NetworkType {
+func NetworkType(networkType skytap.NetworkType) *skytap.NetworkType {
 	return &networkType
 }
