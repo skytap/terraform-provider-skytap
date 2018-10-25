@@ -40,10 +40,14 @@ func sharedClientForRegion(region string) (*SkytapClient, error) {
 }
 
 func shouldSweepAcceptanceTestResource(name string) bool {
+	return shouldSweepAcceptanceTestResourceWithPrefix(name, "tftest")
+}
+
+func shouldSweepAcceptanceTestResourceWithPrefix(name string, prefix string) bool {
 	loweredName := strings.ToLower(name)
 
-	if !strings.HasPrefix(loweredName, "tftest") {
-		log.Printf("ignoring Resource %q as it doesn't start with `tftest`", name)
+	if !strings.HasPrefix(loweredName, prefix) {
+		log.Printf("ignoring Resource %q as it doesn't start with `%s`", name, prefix)
 		return false
 	}
 

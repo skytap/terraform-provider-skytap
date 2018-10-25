@@ -29,10 +29,10 @@ func testSweepSkytapProject(region string) error {
 	client := meta.projectsClient
 	ctx := meta.StopContext
 
-	log.Printf("[INFO] Retrieving list of project")
+	log.Printf("[INFO] Retrieving list of projects")
 	projects, err := client.List(ctx)
 	if err != nil {
-		return fmt.Errorf("error retrieving list of project: %v", err)
+		return fmt.Errorf("error retrieving list of projects: %v", err)
 	}
 
 	for _, p := range projects.Value {

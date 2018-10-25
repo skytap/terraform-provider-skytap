@@ -284,64 +284,6 @@ type Container struct {
 	ConfigurationID *int        `json:"configuration_id"`
 }
 
-// Network is a network in the environment.
-// Every environment can have multiple networks;
-// the number of total networks that can be created is restricted by your customer account’s network quota.
-type Network struct {
-	ID                  *string         `json:"id"`
-	URL                 *string         `json:"url"`
-	Name                *string         `json:"name"`
-	NetworkType         *string         `json:"network_type"`
-	Subnet              *string         `json:"subnet"`
-	SubnetAddr          *string         `json:"subnet_addr"`
-	SubnetSize          *int            `json:"subnet_size"`
-	Gateway             *string         `json:"gateway"`
-	PrimaryNameserver   *string         `json:"primary_nameserver"`
-	SecondaryNameserver *string         `json:"secondary_nameserver"`
-	Region              *string         `json:"region"`
-	Domain              *string         `json:"domain"`
-	VPNAttachments      []VPNAttachment `json:"vpn_attachments"`
-	Tunnelable          *bool           `json:"tunnelable"`
-	Tunnels             []Tunnel        `json:"tunnels"`
-}
-
-// VPNAttachment are representations of the relationships between this network
-// and any VPN or Private Network Connections it is attached to, including whether the network is currently connected.
-type VPNAttachment struct {
-	ID        *string               `json:"id"`
-	Connected *bool                 `json:"connected"`
-	Network   *VpnAttachmentNetwork `json:"network"`
-	VPN       *VPN                  `json:"vpn"`
-}
-
-// VpnAttachmentNetwork describes the attachment network
-type VpnAttachmentNetwork struct {
-	ID              *string `json:"id"`
-	Subnet          *string `json:"subnet"`
-	NetworkName     *string `json:"network_name"`
-	ConfigurationID *string `json:"configuration_id"`
-}
-
-// VPN described a virtual machine attached to an environment.
-type VPN struct {
-	ID            *string `json:"id"`
-	Name          *string `json:"name"`
-	Enabled       *bool   `json:"enabled"`
-	NatEnabled    *bool   `json:"nat_enabled"`
-	RemoteSubnets *string `json:"remote_subnets"`
-	RemotePeerIP  *string `json:"remote_peer_ip"`
-	CanReconnect  *bool   `json:"can_reconnect"`
-}
-
-// Tunnel is a list of connections between this network and other networks
-type Tunnel struct {
-	ID            *string  `json:"id"`
-	Status        *string  `json:"status"`
-	Error         *string  `json:"error"`
-	SourceNetwork *Network `json:"source_network"`
-	TargetNetwork *Network `json:"target_network"`
-}
-
 // SVMsByArchitecture lists the number of x86 and power SVMs consumed by VMs in the environment
 type SVMsByArchitecture struct {
 	X86   *int `json:"x86"`
@@ -386,7 +328,7 @@ type EnvironmentListResult struct {
 	Value []Environment
 }
 
-// CreateEnvironmentRequest describes the update the environment data
+// CreateEnvironmentRequest describes the create the environment data
 type CreateEnvironmentRequest struct {
 	TemplateID      *string `json:"template_id,omitempty"`
 	ProjectID       *int    `json:"project_id,omitempty"`
