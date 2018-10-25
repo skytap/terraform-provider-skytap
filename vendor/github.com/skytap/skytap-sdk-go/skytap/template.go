@@ -7,8 +7,7 @@ import (
 
 // Default URL paths
 const (
-	templateLegacyBasePath = "/templates"
-	templateBasePath       = "/v2/templates"
+	templateBasePath = "/v2/templates"
 )
 
 // TemplatesService is the contract for the services provided on the Skytap Template resource

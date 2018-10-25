@@ -27,3 +27,13 @@ func ptrToInt(i *int) int {
 func intToPtr(i int) *int {
 	return &i
 }
+
+// boolToPtr returns a pointer to the passed bool.
+func boolToPtr(i bool) *bool {
+	return &i
+}
+
+// networkTypeToPtr returns a pointer to the passed NetworkType.
+func networkTypeToPtr(networkType NetworkType) *NetworkType {
+	return &networkType
+}

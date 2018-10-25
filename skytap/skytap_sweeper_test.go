@@ -11,6 +11,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const PREFIX = "tftest"
+
 func TestMain(m *testing.M) {
 	resource.TestMain(m)
 }
@@ -40,10 +42,14 @@ func sharedClientForRegion(region string) (*SkytapClient, error) {
 }
 
 func shouldSweepAcceptanceTestResource(name string) bool {
+	return shouldSweepAcceptanceTestResourceWithPrefix(name, PREFIX)
+}
+
+func shouldSweepAcceptanceTestResourceWithPrefix(name string, prefix string) bool {
 	loweredName := strings.ToLower(name)
 
-	if !strings.HasPrefix(loweredName, "tftest") {
-		log.Printf("ignoring Resource %q as it doesn't start with `tftest`", name)
+	if !strings.HasPrefix(loweredName, prefix) {
+		log.Printf("ignoring Resource %q as it doesn't start with `%s`", name, prefix)
 		return false
 	}
 

@@ -31,6 +31,7 @@ func Provider() terraform.ResourceProvider {
 		ResourcesMap: map[string]*schema.Resource{
 			"skytap_project":     resourceSkytapProject(),
 			"skytap_environment": resourceSkytapEnvironment(),
+			"skytap_network":     resourceSkytapNetwork(),
 		},
 	}
 

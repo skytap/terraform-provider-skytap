@@ -206,7 +206,7 @@ func getResource(s *terraform.State, name string) (*terraform.ResourceState, err
 		err = fmt.Errorf("not found: %q", name)
 	}
 
-	if rs.Primary.ID == "" {
+	if ok && rs.Primary.ID == "" {
 		err = fmt.Errorf("no resource ID is set")
 	}
 	return rs, err

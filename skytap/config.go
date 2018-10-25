@@ -20,6 +20,7 @@ type SkytapClient struct {
 	projectsClient     skytap.ProjectsService
 	environmentsClient skytap.EnvironmentsService
 	templatesClient    skytap.TemplatesService
+	networksClient     skytap.NetworksService
 }
 
 // Client creates a SkytapClient client
@@ -40,6 +41,7 @@ func (c *Config) Client() (*SkytapClient, error) {
 		projectsClient:     client.Projects,
 		environmentsClient: client.Environments,
 		templatesClient:    client.Templates,
+		networksClient:     client.Networks,
 	}
 
 	return &skytapClient, nil
