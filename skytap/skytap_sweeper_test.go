@@ -11,6 +11,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const PREFIX = "tftest"
+
 func TestMain(m *testing.M) {
 	resource.TestMain(m)
 }
@@ -40,7 +42,7 @@ func sharedClientForRegion(region string) (*SkytapClient, error) {
 }
 
 func shouldSweepAcceptanceTestResource(name string) bool {
-	return shouldSweepAcceptanceTestResourceWithPrefix(name, "tftest")
+	return shouldSweepAcceptanceTestResourceWithPrefix(name, PREFIX)
 }
 
 func shouldSweepAcceptanceTestResourceWithPrefix(name string, prefix string) bool {

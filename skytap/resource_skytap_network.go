@@ -43,7 +43,7 @@ func resourceSkytapNetwork() *schema.Resource {
 			"subnet": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.CIDRNetwork(0, 255),
+				ValidateFunc: validation.CIDRNetwork(16, 29),
 			},
 
 			"gateway": {
@@ -75,7 +75,7 @@ func resourceSkytapNetworkCreate(d *schema.ResourceData, meta interface{}) error
 
 	opts := skytap.CreateNetworkRequest{
 		Name:        &name,
-		NetworkType: nil,
+		NetworkType: utils.NetworkType(skytap.NetworkTypeAutomatic),
 		Domain:      &domain,
 		Subnet:      &subnet,
 		Tunnelable:  &tunnelable,
