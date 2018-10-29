@@ -50,6 +50,7 @@ func resourceSkytapNetwork() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.SingleIP(),
+				Computed:     true,
 			},
 
 			"tunnelable": {
