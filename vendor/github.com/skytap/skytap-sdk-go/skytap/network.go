@@ -62,7 +62,7 @@ type VpnAttachmentNetwork struct {
 	ConfigurationID *string `json:"configuration_id"`
 }
 
-// VPN described a virtual machine attached to an environment.
+// VPN describes a virtual private network.
 type VPN struct {
 	ID            *string `json:"id"`
 	Name          *string `json:"name"`
@@ -82,7 +82,7 @@ type Tunnel struct {
 	TargetNetwork *Network `json:"target_network"`
 }
 
-// CreateNetworkRequest describes the create the environment data
+// CreateNetworkRequest describes the create the network data
 type CreateNetworkRequest struct {
 	Name        *string      `json:"name"`
 	NetworkType *NetworkType `json:"network_type"`
@@ -92,7 +92,7 @@ type CreateNetworkRequest struct {
 	Tunnelable  *bool        `json:"tunnelable,omitempty"`
 }
 
-// UpdateNetworkRequest describes the update the environment data
+// UpdateNetworkRequest describes the update the network data
 type UpdateNetworkRequest struct {
 	Name       *string `json:"name,omitempty"`
 	Subnet     *string `json:"subnet,omitempty"`
@@ -159,8 +159,6 @@ func (s *NetworksServiceClient) Get(ctx context.Context, environmentID string, i
 // Create a network
 func (s *NetworksServiceClient) Create(ctx context.Context, environmentID string, opts *CreateNetworkRequest) (*Network, error) {
 	path := s.buildPath(environmentID, "")
-
-	opts.NetworkType = networkTypeToPtr(NetworkTypeAutomatic)
 
 	req, err := s.client.newRequest(ctx, "POST", path, opts)
 	if err != nil {

@@ -32,6 +32,7 @@ func Provider() terraform.ResourceProvider {
 			"skytap_project":     resourceSkytapProject(),
 			"skytap_environment": resourceSkytapEnvironment(),
 			"skytap_network":     resourceSkytapNetwork(),
+			"skytap_vm":          resourceSkytapVM(),
 		},
 	}
 

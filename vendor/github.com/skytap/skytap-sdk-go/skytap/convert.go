@@ -37,3 +37,8 @@ func boolToPtr(i bool) *bool {
 func networkTypeToPtr(networkType NetworkType) *NetworkType {
 	return &networkType
 }
+
+// vmRunStateToPtr returns a pointer to the passed VMRunstate.
+func vmRunStateToPtr(vmRunState VMRunstate) *VMRunstate {
+	return &vmRunState
+}

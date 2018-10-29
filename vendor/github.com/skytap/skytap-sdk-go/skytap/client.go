@@ -45,6 +45,7 @@ type Client struct {
 	Environments EnvironmentsService
 	Templates    TemplatesService
 	Networks     NetworksService
+	VMs          VMsService
 
 	retryAfter int
 	retryCount int
@@ -127,6 +128,7 @@ func NewClient(settings Settings) (*Client, error) {
 	client.Environments = &EnvironmentsServiceClient{&client}
 	client.Templates = &TemplatesServiceClient{&client}
 	client.Networks = &NetworksServiceClient{&client}
+	client.VMs = &VMsServiceClient{&client}
 
 	client.retryAfter = defRetryAfter
 	client.retryCount = defRetryCount

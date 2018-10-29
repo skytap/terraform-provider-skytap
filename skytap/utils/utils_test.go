@@ -21,3 +21,8 @@ func TestNetworkType(t *testing.T) {
 	v := skytap.NetworkTypeAutomatic
 	assert.Equal(t, v, *NetworkType(v))
 }
+
+func TestRunstate(t *testing.T) {
+	v := skytap.VMRunstateRunning
+	assert.Equal(t, skytap.VMRunstateRunning, *VMRunstate(v))
+}

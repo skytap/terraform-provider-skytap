@@ -16,3 +16,8 @@ func Int(v int) *int {
 func NetworkType(networkType skytap.NetworkType) *skytap.NetworkType {
 	return &networkType
 }
+
+// VMRunstate returns a pointer to a VMRunstate literal
+func VMRunstate(runstate skytap.VMRunstate) *skytap.VMRunstate {
+	return &runstate
+}
