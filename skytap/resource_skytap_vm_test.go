@@ -63,11 +63,11 @@ func TestAccSkytapVM_Basic(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapVMConfig_basic(testEnvTemplateID, uniqueSuffixEnv, testVMTemplateID, testVMID, ""),
+				Config: testAccSkytapVMConfig_basic(testEnvTemplateID, uniqueSuffixEnv, testVMTemplateID, testVMID, "name = \"test\""),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
-					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "CentOS 6 Desktop x64"),
-					resource.TestCheckResourceAttr("skytap_vm.bar", "runstate", string(skytap.VMRunstateRunning)),
+					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "test"),
+					testAccCheckSkytapVMRunning(&vm),
 				),
 			},
 		},
@@ -89,6 +89,7 @@ func TestAccSkytapVM_Update(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "CentOS 6 Desktop x64"),
+					testAccCheckSkytapVMRunning(&vm),
 				),
 			},
 			{
@@ -96,6 +97,7 @@ func TestAccSkytapVM_Update(t *testing.T) {
 					fmt.Sprintf("name = \"tftest-vm-%d\"", uniqueSuffixVM)),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("skytap_vm.bar", "name", fmt.Sprintf("tftest-vm-%d", uniqueSuffixVM)),
+					testAccCheckSkytapVMRunning(&vm),
 				),
 			},
 		},
@@ -163,4 +165,14 @@ func getVM(rs *terraform.ResourceState, environmentId string) (*skytap.VM, error
 		err = fmt.Errorf("error retrieving vm (%s): %v", rs.Primary.ID, err)
 	}
 	return vm, err
+}
+
+func testAccCheckSkytapVMRunning(vm *skytap.VM) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		resource.TestCheckResourceAttr("skytap_vm.bar", "runstate", string(skytap.VMRunstateRunning))
+		if skytap.VMRunstateRunning != *vm.Runstate {
+			return errors.Errorf("vm (%s) is not running as expected", *vm.ID)
+		}
+		return nil
+	}
 }

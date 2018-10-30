@@ -1,6 +1,12 @@
 package skytap
 
-import "context"
+import (
+	"context"
+	"sort"
+	"time"
+)
+
+const timestampFormat = "2006/01/02 15:04:05 -0700"
 
 // Default URL paths
 const (
@@ -13,7 +19,7 @@ const (
 type VMsService interface {
 	List(ctx context.Context, environmentID string) (*VMListResult, error)
 	Get(ctx context.Context, environmentID string, id string) (*VM, error)
-	Create(ctx context.Context, environmentID string, opts *CreateVMRequest) (*Environment, error)
+	Create(ctx context.Context, environmentID string, opts *CreateVMRequest) (*VM, error)
 	Update(ctx context.Context, environmentID string, id string, vm *UpdateVMRequest) (*VM, error)
 	Delete(ctx context.Context, environmentID string, id string) error
 }
@@ -269,7 +275,7 @@ func (s *VMsServiceClient) Get(ctx context.Context, environmentID string, id str
 }
 
 // Create a vm - returns an Environment
-func (s *VMsServiceClient) Create(ctx context.Context, environmentID string, opts *CreateVMRequest) (*Environment, error) {
+func (s *VMsServiceClient) Create(ctx context.Context, environmentID string, opts *CreateVMRequest) (*VM, error) {
 	path := s.buildPath(true, environmentID, "")
 
 	req, err := s.client.newRequest(ctx, "PUT", path, opts)
@@ -283,7 +289,21 @@ func (s *VMsServiceClient) Create(ctx context.Context, environmentID string, opt
 		return nil, err
 	}
 
-	return &createdEnvironment, nil
+	// The create method returns an environment. The ID of the VM is not specified.
+	// It is necessary to retrieve the most recently created vm.
+	createdVM := mostRecentVM(createdEnvironment.VMs)
+
+	return createdVM, nil
+}
+
+// mostRecentVM returns the mose recent VM given a list of VMs
+func mostRecentVM(vms []VM) *VM {
+	sort.Slice(vms, func(i, j int) bool {
+		time1, _ := time.Parse(timestampFormat, *vms[i].CreatedAt)
+		time2, _ := time.Parse(timestampFormat, *vms[j].CreatedAt)
+		return time1.After(time2)
+	})
+	return &vms[0]
 }
 
 // Update a vm
