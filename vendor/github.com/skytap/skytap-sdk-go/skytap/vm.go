@@ -218,6 +218,12 @@ const (
 
 // CreateVMRequest describes the create the VM data
 type CreateVMRequest struct {
+	TemplateID string
+	VMID       string
+}
+
+// createVMRequestAPI describes the create the VM data accepted by the API
+type createVMRequestAPI struct {
 	TemplateID string   `json:"template_id"`
 	VMID       []string `json:"vm_ids"`
 }
@@ -278,7 +284,12 @@ func (s *VMsServiceClient) Get(ctx context.Context, environmentID string, id str
 func (s *VMsServiceClient) Create(ctx context.Context, environmentID string, opts *CreateVMRequest) (*VM, error) {
 	path := s.buildPath(true, environmentID, "")
 
-	req, err := s.client.newRequest(ctx, "PUT", path, opts)
+	apiOpts := createVMRequestAPI{
+		TemplateID: opts.TemplateID,
+		VMID:       []string{opts.VMID},
+	}
+
+	req, err := s.client.newRequest(ctx, "PUT", path, apiOpts)
 	if err != nil {
 		return nil, err
 	}

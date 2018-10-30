@@ -149,14 +149,14 @@ func testAccSkytapVMConfig_basic(envTemplateID string, uniqueSuffixEnv int, VMTe
 	return config
 }
 
-func getVM(rs *terraform.ResourceState, environmentId string) (*skytap.VM, error) {
+func getVM(rs *terraform.ResourceState, environmentID string) (*skytap.VM, error) {
 	var err error
 	// retrieve the connection established in Provider configuration
 	client := testAccProvider.Meta().(*SkytapClient).vmsClient
 	ctx := testAccProvider.Meta().(*SkytapClient).StopContext
 
 	// Retrieve our vm by referencing it's state ID for API lookup
-	vm, errClient := client.Get(ctx, environmentId, rs.Primary.ID)
+	vm, errClient := client.Get(ctx, environmentID, rs.Primary.ID)
 	if errClient != nil {
 		if utils.ResponseErrorIsNotFound(err) {
 			err = errors.Errorf("vm (%s) was not found - does not exist", rs.Primary.ID)

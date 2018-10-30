@@ -9,7 +9,6 @@ import (
 	"github.com/skytap/skytap-sdk-go/skytap"
 	"github.com/skytap/terraform-provider-skytap/skytap/utils"
 	"log"
-	"net/http"
 	"time"
 )
 
@@ -68,7 +67,7 @@ func resourceSkytapVMCreate(d *schema.ResourceData, meta interface{}) error {
 	// create the VM
 	createOpts := skytap.CreateVMRequest{
 		TemplateID: templateID,
-		VMID:       []string{templateVMID},
+		VMID:       templateVMID,
 	}
 
 	log.Printf("[DEBUG] vm create options: %#v", createOpts)
@@ -80,9 +79,9 @@ func resourceSkytapVMCreate(d *schema.ResourceData, meta interface{}) error {
 	d.SetId(*vm.ID)
 
 	stateConf := &resource.StateChangeConf{
-		Pending:    VMPendingCreateRunstates,
-		Target:     VMTargetCreateRunstates,
-		Refresh:    VMRunstateRefreshFunc(d, meta),
+		Pending:    vmPendingCreateRunstates,
+		Target:     vmTargetCreateRunstates,
+		Refresh:    vmRunstateRefreshFunc(d, meta),
 		Timeout:    d.Timeout(schema.TimeoutCreate),
 		MinTimeout: 10 * time.Second,
 		Delay:      10 * time.Second,
@@ -150,9 +149,9 @@ func resourceSkytapVMUpdateRunstate(d *schema.ResourceData, meta interface{}, ru
 	}
 
 	stateConf := &resource.StateChangeConf{
-		Pending:    VMPendingUpdateRunstates,
-		Target:     VMTargetUpdateRunstates(running),
-		Refresh:    VMRunstateRefreshFunc(d, meta),
+		Pending:    vmPendingUpdateRunstates,
+		Target:     getVMTargetUpdateRunstates(running),
+		Refresh:    vmRunstateRefreshFunc(d, meta),
 		Timeout:    d.Timeout(schema.TimeoutUpdate),
 		MinTimeout: 10 * time.Second,
 		Delay:      10 * time.Second,
@@ -167,7 +166,7 @@ func resourceSkytapVMUpdateRunstate(d *schema.ResourceData, meta interface{}, ru
 	return resourceSkytapVMRead(d, meta)
 }
 
-func VMRunstateRefreshFunc(
+func vmRunstateRefreshFunc(
 	d *schema.ResourceData, meta interface{}) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		client := meta.(*SkytapClient).vmsClient
@@ -208,48 +207,36 @@ func resourceSkytapVMDelete(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("error deleting vm (%s): %v", id, err)
 	}
 
-	return resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		_, err := client.Get(ctx, environmentID, id)
-
-		if err != nil {
-			if skytapErr, ok := err.(*skytap.ErrorResponse); ok {
-				if http.StatusNotFound == skytapErr.Response.StatusCode {
-					return resource.NonRetryableError(nil)
-				} else {
-					return resource.RetryableError(fmt.Errorf("waiting for vm (%s) to delete: %s", d.Id(), err))
-				}
-			} else {
-				return resource.NonRetryableError(fmt.Errorf("error waiting for vm (%s) to delete: %s", d.Id(), err))
-			}
-		}
-		return resource.RetryableError(fmt.Errorf("waiting for vm (%s) to delete: %s", d.Id(), err))
-	})
+	return err
 }
 
-var VMPendingCreateRunstates = []string{
+var vmPendingCreateRunstates = []string{
 	string(skytap.VMRunstateBusy),
 }
 
-var VMTargetCreateRunstates = []string{
+var vmTargetCreateRunstates = []string{
 	string(skytap.VMRunstateStopped),
 }
 
-var VMPendingUpdateRunstates = []string{
+var vmPendingUpdateRunstates = []string{
 	string(skytap.VMRunstateBusy),
 }
 
-func VMTargetUpdateRunstates(running bool) []string {
+var vmTargetUpdateRunstateAfterCreate = []string{
+	string(skytap.VMRunstateRunning),
+}
+
+var vmTargetUpdateRunstates = []string{
+	string(skytap.VMRunstateRunning),
+	string(skytap.VMRunstateStopped),
+	string(skytap.VMRunstateReset),
+	string(skytap.VMRunstateSuspended),
+	string(skytap.VMRunstateHalted),
+}
+
+func getVMTargetUpdateRunstates(running bool) []string {
 	if running {
-		return []string{
-			string(skytap.VMRunstateRunning),
-		}
-	} else {
-		return []string{
-			string(skytap.VMRunstateRunning),
-			string(skytap.VMRunstateStopped),
-			string(skytap.VMRunstateReset),
-			string(skytap.VMRunstateSuspended),
-			string(skytap.VMRunstateHalted),
-		}
+		return vmTargetUpdateRunstateAfterCreate
 	}
+	return vmTargetUpdateRunstates
 }
