@@ -42,3 +42,8 @@ func networkTypeToPtr(networkType NetworkType) *NetworkType {
 func vmRunStateToPtr(vmRunState VMRunstate) *VMRunstate {
 	return &vmRunState
 }
+
+// nicTypeToPtr returns a pointer to the passed NICType.
+func nicTypeToPtr(nicType NICType) *NICType {
+	return &nicType
+}

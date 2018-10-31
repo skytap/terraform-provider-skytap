@@ -21,3 +21,8 @@ func NetworkType(networkType skytap.NetworkType) *skytap.NetworkType {
 func VMRunstate(runstate skytap.VMRunstate) *skytap.VMRunstate {
 	return &runstate
 }
+
+// NICType returns a pointer to a NICType literal
+func NICType(nicType skytap.NICType) *skytap.NICType {
+	return &nicType
+}

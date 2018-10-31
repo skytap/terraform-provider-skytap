@@ -9,7 +9,6 @@ import (
 	"github.com/skytap/skytap-sdk-go/skytap"
 	"github.com/skytap/terraform-provider-skytap/skytap/utils"
 	"log"
-	"net/http"
 	"time"
 )
 
@@ -278,6 +277,21 @@ func resourceSkytapEnvironmentDelete(d *schema.ResourceData, meta interface{}) e
 		return fmt.Errorf("error deleting environment (%s): %v", id, err)
 	}
 
+	stateConf := &resource.StateChangeConf{
+		Pending:    []string{"false"},
+		Target:     []string{"true"},
+		Refresh:    environmentDeleteRefreshFunc(d, meta),
+		Timeout:    d.Timeout(schema.TimeoutUpdate),
+		MinTimeout: 10 * time.Second,
+		Delay:      10 * time.Second,
+	}
+
+	log.Printf("[INFO] Waiting for environment (%s) to complete", d.Id())
+	_, err = stateConf.WaitForState()
+	if err != nil {
+		return fmt.Errorf("error waiting for environment (%s) to complete: %s", d.Id(), err)
+	}
+
 	return err
 }
 
@@ -341,17 +355,37 @@ func environmentUpdateRunstateRefreshFunc(
 		environment, err := client.Get(ctx, id)
 
 		if err != nil {
-			if skytapErr, ok := err.(*skytap.ErrorResponse); ok {
-				if http.StatusNotFound == skytapErr.Response.StatusCode {
-					return 42, string(skytap.EnvironmentRunstateStopped), nil
-				}
-			}
-			log.Printf("[WARN] Error on retrieving environment status (%s) when waiting: %s", id, err)
+			log.Printf("[WARN] Error on retrieving environment (%s) when waiting: %s", id, err)
 			return nil, "", err
 		}
 
-		log.Printf("[DEBUG] environment status (%s): %s", id, *environment.Runstate)
+		log.Printf("[DEBUG] environment (%s): %s", id, *environment.Runstate)
 
 		return environment, string(*environment.Runstate), nil
+	}
+}
+
+func environmentDeleteRefreshFunc(
+	d *schema.ResourceData, meta interface{}) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		client := meta.(*SkytapClient).environmentsClient
+		ctx := meta.(*SkytapClient).StopContext
+
+		id := d.Id()
+
+		log.Printf("[INFO] retrieving environment: %s", id)
+		environment, err := client.Get(ctx, id)
+
+		var removed = "false"
+		if err != nil {
+			if utils.ResponseErrorIsNotFound(err) {
+				log.Printf("[DEBUG] environment (%s) has been removed.", id)
+				removed = "true"
+			} else {
+				return nil, "", fmt.Errorf("error retrieving environment (%s): %v", id, err)
+			}
+		}
+
+		return environment, removed, nil
 	}
 }

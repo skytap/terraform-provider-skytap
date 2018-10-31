@@ -89,54 +89,6 @@ type Disk struct {
 	LUN        *string `json:"lun"`
 }
 
-// Interface describes the VM's virtual network interface configuration
-type Interface struct {
-	ID                  *string              `json:"id"`
-	IP                  *string              `json:"ip"`
-	Hostname            *string              `json:"hostname"`
-	MAC                 *string              `json:"mac"`
-	ServicesCount       *int                 `json:"services_count"`
-	Services            []Service            `json:"services"`
-	PublicIPsCount      *int                 `json:"public_ips_count"`
-	PublicIPs           []map[string]string  `json:"public_ips"`
-	VMID                *string              `json:"vm_id"`
-	VMName              *string              `json:"vm_name"`
-	Status              *string              `json:"status"`
-	NetworkID           *string              `json:"network_id"`
-	NetworkName         *string              `json:"network_name"`
-	NetworkURL          *string              `json:"network_url"`
-	NetworkType         *string              `json:"network_type"`
-	NetworkSubnet       *string              `json:"network_subnet"`
-	NICType             *string              `json:"nic_type"`
-	SecondaryIPs        []SecondaryIP        `json:"secondary_ips"`
-	PublicIPAttachments []PublicIPAttachment `json:"public_ip_attachments"`
-}
-
-// Service describes a service provided on the connected network
-type Service struct {
-	ID           *string `json:"id"`
-	InternalPort *int    `json:"internal_port"`
-	ExternalIP   *string `json:"external_ip"`
-	ExternalPort *int    `json:"external_port"`
-}
-
-// SecondaryIP holds secondary IP address data
-type SecondaryIP struct {
-	ID      *string `json:"id"`
-	Address *string `json:"address"`
-}
-
-// PublicIPAttachment describes the public IP address data
-type PublicIPAttachment struct {
-	ID                    *int    `json:"id"`
-	PublicIPAttachmentKey *int    `json:"public_ip_attachment_key"`
-	Address               *string `json:"address"`
-	ConnectType           *int    `json:"connect_type"`
-	Hostname              *string `json:"hostname"`
-	DNSName               *string `json:"dns_name"`
-	PublicIPKey           *string `json:"public_ip_key"`
-}
-
 // Note describes a note on the VM
 type Note struct {
 	ID        *string `json:"id"`

@@ -38,6 +38,12 @@ The following arguments are supported:
 * `name` - (Optional, Computed) User-defined name. Limited to 100 characters. 
 <br/>The name will be truncated to 33 UTF-8 characters after saving. 
 <br/>If a name is not provided then the source VM's name will be used.
+* `network_interface` - A Skytap network adapter is a virtualized network interface card (also known as a network adapter). It is logically contained in a VM and attached to a network.
+  * `interface_type` - (Required) Type of network that this network adapter is attached to.
+  * `network_id` - (Required) ID of the network that this network adapter is attached to.
+  *	`ip` - (Optional, Computed) Internally, Skytap uses DHCP to provision an IP address (for example, 10.1.0.37) based on the MAC address. Skytap will not assign the same IP address to multiple interfaces on the same network. This field can be modified if you want to provide your own network information.
+                                <br/>Each segment of the IP address must be within the valid range (0 to 255, inclusive).
+  * `hostname` - (Optional, Computed) Limited to 32 characters. Valid characters are lowercase letters, numbers, and hyphens. Cannot begin or end with hyphens. Cannot be `gw`.
 
 ## Attributes Reference
 
@@ -46,3 +52,8 @@ The following attributes are exported:
 * `id`: The ID of the VM.
 * `environment_id`: ID of the environment the VM belongs to. 
 * `name`: User-defined name of the VM.
+* `network_interface`: A set of network adapters.
+  * `interface_type`: Type of network that this network adapter is attached to.
+  * `network_id`: ID of the network that this network adapter is attached to.
+  *	`ip`: The interface's IP address.
+  * `hostname`: The interface's hostname.
