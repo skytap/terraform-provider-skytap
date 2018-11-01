@@ -27,29 +27,29 @@ func resourceSkytapVM() *schema.Resource {
 			"environment_id": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.NoZeroValues,
 				ForceNew:     true,
+				ValidateFunc: validation.NoZeroValues,
 			},
 
 			"template_id": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.NoZeroValues,
 				ForceNew:     true,
+				ValidateFunc: validation.NoZeroValues,
 			},
 
 			"vm_id": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.NoZeroValues,
 				ForceNew:     true,
+				ValidateFunc: validation.NoZeroValues,
 			},
 
 			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.NoZeroValues,
 				Computed:     true,
+				ValidateFunc: validation.NoZeroValues,
 			},
 
 			"network_interface": {
@@ -62,6 +62,7 @@ func resourceSkytapVM() *schema.Resource {
 						"interface_type": {
 							Type:     schema.TypeString,
 							Required: true,
+							ForceNew: true,
 							ValidateFunc: validation.StringInSlice([]string{
 								string(skytap.NICTypeDefault),
 								string(skytap.NICTypeE1000),
@@ -80,21 +81,22 @@ func resourceSkytapVM() *schema.Resource {
 						"ip": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validation.SingleIP(),
 							Computed:     true,
 							ForceNew:     true,
+							ValidateFunc: validation.SingleIP(),
 						},
 						"hostname": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validation.NoZeroValues,
 							Computed:     true,
 							ForceNew:     true,
+							ValidateFunc: validation.NoZeroValues,
 						},
 
 						"published_service": {
 							Type:     schema.TypeList,
 							Optional: true,
+							ForceNew: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"internal_port": {

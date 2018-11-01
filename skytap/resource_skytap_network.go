@@ -24,8 +24,8 @@ func resourceSkytapNetwork() *schema.Resource {
 			"environment_id": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.NoZeroValues,
 				ForceNew:     true,
+				ValidateFunc: validation.NoZeroValues,
 			},
 
 			"name": {
@@ -49,8 +49,8 @@ func resourceSkytapNetwork() *schema.Resource {
 			"gateway": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.SingleIP(),
 				Computed:     true,
+				ValidateFunc: validation.SingleIP(),
 			},
 
 			"tunnelable": {

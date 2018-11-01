@@ -38,15 +38,15 @@ The following arguments are supported:
 * `name` - (Optional, Computed) User-defined name. Limited to 100 characters. 
 <br/>The name will be truncated to 33 UTF-8 characters after saving. 
 <br/>If a name is not provided then the source VM's name will be used.
-* `network_interface` - A Skytap network adapter is a virtualized network interface card (also known as a network adapter). It is logically contained in a VM and attached to a network.
-  * `interface_type` - (Required) Type of network that this network adapter is attached to.
-  * `network_id` - (Required) ID of the network that this network adapter is attached to.
-  *	`ip` - (Optional, Computed) Internally, Skytap uses DHCP to provision an IP address (for example, 10.1.0.37) based on the MAC address. Skytap will not assign the same IP address to multiple interfaces on the same network. This field can be modified if you want to provide your own network information.
+* `network_interface` - (Optional, Computed, ForceNew) A Skytap network adapter is a virtualized network interface card (also known as a network adapter). It is logically contained in a VM and attached to a network.
+  * `interface_type` - (Required, Force New) Type of network that this network adapter is attached to.
+  * `network_id` - (Required, Force New) ID of the network that this network adapter is attached to.
+  *	`ip` - (Optional, Computed, Force New) Internally, Skytap uses DHCP to provision an IP address (for example, 10.1.0.37) based on the MAC address. Skytap will not assign the same IP address to multiple interfaces on the same network. This field can be modified if you want to provide your own network information.
                                 <br/>Each segment of the IP address must be within the valid range (0 to 255, inclusive).
-  * `hostname` - (Optional, Computed) Limited to 32 characters. Valid characters are lowercase letters, numbers, and hyphens. Cannot begin or end with hyphens. Cannot be `gw`.
-* `published_service` - Generally, a published service represents a binding of a port on a network interface to an IP and port that is routable and accessible from the public Internet. This mechanism is used to selectively expose ports on the guest to the public Internet.
+  * `hostname` - (Optional, Computed, Force New) Limited to 32 characters. Valid characters are lowercase letters, numbers, and hyphens. Cannot begin or end with hyphens. Cannot be `gw`.
+* `published_service` - (Optional, Force New) Generally, a published service represents a binding of a port on a network interface to an IP and port that is routable and accessible from the public Internet. This mechanism is used to selectively expose ports on the guest to the public Internet.
                         <br/>Published services exist and are managed as aspects of network interfaces—that is, as part of the overall environment element.
-  * `internal_port` - The port that is exposed on the interface. Typically this will be dictated by standard usage (e.g., port 80 for http traffic, port 22 for SSH).
+  * `internal_port` - (Required, Force New) The port that is exposed on the interface. Typically this will be dictated by standard usage (e.g., port 80 for http traffic, port 22 for SSH).
 
 ## Attributes Reference
 
