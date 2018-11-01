@@ -97,8 +97,6 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*SkytapClient).environmentsClient
 	ctx := meta.(*SkytapClient).StopContext
 
-	log.Printf("[INFO] preparing arguments for creating the Skytap Environment")
-
 	templateID := d.Get("template_id").(string)
 	name := d.Get("name").(string)
 	outboundTraffic := d.Get("outbound_traffic").(bool)
@@ -139,7 +137,7 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 		opts.ShutdownAtTime = utils.String(v.(string))
 	}
 
-	log.Printf("[DEBUG] environment create options: %#v", opts)
+	log.Printf("[INFO] environment create options: %#v", opts)
 	environment, err := client.Create(ctx, &opts)
 	if err != nil {
 		return errors.Errorf("error creating environment: %v", err)
@@ -161,6 +159,8 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 	if err != nil {
 		return fmt.Errorf("error waiting for environment (%s) to complete: %s", d.Id(), err)
 	}
+
+	log.Printf("[INFO] environment created: %#v", environment)
 
 	return resourceSkytapEnvironmentRead(d, meta)
 }
@@ -192,6 +192,8 @@ func resourceSkytapEnvironmentRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("suspend_at_time", environment.SuspendAtTime)
 	d.Set("shutdown_on_idle", environment.ShutdownOnIdle)
 	d.Set("shutdown_at_time", environment.ShutdownAtTime)
+
+	log.Printf("[INFO] environment retrieved: %#v", environment)
 
 	return err
 }
@@ -236,8 +238,8 @@ func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) e
 		opts.ShutdownAtTime = utils.String(v.(string))
 	}
 
-	log.Printf("[DEBUG] environment update options: %#v", opts)
-	_, err := client.Update(ctx, id, &opts)
+	log.Printf("[INFO] environment update options: %#v", opts)
+	environment, err := client.Update(ctx, id, &opts)
 	if err != nil {
 		return errors.Errorf("error updating environment (%s): %v", id, err)
 	}
@@ -256,6 +258,8 @@ func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) e
 	if err != nil {
 		return fmt.Errorf("error waiting for environment (%s) to complete: %s", d.Id(), err)
 	}
+
+	log.Printf("[INFO] environment updated: %#v", environment)
 
 	return resourceSkytapEnvironmentRead(d, meta)
 }
@@ -292,6 +296,8 @@ func resourceSkytapEnvironmentDelete(d *schema.ResourceData, meta interface{}) e
 		return fmt.Errorf("error waiting for environment (%s) to complete: %s", d.Id(), err)
 	}
 
+	log.Printf("[INFO] environment destroyed: %s", id)
+
 	return err
 }
 
@@ -321,12 +327,11 @@ func environmentCreateRunstateRefreshFunc(
 
 		id := d.Id()
 
-		log.Printf("[INFO] retrieving environment: %s", id)
+		log.Printf("[DEBUG] retrieving environment: %s", id)
 		environment, err := client.Get(ctx, id)
 
 		if err != nil {
-			log.Printf("[WARN] Error on retrieving environment status (%s) when waiting: %s", id, err)
-			return nil, "", err
+			return nil, "", fmt.Errorf("error retrieving environment (%s) when waiting: %v", id, err)
 		}
 
 		computedRunstate := skytap.EnvironmentRunstateRunning
@@ -351,12 +356,11 @@ func environmentUpdateRunstateRefreshFunc(
 
 		id := d.Id()
 
-		log.Printf("[INFO] retrieving environment: %s", id)
+		log.Printf("[DEBUG] retrieving environment: %s", id)
 		environment, err := client.Get(ctx, id)
 
 		if err != nil {
-			log.Printf("[WARN] Error on retrieving environment (%s) when waiting: %s", id, err)
-			return nil, "", err
+			return nil, "", fmt.Errorf("error retrieving environment (%s) when waiting: %v", id, err)
 		}
 
 		log.Printf("[DEBUG] environment (%s): %s", id, *environment.Runstate)
@@ -373,7 +377,7 @@ func environmentDeleteRefreshFunc(
 
 		id := d.Id()
 
-		log.Printf("[INFO] retrieving environment: %s", id)
+		log.Printf("[DEBUG] retrieving environment: %s", id)
 		environment, err := client.Get(ctx, id)
 
 		var removed = "false"
@@ -382,7 +386,7 @@ func environmentDeleteRefreshFunc(
 				log.Printf("[DEBUG] environment (%s) has been removed.", id)
 				removed = "true"
 			} else {
-				return nil, "", fmt.Errorf("error retrieving environment (%s): %v", id, err)
+				return nil, "", fmt.Errorf("error retrieving environment (%s) when waiting: %v", id, err)
 			}
 		}
 

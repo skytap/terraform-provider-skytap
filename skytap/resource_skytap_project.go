@@ -59,8 +59,6 @@ func resourceSkytapProjectCreate(d *schema.ResourceData, meta interface{}) error
 	client := meta.(*SkytapClient).projectsClient
 	ctx := meta.(*SkytapClient).StopContext
 
-	log.Printf("[INFO] preparing arguments for creating the Skytap Project")
-
 	name := d.Get("name").(string)
 	showProjectMembers := d.Get("show_project_members").(bool)
 
@@ -78,13 +76,15 @@ func resourceSkytapProjectCreate(d *schema.ResourceData, meta interface{}) error
 		opts.AutoAddRoleName = &autoAddRoleName
 	}
 
-	log.Printf("[DEBUG] project create options: %#v", opts)
+	log.Printf("[INFO] project create options: %#v", opts)
 	project, err := client.Create(ctx, &opts)
 	if err != nil {
 		return errors.Errorf("error creating project: %v", err)
 	}
 
 	d.SetId(strconv.Itoa(*project.ID))
+
+	log.Printf("[INFO] project created: %#v", project)
 
 	return resourceSkytapProjectRead(d, meta)
 }
@@ -115,6 +115,8 @@ func resourceSkytapProjectRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("auto_add_role_name", project.AutoAddRoleName)
 	d.Set("show_project_members", project.ShowProjectMembers)
 
+	log.Printf("[INFO] project retrieved: %#v", project)
+
 	return err
 }
 
@@ -144,11 +146,13 @@ func resourceSkytapProjectUpdate(d *schema.ResourceData, meta interface{}) error
 		opts.AutoAddRoleName = &autoAddRoleName
 	}
 
-	log.Printf("[DEBUG] project update options: %#v", opts)
-	_, err = client.Update(ctx, id, &opts)
+	log.Printf("[INFO] project update options: %#v", opts)
+	project, err := client.Update(ctx, id, &opts)
 	if err != nil {
 		return errors.Errorf("error updating project (%d): %v", id, err)
 	}
+
+	log.Printf("[INFO] project updated: %#v", project)
 
 	return resourceSkytapProjectRead(d, meta)
 }
@@ -172,6 +176,8 @@ func resourceSkytapProjectDelete(d *schema.ResourceData, meta interface{}) error
 
 		return fmt.Errorf("error deleting project (%d): %v", id, err)
 	}
+
+	log.Printf("[INFO] project destroyed: %d", id)
 
 	return err
 }
