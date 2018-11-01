@@ -278,13 +278,17 @@ func resourceSkytapVMRead(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("error retrieving VM (%s): %v", id, err)
 	}
 
+	// templatedID and vmID are not set, as they are not returned by the VM response.
+	// If any of these attributes are changed, this VM will be rebuilt.
 	d.Set("environment_id", environmentID)
 	d.Set("name", vm.Name)
-	d.Set("network_interface", flattenInterfaces(vm.Interfaces))
+	if err := d.Set("network_interface", flattenInterfaces(vm.Interfaces)); err != nil {
+		return err
+	}
 
 	log.Printf("[INFO] retrieved VM: %#v", vm)
 
-	return err
+	return nil
 }
 
 func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {

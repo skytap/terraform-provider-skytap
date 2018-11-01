@@ -2,13 +2,14 @@ package skytap
 
 import (
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
 	"github.com/skytap/skytap-sdk-go/skytap"
 	"github.com/skytap/terraform-provider-skytap/skytap/utils"
-	"log"
-	"time"
 )
 
 func resourceSkytapEnvironment() *schema.Resource {
@@ -176,6 +177,8 @@ func resourceSkytapEnvironmentRead(d *schema.ResourceData, meta interface{}) err
 		return fmt.Errorf("error retrieving environment (%s): %v", id, err)
 	}
 
+	// The templateID is not set as it is used to build the enviroment and is not returned by the enviroment respose.
+	// If this attribute is changed, this environment will be rebuilt
 	d.Set("name", environment.Name)
 	d.Set("description", environment.Description)
 	d.Set("outbound_traffic", environment.OutboundTraffic)
