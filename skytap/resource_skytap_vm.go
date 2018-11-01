@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
-	"github.com/pkg/errors"
 	"github.com/skytap/skytap-sdk-go/skytap"
 	"github.com/skytap/terraform-provider-skytap/skytap/utils"
 )
@@ -60,17 +59,10 @@ func resourceSkytapVM() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"interface_type": {
-							Type:     schema.TypeString,
-							Required: true,
-							ForceNew: true,
-							ValidateFunc: validation.StringInSlice([]string{
-								string(skytap.NICTypeDefault),
-								string(skytap.NICTypeE1000),
-								string(skytap.NICTypeE1000E),
-								string(skytap.NICTypePCNet32),
-								string(skytap.NICTypeVMXNet),
-								string(skytap.NICTypeVMXNet3),
-							}, false),
+							Type:         schema.TypeString,
+							Required:     true,
+							ForceNew:     true,
+							ValidateFunc: validateNICType(),
 						},
 						"network_id": {
 							Type:         schema.TypeString,
@@ -132,10 +124,14 @@ func resourceSkytapVMCreate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[INFO] VM create options: %#v", createOpts)
 	vm, err := client.Create(ctx, environmentID, &createOpts)
 	if err != nil {
-		return errors.Errorf("error creating VM: %v", err)
+		return fmt.Errorf("error creating VM: %v", err)
 	}
 
-	d.SetId(*vm.ID)
+	if vm.ID == nil {
+		return fmt.Errorf("VM ID is not set")
+	}
+	vmID := *vm.ID
+	d.SetId(vmID)
 
 	stateConf := &resource.StateChangeConf{
 		Pending:    vmPendingCreateRunstates,
@@ -173,12 +169,12 @@ func addNetworkAdapters(d *schema.ResourceData, meta interface{}, vmID string) e
 		if networkIfaceCount > 0 {
 			vmIfaces, err := client.List(ctx, environmentID, vmID)
 			if err != nil {
-				return errors.Errorf("error resolving VM network interfaces: %v", err)
+				return fmt.Errorf("error resolving VM network interfaces: %v", err)
 			}
 			for _, iface := range vmIfaces.Value {
 				err = client.Delete(ctx, environmentID, vmID, *iface.ID)
 				if err != nil {
-					return errors.Errorf("error removing the default interface from VM: %v", err)
+					return fmt.Errorf("error removing the default interface from VM: %v", err)
 				}
 			}
 		}
@@ -206,7 +202,7 @@ func addNetworkAdapters(d *schema.ResourceData, meta interface{}, vmID string) e
 				// create
 				networkInterface, err := client.Create(ctx, environmentID, vmID, &nicType)
 				if err != nil {
-					return errors.Errorf("error creating interface: %v", err)
+					return fmt.Errorf("error creating interface: %v", err)
 				}
 				id = *networkInterface.ID
 				log.Printf("[INFO] created interface: %#v", networkInterface)
@@ -215,7 +211,7 @@ func addNetworkAdapters(d *schema.ResourceData, meta interface{}, vmID string) e
 				// attach
 				_, err := client.Attach(ctx, environmentID, vmID, id, &networkID)
 				if err != nil {
-					return errors.Errorf("error attaching interface: %v", err)
+					return fmt.Errorf("error attaching interface: %v", err)
 				}
 				log.Printf("[INFO] attached interface: %#v", networkInterface)
 			}
@@ -223,13 +219,13 @@ func addNetworkAdapters(d *schema.ResourceData, meta interface{}, vmID string) e
 				// update
 				networkInterface, err := client.Update(ctx, environmentID, vmID, id, &opts)
 				if err != nil {
-					return errors.Errorf("error updating interface: %v", err)
+					return fmt.Errorf("error attaching interface: %v", err)
 				}
 				log.Printf("[INFO] updated interface: %#v", networkInterface)
 			}
 			{
 				// create network interfaces if necessary
-				err := addPublishedServices(d, meta, environmentID, vmID, id, networkInterface)
+				err := addPublishedServices(meta, environmentID, vmID, id, networkInterface)
 				if err != nil {
 					return err
 				}
@@ -240,7 +236,7 @@ func addNetworkAdapters(d *schema.ResourceData, meta interface{}, vmID string) e
 	return nil
 }
 
-func addPublishedServices(d *schema.ResourceData, meta interface{}, environmentID string, vmID string, nicID string, networkInterfaces map[string]interface{}) error {
+func addPublishedServices(meta interface{}, environmentID string, vmID string, nicID string, networkInterfaces map[string]interface{}) error {
 	if _, ok := networkInterfaces["published_service"]; ok {
 		client := meta.(*SkytapClient).publishedServicesClient
 		ctx := meta.(*SkytapClient).StopContext
@@ -255,7 +251,7 @@ func addPublishedServices(d *schema.ResourceData, meta interface{}, environmentI
 			log.Printf("[INFO] creating published service: %#v", internalPort)
 			createdService, err := client.Create(ctx, environmentID, vmID, nicID, &internalPort)
 			if err != nil {
-				return errors.Errorf("error creating published service: %v", err)
+				return fmt.Errorf("error creating published service: %v", err)
 			}
 			log.Printf("[INFO] created published service: %#v", createdService)
 		}
@@ -289,39 +285,6 @@ func resourceSkytapVMRead(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[INFO] retrieved VM: %#v", vm)
 
 	return err
-}
-
-func flattenInterfaces(interfaces []skytap.Interface) interface{} {
-	results := make([]map[string]interface{}, 0)
-
-	for _, v := range interfaces {
-		result := make(map[string]interface{})
-		result["interface_type"] = *v.NICType
-		result["network_id"] = *v.NetworkID
-		result["ip"] = *v.IP
-		result["hostname"] = *v.Hostname
-		result["published_service"] = flattenPublishedServices(v.Services)
-
-		results = append(results, result)
-	}
-
-	return results
-}
-
-func flattenPublishedServices(publishedServices []skytap.PublishedService) interface{} {
-	results := make([]map[string]interface{}, 0)
-
-	for _, v := range publishedServices {
-		result := make(map[string]interface{})
-		result["id"] = *v.ID
-		result["internal_port"] = *v.InternalPort
-		result["external_ip"] = *v.ExternalPort
-		result["external_port"] = *v.ExternalIP
-
-		results = append(results, result)
-	}
-
-	return results
 }
 
 func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -386,7 +349,7 @@ func update(d *schema.ResourceData, meta interface{}, forceRunning bool) error {
 	log.Printf("[INFO] VM update options: %#v", opts)
 	vm, err := client.Update(ctx, environmentID, id, &opts)
 	if err != nil {
-		return errors.Errorf("error updating VM (%s): %v", id, err)
+		return fmt.Errorf("error updating vm (%s): %v", id, err)
 	}
 
 	stateConf := &resource.StateChangeConf{

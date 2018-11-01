@@ -67,8 +67,12 @@ func dataSourceSkytapTemplateRead(d *schema.ResourceData, meta interface{}) erro
 		template = templates[0]
 	}
 
-	d.SetId(*template.ID)
-	d.Set("name", *template.Name)
+	if template.ID == nil {
+		return fmt.Errorf("template ID is not set")
+	}
+	templateID := *template.ID
+	d.SetId(templateID)
+	d.Set("name", template.Name)
 
 	return nil
 }

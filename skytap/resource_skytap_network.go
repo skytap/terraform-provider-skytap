@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
-	"github.com/pkg/errors"
 	"github.com/skytap/skytap-sdk-go/skytap"
 	"github.com/skytap/terraform-provider-skytap/skytap/utils"
 	"log"
@@ -87,10 +86,14 @@ func resourceSkytapNetworkCreate(d *schema.ResourceData, meta interface{}) error
 	log.Printf("[INFO] network create options: %#v", opts)
 	network, err := client.Create(ctx, environmentID, &opts)
 	if err != nil {
-		return errors.Errorf("error creating network: %v", err)
+		return fmt.Errorf("error creating network: %v", err)
 	}
 
-	d.SetId(*network.ID)
+	if network.ID == nil {
+		return fmt.Errorf("network ID is not set")
+	}
+	networkID := *network.ID
+	d.SetId(networkID)
 
 	log.Printf("[INFO] network created: %#v", network)
 
@@ -154,7 +157,7 @@ func resourceSkytapNetworkUpdate(d *schema.ResourceData, meta interface{}) error
 	log.Printf("[INFO] network update options: %#v", opts)
 	network, err := client.Update(ctx, environmentID, id, &opts)
 	if err != nil {
-		return errors.Errorf("error updating network (%s): %v", id, err)
+		return fmt.Errorf("error updating network (%s): %v", id, err)
 	}
 
 	log.Printf("[INFO] network updated: %#v", network)

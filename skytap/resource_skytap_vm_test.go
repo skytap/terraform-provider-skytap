@@ -288,7 +288,7 @@ func testAccCheckSkytapInterfaceAttributes(environmentName string, networkName s
 		})
 
 		if len(vm.Interfaces) != 2 {
-			return fmt.Errorf("Invalid number of interfaces, expected (%d)", len(vm.Interfaces))
+			return fmt.Errorf("invalid number of interfaces, expected (%d)", len(vm.Interfaces))
 		}
 
 		for i := 0; i < 2; i++ {

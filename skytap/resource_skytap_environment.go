@@ -5,7 +5,6 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
-	"github.com/pkg/errors"
 	"github.com/skytap/skytap-sdk-go/skytap"
 	"github.com/skytap/terraform-provider-skytap/skytap/utils"
 	"log"
@@ -47,12 +46,6 @@ func resourceSkytapEnvironment() *schema.Resource {
 				Required:     true,
 				ValidateFunc: validation.NoZeroValues,
 			},
-
-			//"owner": {
-			//	Type:         schema.TypeString,
-			//	Optional:     true,
-			//	ValidateFunc: validation.NoZeroValues,
-			//},
 
 			"outbound_traffic": {
 				Type:     schema.TypeBool,
@@ -117,10 +110,6 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 		opts.Description = utils.String(v.(string))
 	}
 
-	//if v, ok := d.GetOk("owner"); ok {
-	//	opts.Owner = utils.String(v.(string))
-	//}
-
 	if v, ok := d.GetOk("suspend_on_idle"); ok {
 		opts.SuspendOnIdle = utils.Int(v.(int))
 	}
@@ -140,10 +129,14 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 	log.Printf("[INFO] environment create options: %#v", opts)
 	environment, err := client.Create(ctx, &opts)
 	if err != nil {
-		return errors.Errorf("error creating environment: %v", err)
+		return fmt.Errorf("error creating environment: %v", err)
 	}
 
-	d.SetId(*environment.ID)
+	if environment.ID == nil {
+		return fmt.Errorf("environment ID is not set")
+	}
+	environmentID := *environment.ID
+	d.SetId(environmentID)
 
 	stateConf := &resource.StateChangeConf{
 		Pending:    environmentPendingCreateRunstates,
@@ -185,7 +178,6 @@ func resourceSkytapEnvironmentRead(d *schema.ResourceData, meta interface{}) err
 
 	d.Set("name", environment.Name)
 	d.Set("description", environment.Description)
-	//d.Set("owner", environment.OwnerID)
 	d.Set("outbound_traffic", environment.OutboundTraffic)
 	d.Set("routable", environment.OutboundTraffic)
 	d.Set("suspend_on_idle", environment.SuspendOnIdle)
@@ -218,10 +210,6 @@ func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) e
 		opts.Description = utils.String(v.(string))
 	}
 
-	//if v, ok := d.GetOk("owner"); ok {
-	//	opts.Owner = utils.String(v.(string))
-	//}
-
 	if v, ok := d.GetOk("suspend_on_idle"); ok {
 		opts.SuspendOnIdle = utils.Int(v.(int))
 	}
@@ -241,7 +229,7 @@ func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) e
 	log.Printf("[INFO] environment update options: %#v", opts)
 	environment, err := client.Update(ctx, id, &opts)
 	if err != nil {
-		return errors.Errorf("error updating environment (%s): %v", id, err)
+		return fmt.Errorf("error updating environment (%s): %v", id, err)
 	}
 
 	stateConf := &resource.StateChangeConf{

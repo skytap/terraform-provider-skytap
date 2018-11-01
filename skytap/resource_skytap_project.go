@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
-	"github.com/pkg/errors"
 	"github.com/skytap/skytap-sdk-go/skytap"
 	"github.com/skytap/terraform-provider-skytap/skytap/utils"
 )
@@ -36,14 +35,9 @@ func resourceSkytapProject() *schema.Resource {
 			},
 
 			"auto_add_role_name": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(skytap.ProjectRoleViewer),
-					string(skytap.ProjectRoleParticipant),
-					string(skytap.ProjectRoleEditor),
-					string(skytap.ProjectRoleManager),
-				}, false),
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validateRoleType(),
 			},
 
 			"show_project_members": {
@@ -79,10 +73,14 @@ func resourceSkytapProjectCreate(d *schema.ResourceData, meta interface{}) error
 	log.Printf("[INFO] project create options: %#v", opts)
 	project, err := client.Create(ctx, &opts)
 	if err != nil {
-		return errors.Errorf("error creating project: %v", err)
+		return fmt.Errorf("error creating project: %v", err)
 	}
 
-	d.SetId(strconv.Itoa(*project.ID))
+	if project.ID == nil {
+		return fmt.Errorf("project ID is not set")
+	}
+	projectID := strconv.Itoa(*project.ID)
+	d.SetId(projectID)
 
 	log.Printf("[INFO] project created: %#v", project)
 
@@ -126,7 +124,7 @@ func resourceSkytapProjectUpdate(d *schema.ResourceData, meta interface{}) error
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
-		return errors.Errorf("project (%s) is not an integer: %v", d.Id(), err)
+		return fmt.Errorf("project (%s) is not an integer: %v", d.Id(), err)
 	}
 
 	name := d.Get("name").(string)
@@ -149,7 +147,7 @@ func resourceSkytapProjectUpdate(d *schema.ResourceData, meta interface{}) error
 	log.Printf("[INFO] project update options: %#v", opts)
 	project, err := client.Update(ctx, id, &opts)
 	if err != nil {
-		return errors.Errorf("error updating project (%d): %v", id, err)
+		return fmt.Errorf("error updating project (%d): %v", id, err)
 	}
 
 	log.Printf("[INFO] project updated: %#v", project)

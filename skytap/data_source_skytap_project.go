@@ -68,8 +68,11 @@ func dataSourceSkytapProjectRead(d *schema.ResourceData, meta interface{}) error
 	}
 
 	project := projects[0]
-
-	d.SetId(strconv.Itoa(*project.ID))
+	if project.ID == nil {
+		return fmt.Errorf("project ID is not set")
+	}
+	projectID := strconv.Itoa(*project.ID)
+	d.SetId(projectID)
 	d.Set("name", project.Name)
 	d.Set("summary", project.Summary)
 	d.Set("auto_add_role_name", project.AutoAddRoleName)
