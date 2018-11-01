@@ -2,14 +2,15 @@ package skytap
 
 import (
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
 	"github.com/pkg/errors"
 	"github.com/skytap/skytap-sdk-go/skytap"
 	"github.com/skytap/terraform-provider-skytap/skytap/utils"
-	"log"
-	"time"
 )
 
 func resourceSkytapVM() *schema.Resource {
@@ -54,19 +55,20 @@ func resourceSkytapVM() *schema.Resource {
 			"network_interface": {
 				Type:     schema.TypeList,
 				Optional: true,
+				Computed: true,
+				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"interface_type": {
 							Type:     schema.TypeString,
 							Required: true,
-							ForceNew: true,
 							ValidateFunc: validation.StringInSlice([]string{
 								string(skytap.NICTypeDefault),
-								string(skytap.NICTypePCNet32),
-								string(skytap.NICTypeVMXNet3),
-								string(skytap.NICTypeVMXNet),
 								string(skytap.NICTypeE1000),
 								string(skytap.NICTypeE1000E),
+								string(skytap.NICTypePCNet32),
+								string(skytap.NICTypeVMXNet),
+								string(skytap.NICTypeVMXNet3),
 							}, false),
 						},
 						"network_id": {
@@ -161,15 +163,26 @@ func addNetworkAdapters(d *schema.ResourceData, meta interface{}, vmID string) e
 
 		client := meta.(*SkytapClient).interfacesClient
 		ctx := meta.(*SkytapClient).StopContext
+		environmentID := d.Get("environment_id").(string)
+		networkIfaceCount := d.Get("network_interface.#").(int)
 
-		networkInterfaces := d.Get("network_interface").([]interface{})
-		for _, v := range networkInterfaces {
-
+		// In case there is network interface defined
+		// we remove the default networks from the VM before create the network defined
+		if networkIfaceCount > 0 {
+			vmIfaces, err := client.List(ctx, environmentID, vmID)
+			if err != nil {
+				return errors.Errorf("error resolving vm network interfaces: %v", err)
+			}
+			for _, iface := range vmIfaces.Value {
+				err = client.Delete(ctx, environmentID, vmID, *iface.ID)
+				if err != nil {
+					return errors.Errorf("Error removing the default interface from vm: %v", err)
+				}
+			}
+		}
+		for i := 0; i < networkIfaceCount; i++ {
 			log.Printf("[INFO] preparing arguments for creating the Skytap vm network interface")
-
-			environmentID := d.Get("environment_id").(string)
-
-			networkInterface := v.(map[string]interface{})
+			networkInterface := d.Get(fmt.Sprintf("network_interface.%d", i)).(map[string]interface{})
 			var id string
 			{
 				// create

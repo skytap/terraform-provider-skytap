@@ -2,16 +2,17 @@ package skytap
 
 import (
 	"fmt"
+	"log"
+	"sort"
+	"strconv"
+	"testing"
+
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/pkg/errors"
 	"github.com/skytap/skytap-sdk-go/skytap"
 	"github.com/skytap/terraform-provider-skytap/skytap/utils"
-	"log"
-	"sort"
-	"strconv"
-	"testing"
 )
 
 const (
@@ -285,6 +286,10 @@ func testAccCheckSkytapInterfaceAttributes(environmentName string, networkName s
 		sort.Slice(vm.Interfaces, func(i, j int) bool {
 			return *vm.Interfaces[i].ID > *vm.Interfaces[j].ID
 		})
+
+		if len(vm.Interfaces) != 2 {
+			return fmt.Errorf("Invalid number of interfaces, expected (%d)", len(vm.Interfaces))
+		}
 
 		for i := 0; i < 2; i++ {
 			adapter := vm.Interfaces[i]
