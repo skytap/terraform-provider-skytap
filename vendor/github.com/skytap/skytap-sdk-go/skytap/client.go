@@ -41,12 +41,13 @@ type Client struct {
 	Credentials CredentialsProvider
 
 	// Services used for communicating with the API
-	Projects     ProjectsService
-	Environments EnvironmentsService
-	Templates    TemplatesService
-	Networks     NetworksService
-	VMs          VMsService
-	Interfaces   InterfacesService
+	Projects          ProjectsService
+	Environments      EnvironmentsService
+	Templates         TemplatesService
+	Networks          NetworksService
+	VMs               VMsService
+	Interfaces        InterfacesService
+	PublishedServices PublishedServicesService
 
 	retryAfter int
 	retryCount int
@@ -131,6 +132,7 @@ func NewClient(settings Settings) (*Client, error) {
 	client.Networks = &NetworksServiceClient{&client}
 	client.VMs = &VMsServiceClient{&client}
 	client.Interfaces = &InterfacesServiceClient{&client}
+	client.PublishedServices = &PublishedServicesServiceClient{&client}
 
 	client.retryAfter = defRetryAfter
 	client.retryCount = defRetryCount
@@ -274,7 +276,7 @@ func (c *Client) checkResponse(r *http.Response) error {
 	if code := r.StatusCode; code == http.StatusLocked ||
 		code == http.StatusTooManyRequests ||
 		code == http.StatusConflict ||
-		code >= http.StatusInternalServerError && code <= 599 {
+		(code >= http.StatusInternalServerError && code <= 599) {
 		if retryAfter := r.Header.Get(headerRetryAfter); retryAfter != "" {
 			val, err := strconv.Atoi(retryAfter)
 			if err == nil {

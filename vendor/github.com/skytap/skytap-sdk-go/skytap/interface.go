@@ -67,7 +67,7 @@ type Interface struct {
 	Hostname            *string              `json:"hostname"`
 	MAC                 *string              `json:"mac"`
 	ServicesCount       *int                 `json:"services_count"`
-	Services            []Service            `json:"services"`
+	Services            []PublishedService   `json:"services"`
 	PublicIPsCount      *int                 `json:"public_ips_count"`
 	PublicIPs           []map[string]string  `json:"public_ips"`
 	VMID                *string              `json:"vm_id"`
@@ -81,14 +81,6 @@ type Interface struct {
 	NICType             *NICType             `json:"nic_type"`
 	SecondaryIPs        []SecondaryIP        `json:"secondary_ips"`
 	PublicIPAttachments []PublicIPAttachment `json:"public_ip_attachments"`
-}
-
-// Service describes a service provided on the connected network
-type Service struct {
-	ID           *string `json:"id"`
-	InternalPort *int    `json:"internal_port"`
-	ExternalIP   *string `json:"external_ip"`
-	ExternalPort *int    `json:"external_port"`
 }
 
 // SecondaryIP holds secondary IP address data

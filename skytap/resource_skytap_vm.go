@@ -52,18 +52,27 @@ func resourceSkytapVM() *schema.Resource {
 			},
 
 			"network_interface": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"interface_type": {
-							Type:         schema.TypeString,
-							Required:     true,
-							ValidateFunc: validation.NoZeroValues,
+							Type:     schema.TypeString,
+							Required: true,
+							ForceNew: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								string(skytap.NICTypeDefault),
+								string(skytap.NICTypePCNet32),
+								string(skytap.NICTypeVMXNet3),
+								string(skytap.NICTypeVMXNet),
+								string(skytap.NICTypeE1000),
+								string(skytap.NICTypeE1000E),
+							}, false),
 						},
 						"network_id": {
 							Type:         schema.TypeString,
 							Required:     true,
+							ForceNew:     true,
 							ValidateFunc: validation.NoZeroValues,
 						},
 						"ip": {
@@ -71,12 +80,29 @@ func resourceSkytapVM() *schema.Resource {
 							Optional:     true,
 							ValidateFunc: validation.SingleIP(),
 							Computed:     true,
+							ForceNew:     true,
 						},
 						"hostname": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							ValidateFunc: validation.NoZeroValues,
 							Computed:     true,
+							ForceNew:     true,
+						},
+
+						"published_service": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"internal_port": {
+										Type:         schema.TypeInt,
+										Required:     true,
+										ForceNew:     true,
+										ValidateFunc: validation.NoZeroValues,
+									},
+								},
+							},
 						},
 					},
 				},
@@ -136,8 +162,8 @@ func addNetworkAdapters(d *schema.ResourceData, meta interface{}, vmID string) e
 		client := meta.(*SkytapClient).interfacesClient
 		ctx := meta.(*SkytapClient).StopContext
 
-		networkInterfaces := d.Get("network_interface").(*schema.Set)
-		for _, v := range networkInterfaces.List() {
+		networkInterfaces := d.Get("network_interface").([]interface{})
+		for _, v := range networkInterfaces {
 
 			log.Printf("[INFO] preparing arguments for creating the Skytap vm network interface")
 
@@ -183,9 +209,41 @@ func addNetworkAdapters(d *schema.ResourceData, meta interface{}, vmID string) e
 					return errors.Errorf("error attaching vm network interface: %v", err)
 				}
 			}
+			{
+				// create network interfaces if necessary
+				err := addPublishedServices(d, meta, environmentID, vmID, id, networkInterface)
+				if err != nil {
+					return errors.Errorf("error attaching vm network interface: %v", err)
+				}
+			}
 		}
 	}
 
+	return nil
+}
+
+func addPublishedServices(d *schema.ResourceData, meta interface{}, environmentID string, vmID string, nicID string, networkInterfaces map[string]interface{}) error {
+	if _, ok := networkInterfaces["published_service"]; ok {
+		client := meta.(*SkytapClient).publishedServicesClient
+		ctx := meta.(*SkytapClient).StopContext
+
+		publishedServices := networkInterfaces["published_service"].([]interface{})
+		for _, v := range publishedServices {
+
+			log.Printf("[INFO] preparing arguments for creating the Skytap vm network interface service")
+
+			publishedService := v.(map[string]interface{})
+			// create
+			internalPort := skytap.CreatePublishedServiceRequest{
+				InternalPort: utils.Int(publishedService["internal_port"].(int)),
+			}
+			log.Printf("[DEBUG] vm network interface service : %#v", internalPort)
+			_, err := client.Create(ctx, environmentID, vmID, nicID, &internalPort)
+			if err != nil {
+				return errors.Errorf("error creating vm network interface service: %v", err)
+			}
+		}
+	}
 	return nil
 }
 
@@ -224,6 +282,23 @@ func flattenInterfaces(interfaces []skytap.Interface) interface{} {
 		result["network_id"] = *v.NetworkID
 		result["ip"] = *v.IP
 		result["hostname"] = *v.Hostname
+		result["published_service"] = flattenPublishedServices(v.Services)
+
+		results = append(results, result)
+	}
+
+	return results
+}
+
+func flattenPublishedServices(publishedServices []skytap.PublishedService) interface{} {
+	results := make([]map[string]interface{}, 0)
+
+	for _, v := range publishedServices {
+		result := make(map[string]interface{})
+		result["id"] = *v.ID
+		result["internal_port"] = *v.InternalPort
+		result["external_ip"] = *v.ExternalPort
+		result["external_port"] = *v.ExternalIP
 
 		results = append(results, result)
 	}

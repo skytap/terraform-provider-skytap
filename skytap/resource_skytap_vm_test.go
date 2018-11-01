@@ -10,7 +10,7 @@ import (
 	"github.com/skytap/terraform-provider-skytap/skytap/utils"
 	"log"
 	"sort"
-	"strings"
+	"strconv"
 	"testing"
 )
 
@@ -137,13 +137,131 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					testAccCheckSkytapInterfaceExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz"),
-					testAccCheckSkytapInterfaceAttributes("skytap_environment.foo", "skytap_network.baz", &vm, skytap.NICTypeVMXNet3, "192.168.0.10", "192.168.0.11", "bloggs-web", "bloggs-web2"),
+					testAccCheckSkytapInterfaceAttributes("skytap_environment.foo", "skytap_network.baz", &vm, skytap.NICTypeVMXNet3, []string{"192.168.0.11", "192.168.0.10"}, []string{"bloggs-web2", "bloggs-web"}),
+				),
+			}, {
+				Config: testAccSkytapVMConfig_basic(testEnvTemplateID, uniqueSuffixEnv, `
+					resource "skytap_network" "baz" {
+  						"name"        		= "tftest-network-1"
+						"domain"      		= "mydomain.com"
+  						"environment_id" 	= "${skytap_environment.foo.id}"
+  						"subnet"      		= "192.168.0.0/16"}`, testVMTemplateID, testVMID, "name = \"test\"", `
+                  	network_interface {
+                    	interface_type = "vmxnet3"
+                    	network_id = "${skytap_network.baz.id}"
+						ip = "192.168.0.20"
+						hostname = "bloggs-web3"
+                  	}
+                    network_interface {
+                    	interface_type = "vmxnet3"
+                    	network_id = "${skytap_network.baz.id}"
+						ip = "192.168.0.21"
+						hostname = "bloggs-web4"
+                  	}`),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
+					testAccCheckSkytapInterfaceExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz"),
+					testAccCheckSkytapInterfaceAttributes("skytap_environment.foo", "skytap_network.baz", &vm, skytap.NICTypeVMXNet3, []string{"192.168.0.21", "192.168.0.20"}, []string{"bloggs-web4", "bloggs-web3"}),
 				),
 			},
 		},
 	})
 }
-func testAccCheckSkytapInterfaceAttributes(environmentName string, networkName string, vm *skytap.VM, nicType skytap.NICType, ip1 string, ip2 string, hostname1 string, hostname2 string) resource.TestCheckFunc {
+
+func TestAccSkytapVM_PublishedService(t *testing.T) {
+	uniqueSuffixEnv := acctest.RandInt()
+	var vm skytap.VM
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSkytapVMConfig_basic(testEnvTemplateID, uniqueSuffixEnv, `
+					resource "skytap_network" "baz" {
+  						"name"        		= "tftest-network-1"
+						"domain"      		= "mydomain.com"
+  						"environment_id" 	= "${skytap_environment.foo.id}"
+  						"subnet"      		= "192.168.0.0/16"}`, testVMTemplateID, testVMID, "name = \"test\"", `
+                  	network_interface {
+                    	interface_type = "vmxnet3"
+                    	network_id = "${skytap_network.baz.id}"
+						ip = "192.168.0.10"
+						hostname = "bloggs-web"
+						published_service {
+							internal_port = 8080
+						}
+						published_service {
+							internal_port = 8081
+						}
+                  	}`),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
+					testAccCheckSkytapInterfaceExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz"),
+					testAccCheckSkytapPublishedServiceAttributes(&vm, []int{8080, 8081}),
+				),
+			}, {
+				Config: testAccSkytapVMConfig_basic(testEnvTemplateID, uniqueSuffixEnv, `
+					resource "skytap_network" "baz" {
+  						"name"        		= "tftest-network-1"
+						"domain"      		= "mydomain.com"
+  						"environment_id" 	= "${skytap_environment.foo.id}"
+  						"subnet"      		= "192.168.0.0/16"}`, testVMTemplateID, testVMID, "name = \"test\"", `
+                  	network_interface {
+                    	interface_type = "vmxnet3"
+                    	network_id = "${skytap_network.baz.id}"
+						ip = "192.168.0.10"
+						hostname = "bloggs-web"
+						published_service {
+							internal_port = 8082
+						}
+						published_service {
+							internal_port = 8083
+						}
+                  	}`),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
+					testAccCheckSkytapInterfaceExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz"),
+					testAccCheckSkytapPublishedServiceAttributes(&vm, []int{8082, 8083}),
+				),
+			},
+		},
+	})
+}
+func testAccCheckSkytapPublishedServiceAttributes(vm *skytap.VM, ports []int) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+
+		sort.Slice(vm.Interfaces, func(i, j int) bool {
+			return *vm.Interfaces[i].ID > *vm.Interfaces[j].ID
+		})
+
+		adapter := vm.Interfaces[0]
+
+		sort.Slice(adapter.Services, func(i, j int) bool {
+			return *adapter.Services[i].ID < *adapter.Services[j].ID
+		})
+
+		for i := 0; i < len(adapter.Services); i++ {
+			publishedService := adapter.Services[i]
+			if *publishedService.InternalPort != ports[i] {
+				return fmt.Errorf("the publishedService port (%d) is not configured as expected (%d)", *publishedService.InternalPort, ports[i])
+			}
+			if *publishedService.ID != strconv.Itoa(ports[i]) {
+				return fmt.Errorf("the publishedService ID (%s) is not configured as expected (%d)", *publishedService.ID, ports[i])
+			}
+			if publishedService.ExternalPort == nil {
+				return fmt.Errorf("the publishedService ExternalPort is not configured")
+			}
+			if publishedService.ExternalIP == nil {
+				return fmt.Errorf("the publishedService ExternalIP is not configured")
+			}
+		}
+		return nil
+	}
+}
+
+func testAccCheckSkytapInterfaceAttributes(environmentName string, networkName string, vm *skytap.VM, nicType skytap.NICType, ips []string, hostnames []string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
 		rsEnvironment, err := getResource(s, environmentName)
@@ -165,32 +283,25 @@ func testAccCheckSkytapInterfaceAttributes(environmentName string, networkName s
 		}
 
 		sort.Slice(vm.Interfaces, func(i, j int) bool {
-			return strings.Compare(*vm.Interfaces[i].ID, *vm.Interfaces[j].ID) == 0
+			return *vm.Interfaces[i].ID > *vm.Interfaces[j].ID
 		})
 
-		adapter1 := vm.Interfaces[1]
-		adapter2 := vm.Interfaces[2]
+		for i := 0; i < 2; i++ {
+			adapter := vm.Interfaces[i]
 
-		if *adapter1.IP != ip1 {
-			return fmt.Errorf("the interface ip (%s) is not configured as expected (%s)", *adapter1.IP, ip1)
+			if *adapter.IP != ips[i] {
+				return fmt.Errorf("the interface ip (%s) is not configured as expected (%s)", *adapter.IP, ips[i])
+			}
+			if *adapter.Hostname != hostnames[i] {
+				return fmt.Errorf("the interface hostname (%s) is not configured as expected (%s)", *adapter.Hostname, hostnames[i])
+			}
+			if *adapter.NICType != nicType {
+				return fmt.Errorf("the interface NIC types (%s) are not configured as expected (%s)", *adapter.NICType, nicType)
+			}
+			if *adapter.NetworkID != *net.ID {
+				return fmt.Errorf("the interface network IDs (%s) are not configured as expected (%s)", *adapter.NetworkID, *net.ID)
+			}
 		}
-		if *adapter2.IP != ip2 {
-			return fmt.Errorf("the interface ip (%s) is not configured as expected (%s)", *adapter2.IP, ip2)
-		}
-		if *adapter1.Hostname != hostname1 {
-			return fmt.Errorf("the interface hostname (%s) is not configured as expected (%s)", *adapter1.Hostname, hostname1)
-		}
-		if *adapter2.Hostname != hostname2 {
-			return fmt.Errorf("the interface hostname (%s) is not configured as expected (%s)", *adapter2.Hostname, hostname2)
-		}
-		if *adapter1.NICType != nicType || *adapter2.NICType != nicType {
-			return fmt.Errorf("the interface NIC types (%s,%s) are not configured as expected (%s)", *adapter1.NICType, *adapter2.NICType, nicType)
-		}
-
-		if *adapter1.NetworkID != *net.ID || *adapter2.NetworkID != *net.ID {
-			return fmt.Errorf("the interface network IDs (%s,%s) are not configured as expected (%s)", *adapter1.NetworkID, *adapter2.NetworkID, *net.ID)
-		}
-
 		return nil
 	}
 }

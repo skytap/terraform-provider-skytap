@@ -17,12 +17,13 @@ type Config struct {
 type SkytapClient struct {
 	StopContext context.Context
 
-	projectsClient     skytap.ProjectsService
-	environmentsClient skytap.EnvironmentsService
-	templatesClient    skytap.TemplatesService
-	networksClient     skytap.NetworksService
-	vmsClient          skytap.VMsService
-	interfacesClient   skytap.InterfacesService
+	projectsClient          skytap.ProjectsService
+	environmentsClient      skytap.EnvironmentsService
+	templatesClient         skytap.TemplatesService
+	networksClient          skytap.NetworksService
+	vmsClient               skytap.VMsService
+	interfacesClient        skytap.InterfacesService
+	publishedServicesClient skytap.PublishedServicesService
 }
 
 // Client creates a SkytapClient client
@@ -40,12 +41,13 @@ func (c *Config) Client() (*SkytapClient, error) {
 	}
 
 	skytapClient := SkytapClient{
-		projectsClient:     client.Projects,
-		environmentsClient: client.Environments,
-		templatesClient:    client.Templates,
-		networksClient:     client.Networks,
-		vmsClient:          client.VMs,
-		interfacesClient:   client.Interfaces,
+		projectsClient:          client.Projects,
+		environmentsClient:      client.Environments,
+		templatesClient:         client.Templates,
+		networksClient:          client.Networks,
+		vmsClient:               client.VMs,
+		interfacesClient:        client.Interfaces,
+		publishedServicesClient: client.PublishedServices,
 	}
 
 	return &skytapClient, nil
