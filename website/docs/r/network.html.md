@@ -33,10 +33,10 @@ The following arguments are supported:
 
 * `environment_id` - (Required, Force New) ID of the environment you want to attach the network to. If updating with a new one then the network will be recreated.
 * `name` - (Required) User-defined name of the network. Limited to 255 characters. UTF-8 character type.
-* `domain` - (Optional) Domain name for the Skytap network. Limited to 64 characters.
+* `domain` - (Required) Domain name for the Skytap network. Limited to 64 characters.
                          <br/>Valid characters are lowercase letters, numbers, and hyphens. Cannot be blank, must not begin or end with a period, and must start and end with a letter or number.
                          <br/>This field can be changed only when all virtual machines in the environment are stopped (not suspended or running).
-* `subnet` - (Optional) Defines the subnet address and subnet mask size in CIDR format (for example, 10.0.0.0/24). IP addresses for the VMs are assigned from this subnet and standard network services (DNS resolution, CIFS share, routes to Internet) are defined appropriately for it.
+* `subnet` - (Required) Defines the subnet address and subnet mask size in CIDR format (for example, 10.0.0.0/24). IP addresses for the VMs are assigned from this subnet and standard network services (DNS resolution, CIFS share, routes to Internet) are defined appropriately for it.
                         <br/>The subnet mask size must be between 16 and 29. Valid characters are lowercase letters, numbers, and hyphens. Cannot be blank, must not begin or end with a period, and must start and end with a letter or number.                
 * `gateway` - (Optional, Computed) Gateway IP address.
 * `tunnelable` - (Optional) If true, this network can be connected to other networks.

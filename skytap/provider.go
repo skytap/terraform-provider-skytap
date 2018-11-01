@@ -17,7 +17,7 @@ func Provider() terraform.ResourceProvider {
 			},
 			"api_token": {
 				Type:        schema.TypeString,
-				Optional:    true,
+				Required:    true,
 				DefaultFunc: schema.EnvDefaultFunc("SKYTAP_API_TOKEN", nil),
 				Description: "API Token for the skytap account.",
 			},

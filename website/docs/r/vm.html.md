@@ -32,9 +32,9 @@ resource "skytap_vm" "vm" {
 
 The following arguments are supported:
 
+* `environment_id` - (Required, Force New) ID of the environment you want to add the VM to. If updating with a new one then the VM will be recreated.
 * `template_id` - (Required, Force New) ID of the template you want to create the vm from. If updating with a new one then the VM will be recreated.
 * `vm_id` - (Required, Force New) ID of the VM you want to create the VM from. If updating with a new one then the VM will be recreated.
-* `environment_id` - (Required, Force New) ID of the environment you want to add the VM to. If updating with a new one then the VM will be recreated.
 * `name` - (Optional, Computed) User-defined name. Limited to 100 characters. 
 <br/>The name will be truncated to 33 UTF-8 characters after saving. 
 <br/>If a name is not provided then the source VM's name will be used.
