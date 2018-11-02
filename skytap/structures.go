@@ -32,8 +32,8 @@ func flattenPublishedServices(publishedServices []skytap.PublishedService) []map
 		result := make(map[string]interface{})
 		result["id"] = *v.ID
 		result["internal_port"] = *v.InternalPort
-		result["external_ip"] = *v.ExternalPort
-		result["external_port"] = *v.ExternalIP
+		result["external_ip"] = *v.ExternalIP
+		result["external_port"] = *v.ExternalPort
 
 		results = append(results, result)
 	}
