@@ -8,6 +8,7 @@ import (
 )
 
 func TestAccSkytapProject_importBasic(t *testing.T) {
+	//t.Parallel()
 	resourceName := "skytap_project.foo"
 	ri := acctest.RandInt()
 

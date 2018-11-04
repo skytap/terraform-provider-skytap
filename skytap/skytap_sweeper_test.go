@@ -2,13 +2,13 @@ package skytap
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/pkg/errors"
 )
 
 const PREFIX = "tftest"
@@ -22,7 +22,7 @@ func sharedClientForRegion(region string) (*SkytapClient, error) {
 	apiToken := os.Getenv("SKYTAP_API_TOKEN")
 
 	if username == "" || apiToken == "" {
-		return nil, errors.Errorf("SKYTAP_USERNAME and SKYTAP_API_TOKEN must be set for acceptance tests")
+		return nil, fmt.Errorf("SKYTAP_USERNAME and SKYTAP_API_TOKEN must be set for acceptance tests")
 	}
 
 	config := &Config{

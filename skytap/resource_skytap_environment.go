@@ -2,6 +2,7 @@ package skytap
 
 import (
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"log"
 	"time"
 
@@ -127,7 +128,7 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 		opts.ShutdownAtTime = utils.String(v.(string))
 	}
 
-	log.Printf("[INFO] environment create options: %#v", opts)
+	log.Printf("[INFO] environment create options: %#v", spew.Sdump(opts))
 	environment, err := client.Create(ctx, &opts)
 	if err != nil {
 		return fmt.Errorf("error creating environment: %v", err)
@@ -138,6 +139,8 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 	}
 	environmentID := *environment.ID
 	d.SetId(environmentID)
+
+	log.Printf("[INFO] environment created: %#v", spew.Sdump(environment))
 
 	stateConf := &resource.StateChangeConf{
 		Pending:    environmentPendingCreateRunstates,
@@ -153,8 +156,6 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 	if err != nil {
 		return fmt.Errorf("error waiting for environment (%s) to complete: %s", d.Id(), err)
 	}
-
-	log.Printf("[INFO] environment created: %#v", environment)
 
 	return resourceSkytapEnvironmentRead(d, meta)
 }
@@ -177,7 +178,7 @@ func resourceSkytapEnvironmentRead(d *schema.ResourceData, meta interface{}) err
 		return fmt.Errorf("error retrieving environment (%s): %v", id, err)
 	}
 
-	// The templateID is not set as it is used to build the enviroment and is not returned by the enviroment respose.
+	// The templateID is not set as it is used to build the environment and is not returned by the environment response.
 	// If this attribute is changed, this environment will be rebuilt
 	d.Set("name", environment.Name)
 	d.Set("description", environment.Description)
@@ -188,7 +189,7 @@ func resourceSkytapEnvironmentRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("shutdown_on_idle", environment.ShutdownOnIdle)
 	d.Set("shutdown_at_time", environment.ShutdownAtTime)
 
-	log.Printf("[INFO] environment retrieved: %#v", environment)
+	log.Printf("[INFO] environment retrieved: %#v", spew.Sdump(environment))
 
 	return err
 }
@@ -229,30 +230,37 @@ func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) e
 		opts.ShutdownAtTime = utils.String(v.(string))
 	}
 
-	log.Printf("[INFO] environment update options: %#v", opts)
+	log.Printf("[INFO] environment update options: %#v", spew.Sdump(opts))
 	environment, err := client.Update(ctx, id, &opts)
 	if err != nil {
 		return fmt.Errorf("error updating environment (%s): %v", id, err)
 	}
 
+	log.Printf("[INFO] environment updated: %#v", spew.Sdump(environment))
+
+	if err = waitForEnvironmentReady(d, meta, *environment.ID); err != nil {
+		return err
+	}
+
+	return resourceSkytapEnvironmentRead(d, meta)
+}
+
+func waitForEnvironmentReady(d *schema.ResourceData, meta interface{}, environmentID string) error {
 	stateConf := &resource.StateChangeConf{
 		Pending:    environmentPendingUpdateRunstates,
 		Target:     environmentTargetUpdateRunstates,
-		Refresh:    environmentUpdateRunstateRefreshFunc(d, meta),
+		Refresh:    environmentUpdateRunstateRefreshFunc(meta, environmentID),
 		Timeout:    d.Timeout(schema.TimeoutUpdate),
 		MinTimeout: 10 * time.Second,
 		Delay:      10 * time.Second,
 	}
 
-	log.Printf("[INFO] Waiting for environment (%s) to complete", d.Id())
-	_, err = stateConf.WaitForState()
+	log.Printf("[INFO] Waiting for environment (%s) to complete", environmentID)
+	_, err := stateConf.WaitForState()
 	if err != nil {
-		return fmt.Errorf("error waiting for environment (%s) to complete: %s", d.Id(), err)
+		return fmt.Errorf("error waiting for environment (%s) to complete: %s", environmentID, err)
 	}
-
-	log.Printf("[INFO] environment updated: %#v", environment)
-
-	return resourceSkytapEnvironmentRead(d, meta)
+	return nil
 }
 
 func resourceSkytapEnvironmentDelete(d *schema.ResourceData, meta interface{}) error {
@@ -272,6 +280,8 @@ func resourceSkytapEnvironmentDelete(d *schema.ResourceData, meta interface{}) e
 		return fmt.Errorf("error deleting environment (%s): %v", id, err)
 	}
 
+	log.Printf("[INFO] environment destroyed: %s", id)
+
 	stateConf := &resource.StateChangeConf{
 		Pending:    []string{"false"},
 		Target:     []string{"true"},
@@ -286,8 +296,6 @@ func resourceSkytapEnvironmentDelete(d *schema.ResourceData, meta interface{}) e
 	if err != nil {
 		return fmt.Errorf("error waiting for environment (%s) to complete: %s", d.Id(), err)
 	}
-
-	log.Printf("[INFO] environment destroyed: %s", id)
 
 	return err
 }
@@ -339,22 +347,19 @@ func environmentCreateRunstateRefreshFunc(
 	}
 }
 
-func environmentUpdateRunstateRefreshFunc(
-	d *schema.ResourceData, meta interface{}) resource.StateRefreshFunc {
+func environmentUpdateRunstateRefreshFunc(meta interface{}, environmentID string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		client := meta.(*SkytapClient).environmentsClient
 		ctx := meta.(*SkytapClient).StopContext
 
-		id := d.Id()
-
-		log.Printf("[DEBUG] retrieving environment: %s", id)
-		environment, err := client.Get(ctx, id)
+		log.Printf("[DEBUG] retrieving environment: %s", environmentID)
+		environment, err := client.Get(ctx, environmentID)
 
 		if err != nil {
-			return nil, "", fmt.Errorf("error retrieving environment (%s) when waiting: %v", id, err)
+			return nil, "", fmt.Errorf("error retrieving environment (%s) when waiting: %v", environmentID, err)
 		}
 
-		log.Printf("[DEBUG] environment (%s): %s", id, *environment.Runstate)
+		log.Printf("[DEBUG] environment (%s): %s", environmentID, *environment.Runstate)
 
 		return environment, string(*environment.Runstate), nil
 	}

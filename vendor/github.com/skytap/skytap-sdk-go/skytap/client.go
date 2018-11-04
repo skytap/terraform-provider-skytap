@@ -23,7 +23,7 @@ const (
 	headerRetryAfter = "Retry-After"
 
 	defRetryAfter = 10
-	defRetryCount = 6
+	defRetryCount = 30
 )
 
 // Client is a client to manage and configure the skytap cloud
@@ -79,7 +79,7 @@ type ListFilter struct {
 
 // ErrorResponse is the general purpose struct to hold error data
 type ErrorResponse struct {
-	error
+
 	// HTTP response that caused this error
 	Response *http.Response
 
@@ -98,13 +98,21 @@ type ErrorResponse struct {
 
 // Error returns a formatted error
 func (r *ErrorResponse) Error() string {
+	message := ""
+	if r.Message != nil {
+		message = *r.Message
+	}
+	ID := ""
+	if r.RequestID != nil {
+		ID = *r.RequestID
+	}
 	if r.RequestID != nil {
 		return fmt.Sprintf("%v %v: %d (request %q) %v",
-			r.Response.Request.Method, r.Response.Request.URL, r.Response.StatusCode, *r.RequestID, *r.Message)
+			r.Response.Request.Method, r.Response.Request.URL, r.Response.StatusCode, ID, message)
 	}
 
 	return fmt.Sprintf("%v %v: %d %v",
-		r.Response.Request.Method, r.Response.Request.URL, r.Response.StatusCode, *r.Message)
+		r.Response.Request.Method, r.Response.Request.URL, r.Response.StatusCode, message)
 }
 
 // NewClient creates a Skytab cloud client
@@ -199,7 +207,7 @@ func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*htt
 			makeRequest = false
 		} else if err.(*ErrorResponse).RequiresRetry {
 			seconds := *err.(*ErrorResponse).RetryAfter
-			log.Printf("retrying after %d second(s)\n", seconds)
+			log.Printf("[INFO] retrying after %d second(s)\n", seconds)
 			time.Sleep(time.Duration(seconds) * time.Second)
 		} else {
 			makeRequest = false

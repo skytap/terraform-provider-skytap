@@ -5,7 +5,6 @@ import (
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	"github.com/pkg/errors"
 	"github.com/skytap/skytap-sdk-go/skytap"
 	"github.com/skytap/terraform-provider-skytap/skytap/utils"
 	"log"
@@ -47,6 +46,7 @@ func testSweepSkytapEnvironment(region string) error {
 }
 
 func TestAccSkytapEnvironment_Basic(t *testing.T) {
+	//t.Parallel()
 	uniqueSuffix := acctest.RandInt()
 	var environment skytap.Environment
 
@@ -76,6 +76,7 @@ func TestAccSkytapEnvironment_Basic(t *testing.T) {
 }
 
 func TestAccSkytapEnvironment_UpdateTemplate(t *testing.T) {
+	//t.Parallel()
 	rInt := acctest.RandInt()
 	var environment skytap.Environment
 
@@ -137,7 +138,7 @@ func testAccCheckSkytapEnvironmentAfterTemplateChanged(name string, environmentO
 
 		log.Printf("[DEBUG] old environment (%s) and new environment (%s)\n", *environmentOld.ID, *environmentNew.ID)
 		if *environmentOld.ID == *environmentNew.ID {
-			return errors.Errorf("the old environment (%s) has been updated", rs.Primary.ID)
+			return fmt.Errorf("the old environment (%s) has been updated", rs.Primary.ID)
 		}
 		return nil
 	}
@@ -174,11 +175,11 @@ func testAccCheckSkytapEnvironmentDestroy(s *terraform.State) error {
 
 func testAccSkytapEnvironmentConfig_basic(uniqueSuffix int, templateID string) string {
 	return fmt.Sprintf(`
-resource "skytap_environment" "foo" {
-	template_id = %s
-	name = "tftest-environment-%d"
-	description = "This is an environment created by the skytap terraform provider acceptance test"
-}`, templateID, uniqueSuffix)
+      resource "skytap_environment" "foo" {
+	    template_id = %s
+	    name = "tftest-environment-%d"
+	    description = "This is an environment created by the skytap terraform provider acceptance test"
+      }`, templateID, uniqueSuffix)
 }
 
 func getEnvironment(rs *terraform.ResourceState) (*skytap.Environment, error) {
@@ -191,7 +192,7 @@ func getEnvironment(rs *terraform.ResourceState) (*skytap.Environment, error) {
 	environment, errClient := client.Get(ctx, rs.Primary.ID)
 	if errClient != nil {
 		if utils.ResponseErrorIsNotFound(err) {
-			err = errors.Errorf("environment (%s) was not found - does not exist", rs.Primary.ID)
+			err = fmt.Errorf("environment (%s) was not found - does not exist", rs.Primary.ID)
 		}
 
 		err = fmt.Errorf("error retrieving environment (%s): %v", rs.Primary.ID, err)

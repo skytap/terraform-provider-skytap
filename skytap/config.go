@@ -2,8 +2,8 @@ package skytap
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/skytap/skytap-sdk-go/skytap"
 )
 
@@ -32,12 +32,12 @@ func (c *Config) Client() (*SkytapClient, error) {
 	if c.APIToken != "" {
 		credentialsProvider = skytap.NewAPITokenCredentials(c.Username, c.APIToken)
 	} else {
-		return nil, errors.Errorf("An API token must be provided in order to successfully authenticate to Skytap")
+		return nil, fmt.Errorf("an API token must be provided in order to successfully authenticate to Skytap")
 	}
 
 	client, err := skytap.NewClient(skytap.NewDefaultSettings(skytap.WithCredentialsProvider(credentialsProvider)))
 	if err != nil {
-		return nil, errors.Errorf("failed to initialize the Skytap client: %v", err)
+		return nil, fmt.Errorf("failed to initialize the Skytap client: %v", err)
 	}
 
 	skytapClient := SkytapClient{

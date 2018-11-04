@@ -5,7 +5,6 @@ import (
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	"github.com/pkg/errors"
 	"github.com/skytap/skytap-sdk-go/skytap"
 	"github.com/skytap/terraform-provider-skytap/skytap/utils"
 	"log"
@@ -52,6 +51,7 @@ func testSweepSkytapNetwork(region string) error {
 }
 
 func TestAccSkytapNetwork_Basic(t *testing.T) {
+	//t.Parallel()
 	uniqueSuffixEnv := acctest.RandInt()
 	uniqueSuffixNet := acctest.RandInt()
 	var network skytap.Network
@@ -78,6 +78,7 @@ func TestAccSkytapNetwork_Basic(t *testing.T) {
 }
 
 func TestAccSkytapNetwork_Update(t *testing.T) {
+	//t.Parallel()
 	uniqueSuffixEnv := acctest.RandInt()
 	uniqueSuffixInitial := acctest.RandInt()
 	uniqueSuffixUpdate := acctest.RandInt()
@@ -170,7 +171,7 @@ func getNetwork(rs *terraform.ResourceState, environmentID string) (*skytap.Netw
 	network, errClient := client.Get(ctx, environmentID, rs.Primary.ID)
 	if errClient != nil {
 		if utils.ResponseErrorIsNotFound(err) {
-			err = errors.Errorf("network (%s) was not found - does not exist", rs.Primary.ID)
+			err = fmt.Errorf("network (%s) was not found - does not exist", rs.Primary.ID)
 		}
 
 		err = fmt.Errorf("error retrieving network (%s): %v", rs.Primary.ID, err)

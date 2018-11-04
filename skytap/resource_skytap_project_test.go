@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	"github.com/pkg/errors"
 	"github.com/skytap/terraform-provider-skytap/skytap/utils"
 )
 
@@ -48,6 +47,7 @@ func testSweepSkytapProject(region string) error {
 }
 
 func TestAccSkytapProject_Basic(t *testing.T) {
+	//t.Parallel()
 	rInt := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
@@ -89,13 +89,13 @@ func testAccCheckSkytapProjectExists(name string) resource.TestCheckFunc {
 
 		id, err := strconv.Atoi(rs.Primary.ID)
 		if err != nil {
-			return errors.Errorf("project (%s) is not an integer: %v", rs.Primary.ID, err)
+			return fmt.Errorf("project (%s) is not an integer: %v", rs.Primary.ID, err)
 		}
 
 		_, err = client.Get(ctx, id)
 		if err != nil {
 			if utils.ResponseErrorIsNotFound(err) {
-				return errors.Errorf("project (%d) was not found - does not exist", id)
+				return fmt.Errorf("project (%d) was not found - does not exist", id)
 			}
 
 			return fmt.Errorf("error retrieving project (%d): %v", id, err)
@@ -141,8 +141,8 @@ func testAccCheckSkytapProjectDestroy(s *terraform.State) error {
 
 func testAccSkytapProjectConfig_basic(rInt int) string {
 	return fmt.Sprintf(`
-resource "skytap_project" "foo" {
-	name = "tftest-project-%d"
-	summary = "This is a project created by the skytap terraform provider acceptance test"
-}`, rInt)
+      resource "skytap_project" "foo" {
+	    name = "tftest-project-%d"
+	    summary = "This is a project created by the skytap terraform provider acceptance test"
+      }`, rInt)
 }

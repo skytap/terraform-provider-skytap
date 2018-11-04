@@ -7,6 +7,7 @@ import (
 )
 
 func TestAccDataSourceSkytapTemplate_Basic(t *testing.T) {
+	//t.Parallel()
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
@@ -33,6 +34,7 @@ output "id" {
 }
 
 func TestAccDataSourceSkytapTemplate_RegexMostRecent(t *testing.T) {
+	//t.Parallel()
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,

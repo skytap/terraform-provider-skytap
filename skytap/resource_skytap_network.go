@@ -2,6 +2,7 @@ package skytap
 
 import (
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
 	"github.com/skytap/skytap-sdk-go/skytap"
@@ -83,7 +84,7 @@ func resourceSkytapNetworkCreate(d *schema.ResourceData, meta interface{}) error
 		opts.Gateway = utils.String(v.(string))
 	}
 
-	log.Printf("[INFO] network create options: %#v", opts)
+	log.Printf("[INFO] network create options: %#v", spew.Sdump(opts))
 	network, err := client.Create(ctx, environmentID, &opts)
 	if err != nil {
 		return fmt.Errorf("error creating network: %v", err)
@@ -95,7 +96,11 @@ func resourceSkytapNetworkCreate(d *schema.ResourceData, meta interface{}) error
 	networkID := *network.ID
 	d.SetId(networkID)
 
-	log.Printf("[INFO] network created: %#v", network)
+	log.Printf("[INFO] network created: %#v", spew.Sdump(network))
+
+	if err = waitForEnvironmentReady(d, meta, environmentID); err != nil {
+		return err
+	}
 
 	return resourceSkytapNetworkRead(d, meta)
 }
@@ -126,7 +131,7 @@ func resourceSkytapNetworkRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("gateway", network.Gateway)
 	d.Set("tunnelable", network.Tunnelable)
 
-	log.Printf("[INFO] network retrieved: %#v", network)
+	log.Printf("[INFO] network retrieved: %#v", spew.Sdump(network))
 
 	return err
 }
@@ -154,13 +159,17 @@ func resourceSkytapNetworkUpdate(d *schema.ResourceData, meta interface{}) error
 		opts.Gateway = utils.String(v.(string))
 	}
 
-	log.Printf("[INFO] network update options: %#v", opts)
+	log.Printf("[INFO] network update options: %#v", spew.Sdump(opts))
 	network, err := client.Update(ctx, environmentID, id, &opts)
 	if err != nil {
 		return fmt.Errorf("error updating network (%s): %v", id, err)
 	}
 
-	log.Printf("[INFO] network updated: %#v", network)
+	log.Printf("[INFO] network updated: %#v", spew.Sdump(network))
+
+	if err = waitForEnvironmentReady(d, meta, environmentID); err != nil {
+		return err
+	}
 
 	return resourceSkytapNetworkRead(d, meta)
 }

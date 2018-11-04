@@ -3,6 +3,7 @@ package skytap
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"sort"
 	"strconv"
 	"testing"
@@ -10,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
-	"github.com/pkg/errors"
 	"github.com/skytap/skytap-sdk-go/skytap"
 	"github.com/skytap/terraform-provider-skytap/skytap/utils"
 )
@@ -57,6 +57,7 @@ func testSweepSkytapVM(region string) error {
 }
 
 func TestAccSkytapVM_Basic(t *testing.T) {
+	//t.Parallel()
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 
@@ -78,6 +79,7 @@ func TestAccSkytapVM_Basic(t *testing.T) {
 }
 
 func TestAccSkytapVM_Update(t *testing.T) {
+	//t.Parallel()
 	uniqueSuffixEnv := acctest.RandInt()
 	uniqueSuffixVM := acctest.RandInt()
 	var vm skytap.VM
@@ -108,6 +110,7 @@ func TestAccSkytapVM_Update(t *testing.T) {
 }
 
 func TestAccSkytapVM_Interface(t *testing.T) {
+	//t.Parallel()
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 
@@ -137,7 +140,7 @@ func TestAccSkytapVM_Interface(t *testing.T) {
                   	}`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
-					testAccCheckSkytapInterfaceExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz"),
+					testAccCheckSkytapInterfacesExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz", 2),
 					testAccCheckSkytapInterfaceAttributes("skytap_environment.foo", "skytap_network.baz", &vm, skytap.NICTypeVMXNet3, []string{"192.168.0.11", "192.168.0.10"}, []string{"bloggs-web2", "bloggs-web"}),
 				),
 			}, {
@@ -161,8 +164,26 @@ func TestAccSkytapVM_Interface(t *testing.T) {
                   	}`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
-					testAccCheckSkytapInterfaceExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz"),
+					testAccCheckSkytapInterfacesExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz", 2),
 					testAccCheckSkytapInterfaceAttributes("skytap_environment.foo", "skytap_network.baz", &vm, skytap.NICTypeVMXNet3, []string{"192.168.0.21", "192.168.0.20"}, []string{"bloggs-web4", "bloggs-web3"}),
+				),
+			}, {
+				Config: testAccSkytapVMConfig_basic(testEnvTemplateID, uniqueSuffixEnv, `
+					resource "skytap_network" "baz" {
+  						"name"        		= "tftest-network-1"
+						"domain"      		= "mydomain.com"
+  						"environment_id" 	= "${skytap_environment.foo.id}"
+  						"subnet"      		= "192.168.0.0/16"}`, testVMTemplateID, testVMID, "name = \"test\"", `
+                  	network_interface {
+                    	interface_type = "vmxnet3"
+                    	network_id = "${skytap_network.baz.id}"
+						ip = "192.168.0.22"
+						hostname = "bloggs-web5"
+                  	}`),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
+					testAccCheckSkytapInterfacesExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz", 1),
+					testAccCheckSkytapInterfaceAttributes("skytap_environment.foo", "skytap_network.baz", &vm, skytap.NICTypeVMXNet3, []string{"192.168.0.22"}, []string{"bloggs-web5"}),
 				),
 			},
 		},
@@ -170,6 +191,7 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 }
 
 func TestAccSkytapVM_PublishedService(t *testing.T) {
+	//t.Parallel()
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 
@@ -199,7 +221,7 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
                   	}`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
-					testAccCheckSkytapInterfaceExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz"),
+					testAccCheckSkytapInterfacesExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz", 1),
 					testAccCheckSkytapPublishedServiceAttributes(&vm, []int{8080, 8081}),
 				),
 			}, {
@@ -223,13 +245,85 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
                   	}`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
-					testAccCheckSkytapInterfaceExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz"),
+					testAccCheckSkytapInterfacesExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz", 1),
 					testAccCheckSkytapPublishedServiceAttributes(&vm, []int{8082, 8083}),
+				),
+			}, {
+				Config: testAccSkytapVMConfig_basic(testEnvTemplateID, uniqueSuffixEnv, `
+					resource "skytap_network" "baz" {
+  						"name"        		= "tftest-network-1"
+						"domain"      		= "mydomain.com"
+  						"environment_id" 	= "${skytap_environment.foo.id}"
+  						"subnet"      		= "192.168.0.0/16"}`, testVMTemplateID, testVMID, "name = \"test\"", `
+                  	network_interface {
+                    	interface_type = "vmxnet3"
+                    	network_id = "${skytap_network.baz.id}"
+						ip = "192.168.0.10"
+						hostname = "bloggs-web"
+						published_service {
+							internal_port = 8084
+						}
+                  	}`),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
+					testAccCheckSkytapInterfacesExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz", 1),
+					testAccCheckSkytapPublishedServiceAttributes(&vm, []int{8084}),
+				),
+			}, {
+				Config: testAccSkytapVMConfig_basic(testEnvTemplateID, uniqueSuffixEnv, `
+					resource "skytap_network" "baz" {
+  						"name"        		= "tftest-network-1"
+						"domain"      		= "mydomain.com"
+  						"environment_id" 	= "${skytap_environment.foo.id}"
+  						"subnet"      		= "192.168.0.0/16"}`, testVMTemplateID, testVMID, "name = \"test\"", `
+                  	network_interface {
+                    	interface_type = "e1000"
+                    	network_id = "${skytap_network.baz.id}"
+						ip = "192.168.0.10"
+						hostname = "bloggs-web"
+						published_service {
+							internal_port = 8084
+						}
+                  	}`),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
+					testAccCheckSkytapInterfacesExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz", 1),
+					testAccCheckSkytapPublishedServiceAttributes(&vm, []int{8084}),
 				),
 			},
 		},
 	})
 }
+
+// the interface type is wrong and will be rejected by the API. This tests the SDK error handling.
+func TestAccSkytapVM_PublishedServiceBadNic(t *testing.T) {
+	//t.Parallel()
+	uniqueSuffixEnv := acctest.RandInt()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSkytapVMConfig_basic(testEnvTemplateID, uniqueSuffixEnv, `
+					resource "skytap_network" "baz" {
+  						"name"        		= "tftest-network-1"
+						"domain"      		= "mydomain.com"
+  						"environment_id" 	= "${skytap_environment.foo.id}"
+  						"subnet"      		= "192.168.0.0/16"}`, testVMTemplateID, testVMID, "name = \"test\"", `
+                  	network_interface {
+                    	interface_type = "e1000e"
+                    	network_id = "${skytap_network.baz.id}"
+						ip = "192.168.0.10"
+						hostname = "bloggs-web"
+                  	}`),
+				ExpectError: regexp.MustCompile(`error creating interface: POST (.*?): 422 \(request "(.*?)"\)`),
+			},
+		},
+	})
+}
+
 func testAccCheckSkytapPublishedServiceAttributes(vm *skytap.VM, ports []int) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
@@ -287,11 +381,11 @@ func testAccCheckSkytapInterfaceAttributes(environmentName string, networkName s
 			return *vm.Interfaces[i].ID > *vm.Interfaces[j].ID
 		})
 
-		if len(vm.Interfaces) != 2 {
+		if len(vm.Interfaces) != len(ips) {
 			return fmt.Errorf("invalid number of interfaces, expected (%d)", len(vm.Interfaces))
 		}
 
-		for i := 0; i < 2; i++ {
+		for i := 0; i < len(ips); i++ {
 			adapter := vm.Interfaces[i]
 
 			if *adapter.IP != ips[i] {
@@ -338,7 +432,7 @@ func testAccCheckSkytapVMExists(environmentName string, vmName string, vm *skyta
 	}
 }
 
-func testAccCheckSkytapInterfaceExists(environmentName string, vmName string, networkName string) resource.TestCheckFunc {
+func testAccCheckSkytapInterfacesExists(environmentName string, vmName string, networkName string, interfaceCount int) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rsEnvironment, err := getResource(s, environmentName)
 		if err != nil {
@@ -376,8 +470,8 @@ func testAccCheckSkytapInterfaceExists(environmentName string, vmName string, ne
 			}
 		}
 
-		if count < 2 {
-			return errors.New("not all interfaces were attached to the network")
+		if count != interfaceCount {
+			return fmt.Errorf("expecting %d networks but found %d", interfaceCount, count)
 		}
 
 		return nil
@@ -415,7 +509,7 @@ func getVM(rs *terraform.ResourceState, environmentID string) (*skytap.VM, error
 	vm, errClient := client.Get(ctx, environmentID, rs.Primary.ID)
 	if errClient != nil {
 		if utils.ResponseErrorIsNotFound(err) {
-			err = errors.Errorf("vm (%s) was not found - does not exist", rs.Primary.ID)
+			err = fmt.Errorf("vm (%s) was not found - does not exist", rs.Primary.ID)
 		}
 
 		err = fmt.Errorf("error retrieving vm (%s): %v", rs.Primary.ID, err)
@@ -427,7 +521,7 @@ func testAccCheckSkytapVMRunning(vm *skytap.VM) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		resource.TestCheckResourceAttr("skytap_vm.bar", "runstate", string(skytap.VMRunstateRunning))
 		if skytap.VMRunstateRunning != *vm.Runstate {
-			return errors.Errorf("vm (%s) is not running as expected", *vm.ID)
+			return fmt.Errorf("vm (%s) is not running as expected", *vm.ID)
 		}
 		return nil
 	}

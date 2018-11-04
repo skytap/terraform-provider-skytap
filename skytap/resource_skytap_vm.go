@@ -2,6 +2,7 @@ package skytap
 
 import (
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"log"
 	"time"
 
@@ -133,7 +134,7 @@ func resourceSkytapVMCreate(d *schema.ResourceData, meta interface{}) error {
 		VMID:       templateVMID,
 	}
 
-	log.Printf("[INFO] VM create options: %#v", createOpts)
+	log.Printf("[INFO] VM create options: %#v", spew.Sdump(createOpts))
 	vm, err := client.Create(ctx, environmentID, &createOpts)
 	if err != nil {
 		return fmt.Errorf("error creating VM: %v", err)
@@ -145,6 +146,21 @@ func resourceSkytapVMCreate(d *schema.ResourceData, meta interface{}) error {
 	vmID := *vm.ID
 	d.SetId(vmID)
 
+	log.Printf("[INFO] created VM: %#v", spew.Sdump(vm))
+
+	if err = waitForVMReady(d, meta); err != nil {
+		return err
+	}
+
+	// create network interfaces if necessary
+	if err = addNetworkAdapters(d, meta, *vm.ID); err != nil {
+		return err
+	}
+
+	return update(d, meta, true)
+}
+
+func waitForVMReady(d *schema.ResourceData, meta interface{}) error {
 	stateConf := &resource.StateChangeConf{
 		Pending:    vmPendingCreateRunstates,
 		Target:     vmTargetCreateRunstates,
@@ -155,19 +171,11 @@ func resourceSkytapVMCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	log.Printf("[INFO] Waiting for VM (%s) to complete", d.Id())
-	_, err = stateConf.WaitForState()
+	_, err := stateConf.WaitForState()
 	if err != nil {
 		return fmt.Errorf("error waiting for VM (%s) to complete: %s", d.Id(), err)
 	}
-
-	log.Printf("[INFO] created VM: %#v", vm)
-
-	// create network interfaces if necessary
-	if err = addNetworkAdapters(d, meta, *vm.ID); err != nil {
-		return err
-	}
-
-	return update(d, meta, true)
+	return nil
 }
 
 func addNetworkAdapters(d *schema.ResourceData, meta interface{}, vmID string) error {
@@ -186,10 +194,15 @@ func addNetworkAdapters(d *schema.ResourceData, meta interface{}, vmID string) e
 				return fmt.Errorf("error resolving VM network interfaces: %v", err)
 			}
 			for _, iface := range vmIfaces.Value {
+				log.Printf("[INFO] deleting network interface: %s", *iface.ID)
 				err = client.Delete(ctx, environmentID, vmID, *iface.ID)
 				if err != nil {
 					return fmt.Errorf("error removing the default interface from VM: %v", err)
 				}
+				log.Printf("[INFO] deleted network interface: %s", *iface.ID)
+			}
+			if err = waitForVMReady(d, meta); err != nil {
+				return err
 			}
 		}
 		for i := 0; i < networkIfaceCount; i++ {
@@ -211,41 +224,53 @@ func addNetworkAdapters(d *schema.ResourceData, meta interface{}, vmID string) e
 				opts.Hostname = utils.String(v.(string))
 				requiresUpdate = true
 			}
-			log.Printf("[INFO] creating interface: %#v", nicType)
-			log.Printf("[INFO] attaching interface: %#v", networkID)
-			log.Printf("[INFO] updating interface options: %#v", opts)
 
 			var id string
 			{
-				// create
+				log.Printf("[INFO] creating interface: %#v", spew.Sdump(nicType))
 				networkInterface, err := client.Create(ctx, environmentID, vmID, &nicType)
 				if err != nil {
 					return fmt.Errorf("error creating interface: %v", err)
 				}
 				id = *networkInterface.ID
-				log.Printf("[INFO] created interface: %#v", networkInterface)
+
+				log.Printf("[INFO] created interface: %#v", spew.Sdump(networkInterface))
+
+				if err = waitForVMReady(d, meta); err != nil {
+					return err
+				}
 			}
 			{
-				// attach
+				log.Printf("[INFO] attaching interface: %#v", spew.Sdump(networkID))
 				_, err := client.Attach(ctx, environmentID, vmID, id, &networkID)
 				if err != nil {
 					return fmt.Errorf("error attaching interface: %v", err)
 				}
-				log.Printf("[INFO] attached interface: %#v", networkInterface)
+
+				log.Printf("[INFO] attached interface: %#v", spew.Sdump(networkInterface))
+
+				if err = waitForVMReady(d, meta); err != nil {
+					return err
+				}
 			}
 			{
 				// if the user define a hostname or ip we need an interface update.
 				if requiresUpdate {
+					log.Printf("[INFO] updating interface options: %#v", spew.Sdump(opts))
 					networkInterface, err := client.Update(ctx, environmentID, vmID, id, &opts)
 					if err != nil {
 						return fmt.Errorf("error attaching interface: %v", err)
 					}
-					log.Printf("[INFO] updated interface: %#v", networkInterface)
+					log.Printf("[INFO] updated interface: %#v", spew.Sdump(networkInterface))
+
+					if err = waitForVMReady(d, meta); err != nil {
+						return err
+					}
 				}
 			}
 			{
 				// create network interfaces if necessary
-				err := addPublishedServices(meta, environmentID, vmID, id, networkInterface)
+				err := addPublishedServices(d, meta, environmentID, vmID, id, networkInterface)
 				if err != nil {
 					return err
 				}
@@ -257,7 +282,7 @@ func addNetworkAdapters(d *schema.ResourceData, meta interface{}, vmID string) e
 }
 
 // create the public service for a specific interface
-func addPublishedServices(meta interface{}, environmentID string, vmID string, nicID string, networkInterface map[string]interface{}) error {
+func addPublishedServices(d *schema.ResourceData, meta interface{}, environmentID string, vmID string, nicID string, networkInterface map[string]interface{}) error {
 	if _, ok := networkInterface["published_service"]; ok {
 		client := meta.(*SkytapClient).publishedServicesClient
 		ctx := meta.(*SkytapClient).StopContext
@@ -269,12 +294,17 @@ func addPublishedServices(meta interface{}, environmentID string, vmID string, n
 			internalPort := skytap.CreatePublishedServiceRequest{
 				InternalPort: utils.Int(publishedService["internal_port"].(int)),
 			}
-			log.Printf("[INFO] creating published service: %#v", internalPort)
+			log.Printf("[INFO] creating published service: %#v", spew.Sdump(internalPort))
 			createdService, err := client.Create(ctx, environmentID, vmID, nicID, &internalPort)
 			if err != nil {
 				return fmt.Errorf("error creating published service: %v", err)
 			}
-			log.Printf("[INFO] created published service: %#v", createdService)
+
+			log.Printf("[INFO] created published service: %#v", spew.Sdump(createdService))
+
+			if err = waitForVMReady(d, meta); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -299,16 +329,16 @@ func resourceSkytapVMRead(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("error retrieving VM (%s): %v", id, err)
 	}
 
-	// templatedID and vmID are not set, as they are not returned by the VM response.
+	// templateID and vmID are not set, as they are not returned by the VM response.
 	// If any of these attributes are changed, this VM will be rebuilt.
 	d.Set("environment_id", environmentID)
 	d.Set("name", vm.Name)
 	if err := d.Set("network_interface", flattenInterfaces(vm.Interfaces)); err != nil {
-		log.Printf("[ERROR] error flatten network interfaces: %v", err)
+		log.Printf("[ERROR] error flattening network interfaces: %v", err)
 		return err
 	}
 
-	log.Printf("[INFO] retrieved VM: %#v", vm)
+	log.Printf("[INFO] retrieved VM: %#v", spew.Sdump(vm))
 
 	return nil
 }
@@ -372,14 +402,16 @@ func update(d *schema.ResourceData, meta interface{}, forceRunning bool) error {
 		opts.Name = utils.String(v.(string))
 	}
 
-	log.Printf("[INFO] VM update options: %#v", opts)
+	log.Printf("[INFO] VM update options: %#v", spew.Sdump(opts))
 	vm, err := client.Update(ctx, environmentID, id, &opts)
 	if err != nil {
 		return fmt.Errorf("error updating vm (%s): %v", id, err)
 	}
 
+	log.Printf("[INFO] updated VM: %#v", spew.Sdump(vm))
+
 	stateConf := &resource.StateChangeConf{
-		Pending:    vmPendingUpdateRunstates,
+		Pending:    getVMPendingUpdateRunstates(forceRunning),
 		Target:     getVMTargetUpdateRunstates(forceRunning),
 		Refresh:    vmRunstateRefreshFunc(d, meta),
 		Timeout:    d.Timeout(schema.TimeoutUpdate),
@@ -392,8 +424,6 @@ func update(d *schema.ResourceData, meta interface{}, forceRunning bool) error {
 	if err != nil {
 		return fmt.Errorf("error waiting for VM (%s) to complete: %s", d.Id(), err)
 	}
-
-	log.Printf("[INFO] updated VM: %#v", vm)
 
 	return resourceSkytapVMRead(d, meta)
 }
@@ -414,7 +444,7 @@ func vmRunstateRefreshFunc(
 			return nil, "", fmt.Errorf("error retrieving VM (%s) when waiting: (%s)", id, err)
 		}
 
-		log.Printf("[DEBUG] environment status (%s): %s", id, *vm.Runstate)
+		log.Printf("[DEBUG] VM status (%s): %s", id, *vm.Runstate)
 
 		return vm, string(*vm.Runstate), nil
 	}
@@ -432,6 +462,11 @@ var vmPendingUpdateRunstates = []string{
 	string(skytap.VMRunstateBusy),
 }
 
+var vmPendingUpdateRunstateAfterCreate = []string{
+	string(skytap.VMRunstateBusy),
+	string(skytap.VMRunstateStopped),
+}
+
 var vmTargetUpdateRunstateAfterCreate = []string{
 	string(skytap.VMRunstateRunning),
 }
@@ -442,6 +477,13 @@ var vmTargetUpdateRunstates = []string{
 	string(skytap.VMRunstateReset),
 	string(skytap.VMRunstateSuspended),
 	string(skytap.VMRunstateHalted),
+}
+
+func getVMPendingUpdateRunstates(running bool) []string {
+	if running {
+		return vmPendingUpdateRunstateAfterCreate
+	}
+	return vmPendingUpdateRunstates
 }
 
 func getVMTargetUpdateRunstates(running bool) []string {

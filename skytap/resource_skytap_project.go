@@ -2,6 +2,7 @@ package skytap
 
 import (
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 	"log"
 	"strconv"
 
@@ -70,7 +71,7 @@ func resourceSkytapProjectCreate(d *schema.ResourceData, meta interface{}) error
 		opts.AutoAddRoleName = &autoAddRoleName
 	}
 
-	log.Printf("[INFO] project create options: %#v", opts)
+	log.Printf("[INFO] project create options: %#v", spew.Sdump(opts))
 	project, err := client.Create(ctx, &opts)
 	if err != nil {
 		return fmt.Errorf("error creating project: %v", err)
@@ -82,7 +83,7 @@ func resourceSkytapProjectCreate(d *schema.ResourceData, meta interface{}) error
 	projectID := strconv.Itoa(*project.ID)
 	d.SetId(projectID)
 
-	log.Printf("[INFO] project created: %#v", project)
+	log.Printf("[INFO] project created: %#v", spew.Sdump(project))
 
 	return resourceSkytapProjectRead(d, meta)
 }
@@ -113,7 +114,7 @@ func resourceSkytapProjectRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("auto_add_role_name", project.AutoAddRoleName)
 	d.Set("show_project_members", project.ShowProjectMembers)
 
-	log.Printf("[INFO] project retrieved: %#v", project)
+	log.Printf("[INFO] project retrieved: %#v", spew.Sdump(project))
 
 	return err
 }
@@ -144,13 +145,13 @@ func resourceSkytapProjectUpdate(d *schema.ResourceData, meta interface{}) error
 		opts.AutoAddRoleName = &autoAddRoleName
 	}
 
-	log.Printf("[INFO] project update options: %#v", opts)
+	log.Printf("[INFO] project update options: %#v", spew.Sdump(opts))
 	project, err := client.Update(ctx, id, &opts)
 	if err != nil {
 		return fmt.Errorf("error updating project (%d): %v", id, err)
 	}
 
-	log.Printf("[INFO] project updated: %#v", project)
+	log.Printf("[INFO] project updated: %#v", spew.Sdump(project))
 
 	return resourceSkytapProjectRead(d, meta)
 }
