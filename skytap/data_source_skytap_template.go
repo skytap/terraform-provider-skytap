@@ -2,13 +2,14 @@ package skytap
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/hashicorp/terraform/helper/validation"
-	"github.com/skytap/skytap-sdk-go/skytap"
 	"log"
 	"regexp"
 	"sort"
 	"time"
+
+	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform/helper/validation"
+	"github.com/skytap/skytap-sdk-go/skytap"
 )
 
 const timestampFormat = "2006/01/02 15:04:05 -0700"

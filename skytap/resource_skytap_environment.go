@@ -31,12 +31,6 @@ func resourceSkytapEnvironment() *schema.Resource {
 				ValidateFunc: validation.NoZeroValues,
 			},
 
-			"project_id": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: validation.NoZeroValues,
-			},
-
 			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -62,9 +56,9 @@ func resourceSkytapEnvironment() *schema.Resource {
 			},
 
 			"suspend_on_idle": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Default:  nil,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntBetween(300, 86400),
 			},
 
 			"suspend_at_time": {
@@ -74,9 +68,9 @@ func resourceSkytapEnvironment() *schema.Resource {
 			},
 
 			"shutdown_on_idle": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Default:  nil,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntBetween(300, 86400),
 			},
 
 			"shutdown_at_time": {
@@ -102,10 +96,6 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 		Name:            &name,
 		OutboundTraffic: &outboundTraffic,
 		Routable:        &routable,
-	}
-
-	if v, ok := d.GetOk("project_id"); ok {
-		opts.ProjectID = utils.Int(v.(int))
 	}
 
 	if v, ok := d.GetOk("description"); ok {

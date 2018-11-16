@@ -2,13 +2,14 @@ package skytap
 
 import (
 	"fmt"
+	"log"
+	"testing"
+
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/skytap/skytap-sdk-go/skytap"
 	"github.com/skytap/terraform-provider-skytap/skytap/utils"
-	"log"
-	"testing"
 )
 
 func init() {
@@ -62,7 +63,6 @@ func TestAccSkytapEnvironment_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr("skytap_environment.foo", "name", fmt.Sprintf("tftest-environment-%d", uniqueSuffix)),
 					resource.TestCheckResourceAttr("skytap_environment.foo", "description", "This is an environment created by the skytap terraform provider acceptance test"),
 					resource.TestCheckResourceAttrSet("skytap_environment.foo", "template_id"),
-					resource.TestCheckNoResourceAttr("skytap_environment.foo", "project_id"),
 					resource.TestCheckResourceAttr("skytap_environment.foo", "outbound_traffic", "false"),
 					resource.TestCheckResourceAttr("skytap_environment.foo", "routable", "false"),
 					resource.TestCheckResourceAttr("skytap_environment.foo", "suspend_on_idle", "0"),

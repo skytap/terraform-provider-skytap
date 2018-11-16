@@ -38,7 +38,3 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id`: The ID of the project.
-* `name`: User-defined project name.
-* `summary`: User-defined description of project.
-* `auto_add_role_name`: The role automatically assigned to every new user added to the project.
-* `show_project_members`: Whether project members can view a list of the other project members.

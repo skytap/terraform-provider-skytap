@@ -157,7 +157,7 @@ func resourceSkytapVMCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	return update(d, meta, true)
+	return updateVMResource(d, meta, true)
 }
 
 func waitForVMReady(d *schema.ResourceData, meta interface{}) error {
@@ -344,7 +344,7 @@ func resourceSkytapVMRead(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
-	return update(d, meta, false)
+	return updateVMResource(d, meta, false)
 }
 
 func resourceSkytapVMDelete(d *schema.ResourceData, meta interface{}) error {
@@ -385,7 +385,7 @@ func resourceSkytapVMDelete(d *schema.ResourceData, meta interface{}) error {
 	return err
 }
 
-func update(d *schema.ResourceData, meta interface{}, forceRunning bool) error {
+func updateVMResource(d *schema.ResourceData, meta interface{}, forceRunning bool) error {
 	client := meta.(*SkytapClient).vmsClient
 	ctx := meta.(*SkytapClient).StopContext
 

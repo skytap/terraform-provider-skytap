@@ -2,8 +2,9 @@ package skytap
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform/helper/resource"
 	"testing"
+
+	"github.com/hashicorp/terraform/helper/resource"
 )
 
 func TestAccDataSourceSkytapTemplate_Basic(t *testing.T) {

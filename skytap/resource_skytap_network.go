@@ -2,12 +2,13 @@ package skytap
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/davecgh/go-spew/spew"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
 	"github.com/skytap/skytap-sdk-go/skytap"
 	"github.com/skytap/terraform-provider-skytap/skytap/utils"
-	"log"
 )
 
 func resourceSkytapNetwork() *schema.Resource {

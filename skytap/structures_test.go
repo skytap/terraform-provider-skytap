@@ -3,10 +3,11 @@ package skytap
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/skytap/skytap-sdk-go/skytap"
-	"github.com/stretchr/testify/assert"
 	"strconv"
 	"testing"
+
+	"github.com/skytap/skytap-sdk-go/skytap"
+	"github.com/stretchr/testify/assert"
 )
 
 const exampleInterfaceListResponse = `[

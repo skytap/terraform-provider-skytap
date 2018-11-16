@@ -1,8 +1,9 @@
 package utils
 
 import (
-	"github.com/skytap/skytap-sdk-go/skytap"
 	"testing"
+
+	"github.com/skytap/skytap-sdk-go/skytap"
 
 	"github.com/stretchr/testify/assert"
 )

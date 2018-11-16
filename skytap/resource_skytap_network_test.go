@@ -2,13 +2,14 @@ package skytap
 
 import (
 	"fmt"
+	"log"
+	"testing"
+
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/skytap/skytap-sdk-go/skytap"
 	"github.com/skytap/terraform-provider-skytap/skytap/utils"
-	"log"
-	"testing"
 )
 
 const (

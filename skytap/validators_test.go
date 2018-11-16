@@ -2,9 +2,10 @@ package skytap
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/skytap/skytap-sdk-go/skytap"
-	"testing"
 )
 
 func TestValidateNICType(t *testing.T) {
