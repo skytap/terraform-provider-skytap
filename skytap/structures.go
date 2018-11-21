@@ -1,42 +1,47 @@
 package skytap
 
-import "github.com/skytap/skytap-sdk-go/skytap"
+import (
+	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/skytap/skytap-sdk-go/skytap"
+)
 
-func flattenInterfaces(interfaces []skytap.Interface) []map[string]interface{} {
-	results := make([]map[string]interface{}, 0)
+func flattenNetworkInterfaces(interfaces []skytap.Interface) *schema.Set {
+	results := make([]interface{}, 0)
 
 	for _, v := range interfaces {
-		result := make(map[string]interface{})
-		result["interface_type"] = *v.NICType
-		if v.NetworkID != nil {
-			result["network_id"] = *v.NetworkID
-		}
-		if v.IP != nil {
-			result["ip"] = *v.IP
-		}
-		if v.Hostname != nil {
-			result["hostname"] = *v.Hostname
-		}
-		result["published_service"] = flattenPublishedServices(v.Services)
-
-		results = append(results, result)
+		results = append(results, flattenNetworkInterface(v))
 	}
 
-	return results
+	return schema.NewSet(networkInterfaceHash, results)
 }
 
-func flattenPublishedServices(publishedServices []skytap.PublishedService) []map[string]interface{} {
-	results := make([]map[string]interface{}, 0)
+func flattenNetworkInterface(v skytap.Interface) map[string]interface{} {
+	result := make(map[string]interface{})
+	result["interface_type"] = string(*v.NICType)
+	result["network_id"] = *v.NetworkID
+	result["ip"] = *v.IP
+	result["hostname"] = *v.Hostname
+	if len(v.Services) > 0 {
+		result["published_service"] = flattenPublishedServices(v.Services)
+	}
+	return result
+}
+
+func flattenPublishedServices(publishedServices []skytap.PublishedService) *schema.Set {
+	results := make([]interface{}, 0)
 
 	for _, v := range publishedServices {
-		result := make(map[string]interface{})
-		result["id"] = *v.ID
-		result["internal_port"] = *v.InternalPort
-		result["external_ip"] = *v.ExternalIP
-		result["external_port"] = *v.ExternalPort
-
-		results = append(results, result)
+		results = append(results, flattenPublishedService(v))
 	}
 
-	return results
+	return schema.NewSet(publishedServiceHash, results)
+}
+
+func flattenPublishedService(v skytap.PublishedService) map[string]interface{} {
+	result := make(map[string]interface{})
+	result["id"] = *v.ID
+	result["internal_port"] = *v.InternalPort
+	result["external_ip"] = *v.ExternalIP
+	result["external_port"] = *v.ExternalPort
+	return result
 }

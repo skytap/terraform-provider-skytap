@@ -3,6 +3,7 @@ package skytap
 import (
 	"fmt"
 	"log"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/acctest"
@@ -48,6 +49,12 @@ func testSweepSkytapEnvironment(region string) error {
 
 func TestAccSkytapEnvironment_Basic(t *testing.T) {
 	//t.Parallel()
+
+	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
+		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_environment_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=1473407")
+		os.Setenv("SKYTAP_TEMPLATE_ID", "1473407")
+	}
+
 	uniqueSuffix := acctest.RandInt()
 	var environment skytap.Environment
 
@@ -57,7 +64,7 @@ func TestAccSkytapEnvironment_Basic(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapEnvironmentConfig_basic(uniqueSuffix, "1448141"),
+				Config: testAccSkytapEnvironmentConfig_basic(uniqueSuffix, os.Getenv("SKYTAP_TEMPLATE_ID")),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapEnvironmentExists("skytap_environment.foo", &environment),
 					resource.TestCheckResourceAttr("skytap_environment.foo", "name", fmt.Sprintf("tftest-environment-%d", uniqueSuffix)),
@@ -77,6 +84,16 @@ func TestAccSkytapEnvironment_Basic(t *testing.T) {
 
 func TestAccSkytapEnvironment_UpdateTemplate(t *testing.T) {
 	//t.Parallel()
+
+	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
+		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_environment_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=1473407")
+		os.Setenv("SKYTAP_TEMPLATE_ID", "1473407")
+	}
+	if os.Getenv("SKYTAP_TEMPLATE_ID2") == "" {
+		log.Printf("[WARN] SKYTAP_TEMPLATE_ID2 required to run skytap_environment_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID2=1473347")
+		os.Setenv("SKYTAP_TEMPLATE_ID2", "1473347")
+	}
+
 	rInt := acctest.RandInt()
 	var environment skytap.Environment
 
@@ -86,13 +103,13 @@ func TestAccSkytapEnvironment_UpdateTemplate(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapEnvironmentConfig_basic(rInt, "1448141"),
+				Config: testAccSkytapEnvironmentConfig_basic(rInt, os.Getenv("SKYTAP_TEMPLATE_ID")),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapEnvironmentExists("skytap_environment.foo", &environment),
 				),
 			},
 			{
-				Config: testAccSkytapEnvironmentConfig_basic(rInt, "1442921"),
+				Config: testAccSkytapEnvironmentConfig_basic(rInt, os.Getenv("SKYTAP_TEMPLATE_ID2")),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapEnvironmentAfterTemplateChanged("skytap_environment.foo", &environment),
 				),
@@ -176,7 +193,7 @@ func testAccCheckSkytapEnvironmentDestroy(s *terraform.State) error {
 func testAccSkytapEnvironmentConfig_basic(uniqueSuffix int, templateID string) string {
 	return fmt.Sprintf(`
       resource "skytap_environment" "foo" {
-	    template_id = %s
+	    template_id = "%s"
 	    name = "tftest-environment-%d"
 	    description = "This is an environment created by the skytap terraform provider acceptance test"
       }`, templateID, uniqueSuffix)

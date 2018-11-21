@@ -5,6 +5,11 @@ import (
 	"github.com/hashicorp/terraform/terraform"
 )
 
+const (
+	minTimeout = 10
+	delay      = 10
+)
+
 // Provider returns a schema.Provider for Skytap.
 func Provider() terraform.ResourceProvider {
 	p := &schema.Provider{

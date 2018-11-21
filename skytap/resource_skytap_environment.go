@@ -19,9 +19,6 @@ func resourceSkytapEnvironment() *schema.Resource {
 		Read:   resourceSkytapEnvironmentRead,
 		Update: resourceSkytapEnvironmentUpdate,
 		Delete: resourceSkytapEnvironmentDelete,
-		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
-		},
 
 		Schema: map[string]*schema.Schema{
 			"template_id": {
@@ -137,8 +134,8 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 		Target:     environmentTargetCreateRunstates,
 		Refresh:    environmentCreateRunstateRefreshFunc(d, meta),
 		Timeout:    d.Timeout(schema.TimeoutUpdate),
-		MinTimeout: 10 * time.Second,
-		Delay:      10 * time.Second,
+		MinTimeout: minTimeout * time.Second,
+		Delay:      delay * time.Second,
 	}
 
 	log.Printf("[INFO] Waiting for environment (%s) to complete", d.Id())
@@ -241,8 +238,8 @@ func waitForEnvironmentReady(d *schema.ResourceData, meta interface{}, environme
 		Target:     environmentTargetUpdateRunstates,
 		Refresh:    environmentUpdateRunstateRefreshFunc(meta, environmentID),
 		Timeout:    d.Timeout(schema.TimeoutUpdate),
-		MinTimeout: 10 * time.Second,
-		Delay:      10 * time.Second,
+		MinTimeout: minTimeout * time.Second,
+		Delay:      delay * time.Second,
 	}
 
 	log.Printf("[INFO] Waiting for environment (%s) to complete", environmentID)
@@ -277,8 +274,8 @@ func resourceSkytapEnvironmentDelete(d *schema.ResourceData, meta interface{}) e
 		Target:     []string{"true"},
 		Refresh:    environmentDeleteRefreshFunc(d, meta),
 		Timeout:    d.Timeout(schema.TimeoutUpdate),
-		MinTimeout: 10 * time.Second,
-		Delay:      10 * time.Second,
+		MinTimeout: minTimeout * time.Second,
+		Delay:      delay * time.Second,
 	}
 
 	log.Printf("[INFO] Waiting for environment (%s) to complete", d.Id())

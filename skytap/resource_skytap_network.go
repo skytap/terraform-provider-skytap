@@ -17,9 +17,6 @@ func resourceSkytapNetwork() *schema.Resource {
 		Read:   resourceSkytapNetworkRead,
 		Update: resourceSkytapNetworkUpdate,
 		Delete: resourceSkytapNetworkDelete,
-		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
-		},
 
 		Schema: map[string]*schema.Schema{
 			"environment_id": {
@@ -191,6 +188,9 @@ func resourceSkytapNetworkDelete(d *schema.ResourceData, meta interface{}) error
 		}
 
 		return fmt.Errorf("error deleting network (%s): %v", id, err)
+	}
+	if err = waitForEnvironmentReady(d, meta, environmentID); err != nil {
+		return err
 	}
 
 	log.Printf("[INFO] network destroyed: %s", id)

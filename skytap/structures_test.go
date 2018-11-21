@@ -44,6 +44,7 @@ const exampleInterfaceListResponse = `[
         "vm_id": "37527239",
         "vm_name": "Windows Server 2016 Standard",
         "status": "Running",
+        "network_id": "23917287",
         "nic_type": "e1000",
         "secondary_ips": [],
         "public_ip_attachments": []
@@ -74,7 +75,9 @@ func TestFlattenInterfaces(t *testing.T) {
 	var interfaces []skytap.Interface
 	json.Unmarshal([]byte(exampleInterfaceListResponse), &interfaces)
 	var networkInterfaces = make([]map[string]interface{}, 0)
-	networkInterfaces = flattenInterfaces(interfaces)
+	for _, v := range interfaces {
+		networkInterfaces = append(networkInterfaces, flattenNetworkInterface(v))
+	}
 	assert.True(t, len(networkInterfaces) == 2, fmt.Sprintf("expecting: %d but received: %d", 2, len(networkInterfaces)))
 	for i := 0; i < len(networkInterfaces); i++ {
 		networkInterface := networkInterfaces[i]
@@ -96,7 +99,9 @@ func TestFlattenPublishedServices(t *testing.T) {
 	var services []skytap.PublishedService
 	json.Unmarshal([]byte(examplePublishedServiceListResponse), &services)
 	var publishedServices = make([]map[string]interface{}, 0)
-	publishedServices = flattenPublishedServices(services)
+	for _, v := range services {
+		publishedServices = append(publishedServices, flattenPublishedService(v))
+	}
 	assert.True(t, len(publishedServices) == 2, fmt.Sprintf("expecting: %d but received: %d", 2, len(publishedServices)))
 	for i := 0; i < len(publishedServices); i++ {
 		publishedService := publishedServices[i]

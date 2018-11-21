@@ -18,9 +18,6 @@ func resourceSkytapProject() *schema.Resource {
 		Read:   resourceSkytapProjectRead,
 		Update: resourceSkytapProjectUpdate,
 		Delete: resourceSkytapProjectDelete,
-		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
-		},
 
 		Schema: map[string]*schema.Schema{
 			"name": {

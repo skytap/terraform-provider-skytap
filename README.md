@@ -22,8 +22,10 @@ Requirements
 
 Usage
 ---------------------
-
-If you're building the provider, follow the instructions to [install it as a plugin.](https://www.terraform.io/docs/plugins/basics.html#installing-a-plugin) After placing it into your plugins directory,  run `terraform init` to initialize it.
+```
+provider "skytap" {
+}
+```
 
 Building The Provider
 ---------------------
@@ -44,7 +46,9 @@ $ make build
 
 Using the provider
 ----------------------
-## Fill in for each provider
+If you're building the provider, follow the instructions to [install it as a plugin.](https://www.terraform.io/docs/plugins/basics.html#installing-a-plugin)
+After placing it into your plugins directory,  run `terraform init` to initialize it.
+Documentation about the provider specific configuration options can be found on the [provider's website](https://www.terraform.io/docs/providers/skytap/index.html).
 
 Developing the Provider
 ---------------------------

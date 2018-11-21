@@ -3,6 +3,7 @@ package skytap
 import (
 	"fmt"
 	"log"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/acctest"
@@ -14,7 +15,6 @@ import (
 
 const (
 	networkEnvironmentPrefix = "tftest-net"
-	testTemplate             = "1448141"
 )
 
 func init() {
@@ -53,6 +53,12 @@ func testSweepSkytapNetwork(region string) error {
 
 func TestAccSkytapNetwork_Basic(t *testing.T) {
 	//t.Parallel()
+
+	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
+		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_network_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=1473407")
+		os.Setenv("SKYTAP_TEMPLATE_ID", "1473407")
+	}
+
 	uniqueSuffixEnv := acctest.RandInt()
 	uniqueSuffixNet := acctest.RandInt()
 	var network skytap.Network
@@ -63,7 +69,7 @@ func TestAccSkytapNetwork_Basic(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapNetworkConfig_basic(testTemplate, uniqueSuffixEnv, uniqueSuffixNet, "skytap.io", "192.168.1.0/24", "", true),
+				Config: testAccSkytapNetworkConfig_basic(os.Getenv("SKYTAP_TEMPLATE_ID"), uniqueSuffixEnv, uniqueSuffixNet, "skytap.io", "192.168.1.0/24", "", true),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapNetworkExists("skytap_environment.foo", "skytap_network.bar", &network),
 					resource.TestCheckResourceAttrSet("skytap_network.bar", "environment_id"),
@@ -80,6 +86,12 @@ func TestAccSkytapNetwork_Basic(t *testing.T) {
 
 func TestAccSkytapNetwork_Update(t *testing.T) {
 	//t.Parallel()
+
+	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
+		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_network_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=1473407")
+		os.Setenv("SKYTAP_TEMPLATE_ID", "1473407")
+	}
+
 	uniqueSuffixEnv := acctest.RandInt()
 	uniqueSuffixInitial := acctest.RandInt()
 	uniqueSuffixUpdate := acctest.RandInt()
@@ -91,7 +103,7 @@ func TestAccSkytapNetwork_Update(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapNetworkConfig_basic(testTemplate, uniqueSuffixEnv, uniqueSuffixInitial, "skytap.io", "192.168.1.0/24", "gateway = \"192.168.1.1\"", true),
+				Config: testAccSkytapNetworkConfig_basic(os.Getenv("SKYTAP_TEMPLATE_ID"), uniqueSuffixEnv, uniqueSuffixInitial, "skytap.io", "192.168.1.0/24", "gateway = \"192.168.1.1\"", true),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapNetworkExists("skytap_environment.foo", "skytap_network.bar", &network),
 					resource.TestCheckResourceAttr("skytap_network.bar", "name", fmt.Sprintf("tftest-network-%d", uniqueSuffixInitial)),
@@ -102,7 +114,7 @@ func TestAccSkytapNetwork_Update(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSkytapNetworkConfig_basic(testTemplate, uniqueSuffixEnv, uniqueSuffixUpdate, "skytap.com", "192.168.2.0/24", "gateway = \"192.168.2.1\"", false),
+				Config: testAccSkytapNetworkConfig_basic(os.Getenv("SKYTAP_TEMPLATE_ID"), uniqueSuffixEnv, uniqueSuffixUpdate, "skytap.com", "192.168.2.0/24", "gateway = \"192.168.2.1\"", false),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapNetworkExists("skytap_environment.foo", "skytap_network.bar", &network),
 					resource.TestCheckResourceAttr("skytap_network.bar", "name", fmt.Sprintf("tftest-network-%d", uniqueSuffixUpdate)),
@@ -146,7 +158,7 @@ func testAccCheckSkytapNetworkExists(environmentName string, networkName string,
 func testAccSkytapNetworkConfig_basic(templateID string, uniqueSuffixEnv int, uniqueSuffixNet int, domain string, subnet string, gateway string, tunnelable bool) string {
 	return fmt.Sprintf(`
 	resource "skytap_environment" "foo" {
-		template_id = %s
+		template_id = "%s"
 		name 		= "%s-environment-%d"
 		description = "This is an environment to support a network skytap terraform provider acceptance test"
 	}
