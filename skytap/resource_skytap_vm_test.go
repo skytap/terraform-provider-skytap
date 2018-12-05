@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/skytap/skytap-sdk-go/skytap"
-	"github.com/skytap/terraform-provider-skytap/skytap/utils"
+	"github.com/terraform-providers/terraform-provider-skytap/skytap/utils"
 )
 
 const (
@@ -415,7 +415,7 @@ func TestAccCasandra(t *testing.T) {
 }
 
 func testAccSkytapVMConfig_cassandra(templateID string, vmID string, uniqueSuffixEnv int, existingPort int, extraPublishedService string, extraNIC string) string {
-	config := fmt.Sprintf(`   
+	config := fmt.Sprintf(`
 
     resource "skytap_environment" "my_new_environment" {
       "name" = "%s-environment-%d"

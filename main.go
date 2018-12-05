@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/hashicorp/terraform/plugin"
-	"github.com/skytap/terraform-provider-skytap/skytap"
+	"github.com/terraform-providers/terraform-provider-skytap/skytap"
 )
 
 func main() {

@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/skytap/skytap-sdk-go/skytap"
-	"github.com/skytap/terraform-provider-skytap/skytap/utils"
+	"github.com/terraform-providers/terraform-provider-skytap/skytap/utils"
 )
 
 func init() {

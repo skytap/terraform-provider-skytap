@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/skytap/terraform-provider-skytap.svg?branch=master)](https://travis-ci.org/skytap/terraform-provider-skytap)
+[![Build Status](https://travis-ci.org/terraform-providers/terraform-provider-skytap.svg?branch=master)](https://travis-ci.org/terraform-providers/terraform-provider-skytap)
 
 Terraform Provider for Skytap
 =============================
