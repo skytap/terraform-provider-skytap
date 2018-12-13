@@ -1,5 +1,6 @@
 TEST?=$$(go list ./... |grep -v 'vendor')
 GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
+GOIMPORT_FILES?=$$(find . -type f -name '*.go' -not -path './vendor/*')
 WEBSITE_REPO=github.com/hashicorp/terraform-website
 PKG_NAME=skytap
 
@@ -62,5 +63,8 @@ endif
 lint:
 	golint ./skytap/...
 
-.PHONY: build test testacc vet fmt fmtcheck errcheck vendor-status test-compile website website-test lint
+imports:
+	goimports -w $(GOIMPORT_FILES)
+
+.PHONY: build test testacc vet fmt fmtcheck errcheck vendor-status test-compile website website-test lint imports
 
