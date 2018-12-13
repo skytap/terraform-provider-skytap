@@ -236,7 +236,7 @@ func readTestFile(t *testing.T, name string) []byte {
 }
 
 func TestFlattenInterfacesPortMap(t *testing.T) {
-	expectedKeys := []string{"192_168_0_1:8080", "192_168_0_1:8081", "192_168_0_2:8080", "192_168_0_2:8081"}
+	expectedKeys := []string{"192-168-0-1_8080", "192-168-0-1_8081", "192-168-0-2_8080", "192-168-0-2_8081"}
 	expectedValues := []int{26160, 17785, 26160, 17785}
 
 	var portMap = make(map[string]interface{})
