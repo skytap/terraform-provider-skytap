@@ -173,7 +173,7 @@ func resourceSkytapVMCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	return updateVMResource(d, meta, false)
+	return updateVMResource(d, meta, true)
 }
 
 func waitForVMStopped(d *schema.ResourceData, meta interface{}) error {
