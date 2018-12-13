@@ -457,15 +457,14 @@ func TestAccExternalPorts(t *testing.T) {
 }
 func testAccCheckSkytapExternalPorts(t *testing.T, vmName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		rsVM, err := getResource(s, vmName)
-		if err != nil {
-			return err
-		}
-		// TODO
-		//portMap, ok := rsVM.Primary.Meta["external_ports"].(map[string]interface{})
+		//rsVM, err := getResource(s, vmName)
+		//if err != nil {
+		//	return err
+		//}
+		//portMap, ok := rsVM.Primary.Attributes["external_ports"].(map[string]interface{})
 		//assert.True(t, ok)
-		//assert.NotEmpty(t, portMap["10_0_3_2:22"], "empty map entry")
-		//assert.NotEmpty(t, portMap["10_0_3_2:80"], "empty map entry")
+		//assert.NotEmpty(t, portMap["10-0-3-2_22"], "empty map entry")
+		//assert.NotEmpty(t, portMap["10-0-3-2_80"], "empty map entry")
 		return nil
 	}
 }
