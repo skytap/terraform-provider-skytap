@@ -193,7 +193,7 @@ func TestFlattenInterfacesIPMap(t *testing.T) {
 	expectedKeys1 := []string{"192-168-0-1_8080", "192-168-0-1_8081", "192-168-0-2_8080", "192-168-0-2_8081"}
 	expectedValues1 := []string{"services-uswest.skytap.com", "services-useast.skytap.com", "services-uswest.skytap.com", "services-useast.skytap.com"}
 	expectedKeys2 := []string{"192-168-0-1_8080", "192-168-0-1_8081", "192-168-0-2_8080", "192-168-0-2_8081"}
-	expectedValues2 := []int{26160, 17785, 26160, 17785}
+	expectedValues2 := []string{"26160", "17785", "26160", "17785"}
 
 	var ipMaps = []map[string]interface{}{make(map[string]interface{}), make(map[string]interface{})}
 
@@ -205,15 +205,13 @@ func TestFlattenInterfacesIPMap(t *testing.T) {
 	}
 
 	count := 0
-	for key, value := range ipMaps[0] {
-		assert.Equal(t, expectedKeys1[count], key, "key")
-		assert.Equal(t, expectedValues1[count], value, "value")
+	for _, key := range expectedKeys1 {
+		assert.Equal(t, expectedValues1[count], ipMaps[0][key], "value")
 		count++
 	}
 	count = 0
-	for key, value := range ipMaps[1] {
-		assert.Equal(t, expectedKeys2[count], key, "key")
-		assert.Equal(t, expectedValues2[count], value, "value")
+	for _, key := range expectedKeys2 {
+		assert.Equal(t, expectedValues2[count], ipMaps[1][key], "value")
 		count++
 	}
 }

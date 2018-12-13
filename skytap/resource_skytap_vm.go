@@ -123,7 +123,7 @@ func resourceSkytapVM() *schema.Resource {
 			"external_ports": {
 				Type:     schema.TypeMap,
 				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeInt},
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 		},
 	}
