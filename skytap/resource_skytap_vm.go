@@ -3,11 +3,11 @@ package skytap
 import (
 	"bytes"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
-	"github.com/hashicorp/terraform/helper/hashcode"
 	"log"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
@@ -114,6 +114,11 @@ func resourceSkytapVM() *schema.Resource {
 						},
 					},
 				},
+			},
+			"external_ports": {
+				Type:     schema.TypeMap,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeInt},
 			},
 		},
 	}
@@ -322,12 +327,16 @@ func resourceSkytapVMRead(d *schema.ResourceData, meta interface{}) error {
 	// If any of these attributes are changed, this VM will be rebuilt.
 	d.Set("environment_id", environmentID)
 	d.Set("name", vm.Name)
+	externalPortMap := make(map[string]interface{})
 	if len(vm.Interfaces) > 0 {
-		if err := d.Set("network_interface", flattenNetworkInterfaces(vm.Interfaces)); err != nil {
+		if err := d.Set("network_interface", flattenNetworkInterfaces(vm.Interfaces, externalPortMap)); err != nil {
 			log.Printf("[ERROR] error flattening network interfaces: %v", err)
 			return err
 		}
 	}
+
+	d.Set("external_ports", externalPortMap)
+
 	log.Printf("[INFO] retrieved VM: %#v", spew.Sdump(vm))
 
 	return nil

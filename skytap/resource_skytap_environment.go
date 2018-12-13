@@ -2,10 +2,10 @@ package skytap
 
 import (
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"log"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
