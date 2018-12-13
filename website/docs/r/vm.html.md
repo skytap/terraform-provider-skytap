@@ -21,7 +21,7 @@ Provides a Skytap Virtual Machine (VM) resource. The environment VM resource rep
 
 ```hcl
 # Create a new vm
-resource "skytap_vm" "vm" {
+resource "skytap_vm" "my_vm" {
   template_id = 123
   vm_id = 456
   environment_id = 789
@@ -43,7 +43,7 @@ resource "skytap_vm" "vm" {
   
   network_interface = {
      interface_type = "vmxnet3"
-     network_id = "${skytap_network.my_network}"
+     network_id = "${skytap_network.my_network.id}"
      ip = "10.0.0.1"
      hostname = "myhost"
       
@@ -52,6 +52,10 @@ resource "skytap_vm" "vm" {
     }
   }
 }
+output "external_svc_port" {
+    value = "${skytap_vm.my_vm.external_ports.10-0-0-1_80}"
+}
+
 ```
 
 ## Argument Reference
@@ -79,10 +83,11 @@ The following arguments are supported:
   * `network_id` - (Required, Force New) ID of the network that this network adapter is attached to.
   *	`ip` - (Required, Force New) The IP address (for example, 10.1.0.37). Skytap will not assign the same IP address to multiple interfaces on the same network.
   * `hostname` - (Required, Force New) Limited to 32 characters. Valid characters are lowercase letters, numbers, and hyphens. Cannot begin or end with hyphens. Cannot be `gw`.
-* `published_service` - (Optional, Force New) Generally, a published service represents a binding of a port on a network interface to an IP and port that is routable and accessible from the public Internet. This mechanism is used to selectively expose ports on the guest to the public Internet.
 
-  ~> **NOTE:** Published services exist and are managed as aspects of network interfaces—that is, as part of the overall environment element.
-  * `internal_port` - (Required, Force New) The port that is exposed on the interface. Typically this will be dictated by standard usage (e.g., port 80 for http traffic, port 22 for SSH).
+  * `published_service` - (Optional, Force New) Generally, a published service represents a binding of a port on a network interface to an IP and port that is routable and accessible from the public Internet. This mechanism is used to selectively expose ports on the guest to the public Internet.
+
+    ~> **NOTE:** Published services exist and are managed as aspects of network interfaces—that is, as part of the overall environment element.
+    * `internal_port` - (Required, Force New) The port that is exposed on the interface. Typically this will be dictated by standard usage (e.g., port 80 for http traffic, port 22 for SSH).
 
 ## Attributes Reference
 
@@ -100,3 +105,4 @@ The following attributes are exported:
   * `id`: The published service's ID.
   * `external_id`: The published service's external ID.
   * `external_port`: Each published service's external port.
+* `external_ports`: A map of external ports. The key is the internal IP address together with the internal port number - as defined in the `network_interface` block.
