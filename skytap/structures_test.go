@@ -139,13 +139,13 @@ func TestFlattenInterfaces(t *testing.T) {
 	expected["ip"] = []string{"192.168.0.1", "192.168.0.2"}
 	expected["hostname"] = []string{"wins2016s", "wins2016s2"}
 
-	var portMap = make(map[string]interface{})
+	var ipMaps = []map[string]interface{}{make(map[string]interface{}), make(map[string]interface{})}
 
 	var interfaces []skytap.Interface
 	json.Unmarshal([]byte(exampleInterfaceListResponse), &interfaces)
 	var networkInterfaces = make([]map[string]interface{}, 0)
 	for _, v := range interfaces {
-		networkInterfaces = append(networkInterfaces, flattenNetworkInterface(v, portMap))
+		networkInterfaces = append(networkInterfaces, flattenNetworkInterface(v, ipMaps))
 	}
 	assert.True(t, len(networkInterfaces) == 2, fmt.Sprintf("expecting: %d but received: %d", 2, len(networkInterfaces)))
 	for i := 0; i < len(networkInterfaces); i++ {
@@ -165,13 +165,13 @@ func TestFlattenPublishedServices(t *testing.T) {
 	expected["external_ip"] = []string{"services-uswest.skytap.com", "services-useast.skytap.com"}
 	expected["external_port"] = []string{"26160", "17785"}
 
-	var portMap = make(map[string]interface{})
+	var ipMaps = []map[string]interface{}{make(map[string]interface{}), make(map[string]interface{})}
 
 	var services []skytap.PublishedService
 	json.Unmarshal([]byte(examplePublishedServiceListResponse), &services)
 	var publishedServices = make([]map[string]interface{}, 0)
 	for _, v := range services {
-		publishedServices = append(publishedServices, flattenPublishedService(v, "", portMap))
+		publishedServices = append(publishedServices, flattenPublishedService(v, "", ipMaps))
 	}
 	assert.True(t, len(publishedServices) == 2, fmt.Sprintf("expecting: %d but received: %d", 2, len(publishedServices)))
 	for i := 0; i < len(publishedServices); i++ {
@@ -189,23 +189,31 @@ func TestFlattenPublishedServices(t *testing.T) {
 	}
 }
 
-func TestFlattenInterfacesPortMap(t *testing.T) {
-	expectedKeys := []string{"192-168-0-1_8080", "192-168-0-1_8081", "192-168-0-2_8080", "192-168-0-2_8081"}
-	expectedValues := []int{26160, 17785, 26160, 17785}
+func TestFlattenInterfacesIPMap(t *testing.T) {
+	expectedKeys1 := []string{"192-168-0-1_8080", "192-168-0-1_8081", "192-168-0-2_8080", "192-168-0-2_8081"}
+	expectedValues1 := []string{"services-uswest.skytap.com", "services-useast.skytap.com", "services-uswest.skytap.com", "services-useast.skytap.com"}
+	expectedKeys2 := []string{"192-168-0-1_8080", "192-168-0-1_8081", "192-168-0-2_8080", "192-168-0-2_8081"}
+	expectedValues2 := []int{26160, 17785, 26160, 17785}
 
-	var portMap = make(map[string]interface{})
+	var ipMaps = []map[string]interface{}{make(map[string]interface{}), make(map[string]interface{})}
 
 	var interfaces []skytap.Interface
 	json.Unmarshal([]byte(exampleInterfaceAndPortsListResponse), &interfaces)
 	var networkInterfaces = make([]map[string]interface{}, 0)
 	for _, v := range interfaces {
-		networkInterfaces = append(networkInterfaces, flattenNetworkInterface(v, portMap))
+		networkInterfaces = append(networkInterfaces, flattenNetworkInterface(v, ipMaps))
 	}
 
 	count := 0
-	for key, value := range portMap {
-		assert.Equal(t, expectedKeys[count], key, "key")
-		assert.Equal(t, expectedValues[count], value, "value")
+	for key, value := range ipMaps[0] {
+		assert.Equal(t, expectedKeys1[count], key, "key")
+		assert.Equal(t, expectedValues1[count], value, "value")
+		count++
+	}
+	count = 0
+	for key, value := range ipMaps[1] {
+		assert.Equal(t, expectedKeys2[count], key, "key")
+		assert.Equal(t, expectedValues2[count], value, "value")
 		count++
 	}
 }

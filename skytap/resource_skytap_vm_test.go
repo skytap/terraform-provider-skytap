@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/skytap/skytap-sdk-go/skytap"
+	"github.com/stretchr/testify/assert"
 	"github.com/terraform-providers/terraform-provider-skytap/skytap/utils"
 )
 
@@ -455,20 +456,6 @@ func TestAccExternalPorts(t *testing.T) {
 		},
 	})
 }
-func testAccCheckSkytapExternalPorts(t *testing.T, vmName string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		//rsVM, err := getResource(s, vmName)
-		//if err != nil {
-		//	return err
-		//}
-		//portMap, ok := rsVM.Primary.Attributes["external_ports"].(map[string]interface{})
-		//assert.True(t, ok)
-		//assert.NotEmpty(t, portMap["10-0-3-2_22"], "empty map entry")
-		//assert.NotEmpty(t, portMap["10-0-3-2_80"], "empty map entry")
-		return nil
-	}
-}
-
 func testAccSkytapVMConfig_cassandra(templateID string, vmID string, uniqueSuffixEnv int, existingPort int, extraPublishedService string, extraNIC string) string {
 	config := fmt.Sprintf(`
 
@@ -703,6 +690,18 @@ func testAccCheckSkytapVMRunning(vm *skytap.VM) resource.TestCheckFunc {
 		if skytap.VMRunstateRunning != *vm.Runstate {
 			return fmt.Errorf("vm (%s) is not running as expected", *vm.ID)
 		}
+		return nil
+	}
+}
+
+func testAccCheckSkytapExternalPorts(t *testing.T, vmName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rsVM, err := getResource(s, vmName)
+		if err != nil {
+			return err
+		}
+		assert.Equal(t, "4", rsVM.Primary.Attributes["external_ips.%"], "empty map entry")
+		assert.Equal(t, "4", rsVM.Primary.Attributes["external_ports.%"], "empty map entry")
 		return nil
 	}
 }

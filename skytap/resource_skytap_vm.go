@@ -115,6 +115,11 @@ func resourceSkytapVM() *schema.Resource {
 					},
 				},
 			},
+			"external_ips": {
+				Type:     schema.TypeMap,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"external_ports": {
 				Type:     schema.TypeMap,
 				Computed: true,
@@ -168,7 +173,7 @@ func resourceSkytapVMCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	return updateVMResource(d, meta, true)
+	return updateVMResource(d, meta, false)
 }
 
 func waitForVMStopped(d *schema.ResourceData, meta interface{}) error {
@@ -327,15 +332,16 @@ func resourceSkytapVMRead(d *schema.ResourceData, meta interface{}) error {
 	// If any of these attributes are changed, this VM will be rebuilt.
 	d.Set("environment_id", environmentID)
 	d.Set("name", vm.Name)
-	externalPortMap := make(map[string]interface{})
+
 	if len(vm.Interfaces) > 0 {
-		if err := d.Set("network_interface", flattenNetworkInterfaces(vm.Interfaces, externalPortMap)); err != nil {
+		var ipMaps = []map[string]interface{}{make(map[string]interface{}), make(map[string]interface{})}
+		if err := d.Set("network_interface", flattenNetworkInterfaces(vm.Interfaces, ipMaps)); err != nil {
 			log.Printf("[ERROR] error flattening network interfaces: %v", err)
 			return err
 		}
+		d.Set("external_ips", ipMaps[0])
+		d.Set("external_ports", ipMaps[1])
 	}
-
-	d.Set("external_ports", externalPortMap)
 
 	log.Printf("[INFO] retrieved VM: %#v", spew.Sdump(vm))
 
