@@ -403,6 +403,70 @@ func TestAccSkytapVM_PublishedServiceBadNic(t *testing.T) {
 	})
 }
 
+func TestAccExternalPorts(t *testing.T) {
+
+	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
+		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=1473407")
+		err := os.Setenv("SKYTAP_TEMPLATE_ID", "1473407")
+		assert.NoError(t, err)
+	}
+	if os.Getenv("SKYTAP_VM_ID") == "" {
+		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=37865463")
+		err := os.Setenv("SKYTAP_VM_ID", "37865463")
+		assert.NoError(t, err)
+	}
+	newEnvTemplateID := os.Getenv("SKYTAP_TEMPLATE_ID")
+	if os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID") != "" {
+		newEnvTemplateID = os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID")
+		log.Printf("[DEBUG] SKYTAP_TEMPLATE_NEW_ENV_ID=%s", newEnvTemplateID)
+	}
+
+	uniqueSuffixEnv := acctest.RandInt()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSkytapVMConfig_cassandra(newEnvTemplateID, os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), uniqueSuffixEnv, 23,
+					`"published_service" = {"internal_port" = 8080}`,
+					`"network_interface" = {
+    	              "interface_type" = "vmxnet3"
+        	          "network_id"     = "${skytap_network.dev_network.id}"
+        	          "ip"         = "10.0.3.2"
+                      "hostname" = "myhost2"
+
+        	          "published_service" = {
+          	            "internal_port" = 22
+        	          }
+        	          "published_service" = {
+          	            "internal_port" = 80
+        	          }
+      	            }`),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapExternalPorts(t, "skytap_vm.cassandra1"),
+				),
+			},
+		},
+	})
+}
+
+func testAccCheckSkytapExternalPorts(t *testing.T, vmName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rsVM, err := getResource(s, vmName)
+		if err != nil {
+			return err
+		}
+		// TODO
+		//portMap, ok := rsVM.Primary.Meta["external_ports"].(map[string]interface{})
+		//assert.True(t, ok)
+		//assert.NotEmpty(t, portMap["10_0_3_2:22"], "empty map entry")
+		//assert.NotEmpty(t, portMap["10_0_3_2:80"], "empty map entry")
+		return nil
+	}
+}
+
 func TestAccCasandra(t *testing.T) {
 
 	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {

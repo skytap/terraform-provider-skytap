@@ -68,17 +68,86 @@ const examplePublishedServiceListResponse = `[
     }
 ]`
 
+const exampleInterfaceAndPortsListResponse = `[
+    {
+        "id": "nic-20246343-38367563-0",
+        "ip": "192.168.0.1",
+        "hostname": "wins2016s",
+        "mac": "00:50:56:11:7D:D9",
+        "services_count": 0,
+        "services": [
+	    {
+            "id": "8080",
+            "internal_port": 8080,
+            "external_ip": "services-uswest.skytap.com",
+            "external_port": 26160
+        },
+        {
+            "id": "8081",
+            "internal_port": 8081,
+            "external_ip": "services-useast.skytap.com",
+            "external_port": 17785
+    	}
+        ],
+        "public_ips_count": 0,
+        "public_ips": [],
+        "vm_id": "37527239",
+        "vm_name": "Windows Server 2016 Standard",
+        "status": "Running",
+        "network_id": "23917287",
+        "network_name": "tftest-network-1",
+        "network_url": "https://cloud.skytap.com/v2/configurations/40064014/networks/23917287",
+        "network_type": "automatic",
+        "network_subnet": "192.168.0.0/16",
+        "nic_type": "vmxnet3",
+        "secondary_ips": [],
+        "public_ip_attachments": []
+    },
+    {
+        "id": "nic-20246343-38367563-5",
+        "ip": "192.168.0.2",
+        "hostname": "wins2016s2",
+        "mac": "00:50:56:07:40:3F",
+        "services_count": 0,
+        "services": [
+	    {
+            "id": "8080",
+            "internal_port": 8080,
+            "external_ip": "services-uswest.skytap.com",
+            "external_port": 26160
+        },
+        {
+            "id": "8081",
+            "internal_port": 8081,
+            "external_ip": "services-useast.skytap.com",
+            "external_port": 17785
+    	}
+        ],
+        "public_ips_count": 0,
+        "public_ips": [],
+        "vm_id": "37527239",
+        "vm_name": "Windows Server 2016 Standard",
+        "status": "Running",
+        "network_id": "23917287",
+        "nic_type": "e1000",
+        "secondary_ips": [],
+        "public_ip_attachments": []
+    }
+]`
+
 func TestFlattenInterfaces(t *testing.T) {
 
 	expected := make(map[string][]string)
 	expected["ip"] = []string{"192.168.0.1", "192.168.0.2"}
 	expected["hostname"] = []string{"wins2016s", "wins2016s2"}
 
+	var portMap = make(map[string]interface{})
+
 	var interfaces []skytap.Interface
 	json.Unmarshal([]byte(exampleInterfaceListResponse), &interfaces)
 	var networkInterfaces = make([]map[string]interface{}, 0)
 	for _, v := range interfaces {
-		networkInterfaces = append(networkInterfaces, flattenNetworkInterface(v))
+		networkInterfaces = append(networkInterfaces, flattenNetworkInterface(v, portMap))
 	}
 	assert.True(t, len(networkInterfaces) == 2, fmt.Sprintf("expecting: %d but received: %d", 2, len(networkInterfaces)))
 	for i := 0; i < len(networkInterfaces); i++ {
@@ -98,11 +167,13 @@ func TestFlattenPublishedServices(t *testing.T) {
 	expected["external_ip"] = []string{"services-uswest.skytap.com", "services-useast.skytap.com"}
 	expected["external_port"] = []string{"26160", "17785"}
 
+	var portMap = make(map[string]interface{})
+
 	var services []skytap.PublishedService
 	json.Unmarshal([]byte(examplePublishedServiceListResponse), &services)
 	var publishedServices = make([]map[string]interface{}, 0)
 	for _, v := range services {
-		publishedServices = append(publishedServices, flattenPublishedService(v))
+		publishedServices = append(publishedServices, flattenPublishedService(v, "", portMap))
 	}
 	assert.True(t, len(publishedServices) == 2, fmt.Sprintf("expecting: %d but received: %d", 2, len(publishedServices)))
 	for i := 0; i < len(publishedServices); i++ {
@@ -162,4 +233,25 @@ func readTestFile(t *testing.T, name string) []byte {
 		t.Fatal(err)
 	}
 	return bytes
+}
+
+func TestFlattenInterfacesPortMap(t *testing.T) {
+	expectedKeys := []string{"192_168_0_1:8080", "192_168_0_1:8081", "192_168_0_2:8080", "192_168_0_2:8081"}
+	expectedValues := []int{26160, 17785, 26160, 17785}
+
+	var portMap = make(map[string]interface{})
+
+	var interfaces []skytap.Interface
+	json.Unmarshal([]byte(exampleInterfaceAndPortsListResponse), &interfaces)
+	var networkInterfaces = make([]map[string]interface{}, 0)
+	for _, v := range interfaces {
+		networkInterfaces = append(networkInterfaces, flattenNetworkInterface(v, portMap))
+	}
+
+	count := 0
+	for key, value := range portMap {
+		assert.Equal(t, expectedKeys[count], key, "key")
+		assert.Equal(t, expectedValues[count], value, "value")
+		count++
+	}
 }

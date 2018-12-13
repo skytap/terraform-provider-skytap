@@ -183,6 +183,11 @@ func resourceSkytapVM() *schema.Resource {
 					},
 				},
 			},
+			"external_ports": {
+				Type:     schema.TypeMap,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeInt},
+			},
 		},
 	}
 }
@@ -447,12 +452,15 @@ func resourceSkytapVMRead(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
+	externalPortMap := make(map[string]interface{})
 	if len(vm.Interfaces) > 0 {
-		if err := d.Set("network_interface", flattenNetworkInterfaces(vm.Interfaces)); err != nil {
+		if err := d.Set("network_interface", flattenNetworkInterfaces(vm.Interfaces, externalPortMap)); err != nil {
 			log.Printf("[ERROR] error flattening network interfaces: %v", err)
 			return err
 		}
 	}
+
+	d.Set("external_ports", externalPortMap)
 
 	if len(vm.Hardware.Disks) > 0 {
 		err = d.Set("os_disk_size", *vm.Hardware.Disks[0].Size)
