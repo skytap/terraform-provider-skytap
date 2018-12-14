@@ -463,15 +463,15 @@ func updateVMResourceOptions(d *schema.ResourceData, client *skytap.VMsService, 
 		}
 		// check max cpu property
 		if opts.Hardware.CPUs != nil && *opts.Hardware.CPUs > *vm.Hardware.MaxCPUs {
-			return fmt.Errorf("the 'CPUs' argument has been assigned %d which is more " +
+			return fmt.Errorf("the 'CPUs' argument has been assigned %d which is more "+
 				"than the maximum allowed (%d) as defined by this VM",
-				*opts.Hardware.CPUs , *vm.Hardware.MaxCPUs)
+				*opts.Hardware.CPUs, *vm.Hardware.MaxCPUs)
 		}
 		// check max ram property
 		if opts.Hardware.RAM != nil && *opts.Hardware.RAM > *vm.Hardware.MaxRAM {
-			return fmt.Errorf("the 'RAM' argument has been assigned %d which is more " +
+			return fmt.Errorf("the 'RAM' argument has been assigned %d which is more "+
 				"than the maximum allowed (%d) as defined by this VM",
-				*opts.Hardware.RAM , *vm.Hardware.MaxRAM)
+				*opts.Hardware.RAM, *vm.Hardware.MaxRAM)
 		}
 	}
 
