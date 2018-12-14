@@ -2,6 +2,7 @@ package skytap
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -402,31 +403,9 @@ func updateVMResource(d *schema.ResourceData, meta interface{}, forceRunning boo
 	id := d.Id()
 
 	environmentID := d.Get("environment_id").(string)
-	{
-		opts := skytap.UpdateVMRequest{}
 
-		if v, ok := d.GetOk("name"); ok {
-			opts.Name = utils.String(v.(string))
-		}
-		if v, ok := d.GetOk("cpus"); ok {
-			if opts.Hardware == nil {
-				opts.Hardware = &skytap.UpdateHardware{}
-			}
-			opts.Hardware.CPUs = utils.Int(v.(int))
-		}
-		if v, ok := d.GetOk("ram"); ok {
-			if opts.Hardware == nil {
-				opts.Hardware = &skytap.UpdateHardware{}
-			}
-			opts.Hardware.RAM = utils.Int(v.(int))
-		}
-		log.Printf("[INFO] VM update options: %#v", spew.Sdump(opts))
-		vm, err := client.Update(ctx, environmentID, id, &opts)
-		if err != nil {
-			return fmt.Errorf("error updating vm (%s): %v", id, err)
-		}
-		log.Printf("[INFO] updated VM: %#v", spew.Sdump(vm))
-	}
+	err := updateVMResourceOptions(d, &client, &ctx, environmentID, id)
+
 	if forceRunning {
 		opts := skytap.UpdateVMRequest{}
 		opts.Runstate = utils.VMRunstate(skytap.VMRunstateRunning)
@@ -448,12 +427,40 @@ func updateVMResource(d *schema.ResourceData, meta interface{}, forceRunning boo
 	}
 
 	log.Printf("[INFO] Waiting for VM (%s) to complete", d.Id())
-	_, err := stateConf.WaitForState()
+	_, err = stateConf.WaitForState()
 	if err != nil {
 		return fmt.Errorf("error waiting for VM (%s) to complete: %s", d.Id(), err)
 	}
 
 	return resourceSkytapVMRead(d, meta)
+}
+
+func updateVMResourceOptions(d *schema.ResourceData, client *skytap.VMsService, ctx *context.Context, environmentID string, id string) error {
+	opts := skytap.UpdateVMRequest{}
+
+	if v, ok := d.GetOk("name"); ok {
+		opts.Name = utils.String(v.(string))
+	}
+	if v, ok := d.GetOk("cpus"); ok {
+		if opts.Hardware == nil {
+			opts.Hardware = &skytap.UpdateHardware{}
+		}
+		opts.Hardware.CPUs = utils.Int(v.(int))
+	}
+	if v, ok := d.GetOk("ram"); ok {
+		if opts.Hardware == nil {
+			opts.Hardware = &skytap.UpdateHardware{}
+		}
+		opts.Hardware.RAM = utils.Int(v.(int))
+	}
+	log.Printf("[INFO] VM update options: %#v", spew.Sdump(opts))
+	vm, err := (*client).Update(*ctx, environmentID, id, &opts)
+	if err != nil {
+		return fmt.Errorf("error updating vm (%s): %v", id, err)
+	}
+	log.Printf("[INFO] updated VM: %#v", spew.Sdump(vm))
+
+	return nil
 }
 
 func vmRunstateRefreshFunc(
