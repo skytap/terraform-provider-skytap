@@ -405,7 +405,9 @@ func updateVMResource(d *schema.ResourceData, meta interface{}, forceRunning boo
 	environmentID := d.Get("environment_id").(string)
 
 	err := updateVMResourceOptions(d, &client, &ctx, environmentID, id)
-
+	if err != nil {
+		return err
+	}
 	if forceRunning {
 		opts := skytap.UpdateVMRequest{}
 		opts.Runstate = utils.VMRunstate(skytap.VMRunstateRunning)
@@ -453,6 +455,26 @@ func updateVMResourceOptions(d *schema.ResourceData, client *skytap.VMsService, 
 		}
 		opts.Hardware.RAM = utils.Int(v.(int))
 	}
+
+	if opts.Hardware != nil {
+		vm, err := (*client).Get(*ctx, environmentID, id)
+		if err != nil {
+			return err
+		}
+		// check max cpu property
+		if opts.Hardware.CPUs != nil && *opts.Hardware.CPUs > *vm.Hardware.MaxCPUs {
+			return fmt.Errorf("the 'CPUs' argument has been assigned %d which is more " +
+				"than the maximum allowed (%d) as defined by this VM",
+				*opts.Hardware.CPUs , *vm.Hardware.MaxCPUs)
+		}
+		// check max ram property
+		if opts.Hardware.RAM != nil && *opts.Hardware.RAM > *vm.Hardware.MaxRAM {
+			return fmt.Errorf("the 'RAM' argument has been assigned %d which is more " +
+				"than the maximum allowed (%d) as defined by this VM",
+				*opts.Hardware.RAM , *vm.Hardware.MaxRAM)
+		}
+	}
+
 	log.Printf("[INFO] VM update options: %#v", spew.Sdump(opts))
 	vm, err := (*client).Update(*ctx, environmentID, id, &opts)
 	if err != nil {

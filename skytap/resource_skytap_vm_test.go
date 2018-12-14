@@ -419,12 +419,12 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 	//t.Parallel()
 
 	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=1497575")
-		os.Setenv("SKYTAP_TEMPLATE_ID", "1497575")
+		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=1473407")
+		os.Setenv("SKYTAP_TEMPLATE_ID", "1473407")
 	}
 	if os.Getenv("SKYTAP_VM_ID") == "" {
-		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=39084167")
-		os.Setenv("SKYTAP_VM_ID", "39084167")
+		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=37865463")
+		os.Setenv("SKYTAP_VM_ID", "37865463")
 	}
 
 	uniqueSuffixEnv := acctest.RandInt()
@@ -473,12 +473,12 @@ func TestAccSkytapVMCPU_Invalid(t *testing.T) {
 	//t.Parallel()
 
 	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=1496747")
-		os.Setenv("SKYTAP_TEMPLATE_ID", "1496747")
+		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=1473407")
+		os.Setenv("SKYTAP_TEMPLATE_ID", "1473407")
 	}
 	if os.Getenv("SKYTAP_VM_ID") == "" {
-		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=39055511")
-		os.Setenv("SKYTAP_VM_ID", "39055511")
+		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=37865463")
+		os.Setenv("SKYTAP_VM_ID", "37865463")
 	}
 
 	uniqueSuffixEnv := acctest.RandInt()
@@ -492,7 +492,36 @@ func TestAccSkytapVMCPU_Invalid(t *testing.T) {
 				Config: testAccSkytapVMConfig_basic(os.Getenv("SKYTAP_TEMPLATE_ID"), uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
 					`"cpus" = 121
 									"ram" = 819000000002`),
-				ExpectNonEmptyPlan: false,
+				ExpectError: regexp.MustCompile(`config is invalid: 2 problems:*`),
+			},
+		},
+	})
+}
+
+func TestAccSkytapVMCPU_OutOfRange(t *testing.T) {
+	//t.Parallel()
+
+	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
+		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=136409")
+		os.Setenv("SKYTAP_TEMPLATE_ID", "136409")
+	}
+	if os.Getenv("SKYTAP_VM_ID") == "" {
+		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=849656")
+		os.Setenv("SKYTAP_VM_ID", "849656")
+	}
+
+	uniqueSuffixEnv := acctest.RandInt()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSkytapVMConfig_basic(os.Getenv("SKYTAP_TEMPLATE_ID"), uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+					`"cpus" = 12
+									"ram" = 131072`),
+				ExpectError: regexp.MustCompile(`the 'CPUs' argument has been assigned 12 which is more than the maximum allowed \(8\) as defined by this VM`),
 			},
 		},
 	})
