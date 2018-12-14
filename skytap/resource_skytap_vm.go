@@ -123,7 +123,7 @@ func resourceSkytapVM() *schema.Resource {
 			"external_ports": {
 				Type:     schema.TypeMap,
 				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+				Elem:     &schema.Schema{Type: schema.TypeInt},
 			},
 		},
 	}
@@ -334,13 +334,13 @@ func resourceSkytapVMRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("name", vm.Name)
 
 	if len(vm.Interfaces) > 0 {
-		var ipMaps = []map[string]interface{}{make(map[string]interface{}), make(map[string]interface{})}
-		if err := d.Set("network_interface", flattenNetworkInterfaces(vm.Interfaces, ipMaps)); err != nil {
+		var publishedServices = []map[string]interface{}{make(map[string]interface{}), make(map[string]interface{})}
+		if err := d.Set("network_interface", flattenNetworkInterfaces(vm.Interfaces, publishedServices)); err != nil {
 			log.Printf("[ERROR] error flattening network interfaces: %v", err)
 			return err
 		}
-		d.Set("external_ips", ipMaps[0])
-		d.Set("external_ports", ipMaps[1])
+		d.Set("external_ips", publishedServices[0])
+		d.Set("external_ports", publishedServices[1])
 	}
 
 	log.Printf("[INFO] retrieved VM: %#v", spew.Sdump(vm))

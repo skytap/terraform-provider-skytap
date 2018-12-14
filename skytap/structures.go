@@ -51,6 +51,6 @@ func flattenPublishedService(v skytap.PublishedService, ip string, externalIPMap
 	result["external_port"] = *v.ExternalPort
 	key := strings.Replace(ip, ".", "-", -1) + "_" + strconv.Itoa(*v.InternalPort)
 	externalIPMaps[0][key] = *v.ExternalIP
-	externalIPMaps[1][key] = strconv.Itoa(*v.ExternalPort)
+	externalIPMaps[1][key] = *v.ExternalPort
 	return result
 }
