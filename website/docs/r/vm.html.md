@@ -58,5 +58,5 @@ The following attributes are exported:
 * `id`: The ID of the VM.
 * `published_service`: The published services.
   * `id`: The published service's ID.
-  * `external_id`: The published service's external ID.
+  * `external_ip`: The published service's external IP.
   * `external_port`: Each published service's external port.
