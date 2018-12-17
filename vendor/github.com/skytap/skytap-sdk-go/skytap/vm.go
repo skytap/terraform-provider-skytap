@@ -187,9 +187,20 @@ type UpdateVMRequest struct {
 	Hardware *UpdateHardware `json:"hardware,omitempty"`
 }
 
+// UpdateHardware describes the update data to update the VM cpu, ram and disks
 type UpdateHardware struct {
-	CPUs *int `json:"cpus,omitempty"`
-	RAM  *int `json:"ram,omitempty"`
+	CPUs     *int      `json:"cpus,omitempty"`
+	RAM      *int      `json:"ram,omitempty"`
+	NewDisks *NewDisks `json:"disks,omitempty"`
+}
+
+// NewDisks defines a list of new disks via the sizes
+type NewDisks struct {
+	Sizes []int `json:"new,omitempty"`
+}
+
+// RemoveDisk defines the disk to remove
+type RemoveDisk struct {
 }
 
 // VMListResult is the listing request specific struct
