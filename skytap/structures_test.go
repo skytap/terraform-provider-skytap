@@ -3,6 +3,8 @@ package skytap
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
 	"strconv"
 	"testing"
 
@@ -116,4 +118,52 @@ func TestFlattenPublishedServices(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestFlattenDisks(t *testing.T) {
+
+	expected := make(map[string][]string)
+	expected["id"] = []string{"disk-1-1-scsi-0-0", "disk-1-1-scsi-0-1", "disk-1-1-scsi-0-2"}
+	expected["size"] = []string{"5120", "5121", "5120"}
+	expected["type"] = []string{"SCSI", "SCSI", "SCSI"}
+	expected["controller"] = []string{"0", "0", "0"}
+	expected["lun"] = []string{"0", "1", "2"}
+	expected["name"] = []string{"one", "two", "three"}
+
+	var disks []skytap.Disk
+	err := json.Unmarshal([]byte(readTestFile(t, "disks.json")), &disks)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var diskResources = make([]map[string]interface{}, 0)
+	firstTime := make(map[int][]string)
+	otherTimes := make(map[string]string)
+	firstTime[5120] = []string{"one", "three"}
+	firstTime[5121] = []string{"two"}
+	for _, v := range disks {
+		diskResources = append(diskResources, flattenDisk(v, firstTime, otherTimes))
+	}
+	assert.True(t, len(diskResources) == 3, fmt.Sprintf("expecting: %d but received: %d", 3, len(diskResources)))
+	for i := 0; i < len(diskResources); i++ {
+		diskResource := diskResources[i]
+		for key, expect := range expected {
+			value := diskResource[key]
+			if intValue, ok := value.(int); ok {
+				value = strconv.Itoa(intValue)
+			} else if boolValue, ok := value.(bool); ok {
+				value = strconv.FormatBool(boolValue)
+			}
+			assert.Equal(t, expect[i], value,
+				fmt.Sprintf("expecting: %s but received: %s", expect[i], value))
+		}
+	}
+}
+
+func readTestFile(t *testing.T, name string) []byte {
+	path := filepath.Join("testdata", name) // relative path
+	bytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return bytes
 }
