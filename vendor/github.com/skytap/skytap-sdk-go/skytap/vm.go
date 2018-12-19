@@ -338,6 +338,9 @@ func (s *VMsServiceClient) updateHardware(ctx context.Context, environmentID str
 	runstate := currentVM.Runstate
 	if *runstate == VMRunstateRunning {
 		_, err = s.changeRunstate(ctx, environmentID, id, &UpdateVMRequest{Runstate: vmRunStateToPtr(VMRunstateStopped)})
+		if err != nil {
+			return nil, err
+		}
 		err = s.waitForRunstate(&ctx, environmentID, id, VMRunstateStopped)
 		if err != nil {
 			return nil, err
@@ -410,7 +413,6 @@ func (s *VMsServiceClient) updateHardware(ctx context.Context, environmentID str
 	// if stopped start
 	if *runstate == VMRunstateRunning {
 		_, err = s.changeRunstate(ctx, environmentID, id, &UpdateVMRequest{Runstate: vmRunStateToPtr(VMRunstateRunning)})
-		err = s.waitForRunstate(&ctx, environmentID, id, VMRunstateRunning)
 		if err != nil {
 			return nil, err
 		}
@@ -440,6 +442,20 @@ func (s *VMsServiceClient) changeRunstate(ctx context.Context, environmentID str
 func (s *VMsServiceClient) changeNameCPURAM(ctx context.Context, environmentID string, id string, opts *UpdateVMRequest) (*VM, error) {
 	path := s.buildPath(false, environmentID, id)
 
+	currentVM, err := s.Get(ctx, environmentID, id)
+	// if started stop
+	runstate := currentVM.Runstate
+	if *runstate == VMRunstateRunning {
+		_, err := s.changeRunstate(ctx, environmentID, id, &UpdateVMRequest{Runstate: vmRunStateToPtr(VMRunstateStopped)})
+		if err != nil {
+			return nil, err
+		}
+		err = s.waitForRunstate(&ctx, environmentID, id, VMRunstateStopped)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	requestCreate, err := s.client.newRequest(ctx, "PUT", path, opts)
 	if err != nil {
 		return nil, err
@@ -450,6 +466,15 @@ func (s *VMsServiceClient) changeNameCPURAM(ctx context.Context, environmentID s
 	if err != nil {
 		return nil, err
 	}
+
+	// if stopped start
+	if *runstate == VMRunstateRunning {
+		_, err := s.changeRunstate(ctx, environmentID, id, &UpdateVMRequest{Runstate: vmRunStateToPtr(VMRunstateRunning)})
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &updatedVM, nil
 }
 
