@@ -2,6 +2,8 @@ package skytap
 
 import (
 	"context"
+	"fmt"
+	"log"
 	"sort"
 	"time"
 )
@@ -87,6 +89,7 @@ type Disk struct {
 	Type       *string `json:"type"`
 	Controller *string `json:"controller"`
 	LUN        *string `json:"lun"`
+	Name       *string `json:"name,omitempty"`
 }
 
 // Note describes a note on the VM
@@ -189,18 +192,29 @@ type UpdateVMRequest struct {
 
 // UpdateHardware describes the update data to update the VM cpu, ram and disks
 type UpdateHardware struct {
-	CPUs     *int      `json:"cpus,omitempty"`
-	RAM      *int      `json:"ram,omitempty"`
-	NewDisks *NewDisks `json:"disks,omitempty"`
+	CPUs        *int         `json:"cpus,omitempty"`
+	RAM         *int         `json:"ram,omitempty"`
+	UpdateDisks *UpdateDisks `json:"disks,omitempty"`
 }
 
-// NewDisks defines a list of new disks via the sizes
-type NewDisks struct {
-	Sizes []int `json:"new,omitempty"`
+// UpdateDisks defines a list of new disks
+type UpdateDisks struct {
+	NewDisks           []int                 `json:"new,omitempty"`
+	RemoveDisks        map[string]RemoveDisk `json:"existing,omitempty"`
+	DiskIdentification []DiskIdentification  `json:"identification,omitempty"`
+}
+
+// DiskIdentification defines a new size and name combination
+type DiskIdentification struct {
+	ID   *string
+	Size *int
+	Name *string
 }
 
 // RemoveDisk defines the disk to remove
 type RemoveDisk struct {
+	ID   *string `json:"id"`
+	Size *int    `json:"size"`
 }
 
 // VMListResult is the listing request specific struct
@@ -276,32 +290,14 @@ func (s *VMsServiceClient) Create(ctx context.Context, environmentID string, opt
 	return createdVM, nil
 }
 
-// mostRecentVM returns the mose recent VM given a list of VMs
-func mostRecentVM(vms []VM) *VM {
-	sort.Slice(vms, func(i, j int) bool {
-		time1, _ := time.Parse(timestampFormat, *vms[i].CreatedAt)
-		time2, _ := time.Parse(timestampFormat, *vms[j].CreatedAt)
-		return time1.After(time2)
-	})
-	return &vms[0]
-}
-
 // Update a vm
-func (s *VMsServiceClient) Update(ctx context.Context, environmentID string, id string, vm *UpdateVMRequest) (*VM, error) {
-	path := s.buildPath(false, environmentID, id)
-
-	req, err := s.client.newRequest(ctx, "PUT", path, vm)
-	if err != nil {
-		return nil, err
+func (s *VMsServiceClient) Update(ctx context.Context, environmentID string, id string, opts *UpdateVMRequest) (*VM, error) {
+	if opts.Runstate != nil {
+		return s.changeRunstate(ctx, environmentID, id, opts)
+	} else if opts.Hardware != nil && opts.Hardware.UpdateDisks == nil {
+		return s.changeNameCPURAM(ctx, environmentID, id, opts)
 	}
-
-	var updatedVM VM
-	_, err = s.client.do(ctx, req, &updatedVM)
-	if err != nil {
-		return nil, err
-	}
-
-	return &updatedVM, nil
+	return s.updateHardware(ctx, environmentID, id, opts)
 }
 
 // Delete a vm
@@ -321,6 +317,222 @@ func (s *VMsServiceClient) Delete(ctx context.Context, environmentID string, id 
 	return nil
 }
 
+// mostRecentVM returns the mose recent VM given a list of VMs
+func mostRecentVM(vms []VM) *VM {
+	sort.Slice(vms, func(i, j int) bool {
+		time1, _ := time.Parse(timestampFormat, *vms[i].CreatedAt)
+		time2, _ := time.Parse(timestampFormat, *vms[j].CreatedAt)
+		return time1.After(time2)
+	})
+	return &vms[0]
+}
+
+func (s *VMsServiceClient) updateHardware(ctx context.Context, environmentID string, id string, opts *UpdateVMRequest) (*VM, error) {
+	path := s.buildPath(false, environmentID, id)
+
+	diskIdentification := opts.Hardware.UpdateDisks.DiskIdentification
+	opts.Hardware.UpdateDisks.DiskIdentification = nil
+
+	currentVM, err := s.Get(ctx, environmentID, id)
+	// if started stop
+	runstate := currentVM.Runstate
+	if *runstate == VMRunstateRunning {
+		_, err = s.changeRunstate(ctx, environmentID, id, &UpdateVMRequest{Runstate: vmRunStateToPtr(VMRunstateStopped)})
+		err = s.waitForRunstate(&ctx, environmentID, id, VMRunstateStopped)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	removes := buildRemoveList(currentVM, diskIdentification)
+
+	requestCreate, err := s.client.newRequest(ctx, "PUT", path, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	var updatedVM VM
+	_, err = s.client.do(ctx, requestCreate, &updatedVM)
+	if err != nil {
+		return nil, err
+	}
+
+	// wait until disks as expected.
+	expected := len(currentVM.Hardware.Disks) + len(opts.Hardware.UpdateDisks.NewDisks)
+	if len(updatedVM.Hardware.Disks) != expected {
+		vm, err := s.waitForDisks(&ctx, environmentID, id, expected)
+		if err != nil {
+			return nil, err
+		}
+		if vm == nil {
+			return nil, fmt.Errorf("unable to retrieve the VM with the expected (%d) number of disks", expected)
+		}
+		updatedVM = *vm
+	}
+
+	matchUpExistingDisks(&updatedVM, diskIdentification, removes)
+	matchUpNewDisks(&updatedVM, diskIdentification, removes)
+
+	disks := updatedVM.Hardware.Disks
+
+	if len(removes) > 0 {
+		// delete phase
+		opts.Hardware.CPUs = nil
+		opts.Hardware.RAM = nil
+		opts.Hardware.UpdateDisks.NewDisks = nil
+		opts.Hardware.UpdateDisks.RemoveDisks = removes
+		requestDelete, err := s.client.newRequest(ctx, "PUT", path, opts)
+		if err != nil {
+			return nil, err
+		}
+		_, err = s.client.do(ctx, requestDelete, &updatedVM)
+		if err != nil {
+			return nil, err
+		}
+
+		// wait until disks as expected.
+		expected = len(disks) - len(opts.Hardware.UpdateDisks.RemoveDisks)
+		if len(updatedVM.Hardware.Disks) != expected {
+			vm, err := s.waitForDisks(&ctx, environmentID, id, expected)
+			if err != nil {
+				return nil, err
+			}
+			if vm == nil {
+				return nil, fmt.Errorf("unable to retrieve the VM with the expected (%d) number of disks", expected)
+			}
+			updatedVM = *vm
+		}
+
+		// update new list of disks
+		updateFinalDiskList(updatedVM, disks)
+	}
+
+	// if stopped start
+	if *runstate == VMRunstateRunning {
+		_, err = s.changeRunstate(ctx, environmentID, id, &UpdateVMRequest{Runstate: vmRunStateToPtr(VMRunstateRunning)})
+		err = s.waitForRunstate(&ctx, environmentID, id, VMRunstateRunning)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &updatedVM, nil
+}
+
+func (s *VMsServiceClient) changeRunstate(ctx context.Context, environmentID string, id string, opts *UpdateVMRequest) (*VM, error) {
+	path := s.buildPath(false, environmentID, id)
+
+	opts.Name = nil
+	opts.Hardware = nil
+	requestCreate, err := s.client.newRequest(ctx, "PUT", path, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	var updatedVM VM
+	_, err = s.client.do(ctx, requestCreate, &updatedVM)
+	if err != nil {
+		return nil, err
+	}
+	return &updatedVM, nil
+}
+
+func (s *VMsServiceClient) changeNameCPURAM(ctx context.Context, environmentID string, id string, opts *UpdateVMRequest) (*VM, error) {
+	path := s.buildPath(false, environmentID, id)
+
+	requestCreate, err := s.client.newRequest(ctx, "PUT", path, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	var updatedVM VM
+	_, err = s.client.do(ctx, requestCreate, &updatedVM)
+	if err != nil {
+		return nil, err
+	}
+	return &updatedVM, nil
+}
+
+func matchUpExistingDisks(vm *VM, identifications []DiskIdentification, ignored map[string]RemoveDisk) {
+	for idx := range vm.Hardware.Disks {
+		// ignore os disk
+		if idx > 0 {
+			for _, id := range identifications {
+				if id.ID != nil && *id.ID == *vm.Hardware.Disks[idx].ID {
+					if _, ok := ignored[*id.ID]; !ok {
+						vm.Hardware.Disks[idx].Name = id.Name
+						break
+					}
+				}
+			}
+		}
+	}
+}
+
+func matchUpNewDisks(vm *VM, identifications []DiskIdentification, ignored map[string]RemoveDisk) {
+	for _, id := range identifications {
+		if id.ID == nil || *id.ID == "" {
+			for idx, disk := range vm.Hardware.Disks {
+				// ignore os disk
+				if idx > 0 {
+					// a new disk
+					if _, ok := ignored[*disk.ID]; !ok {
+						if disk.Name == nil {
+							vm.Hardware.Disks[idx].Name = id.Name
+							break
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+// wait until new disks added
+func (s *VMsServiceClient) waitForDisks(ctx *context.Context, environmentID string, id string, expectedDiskCount int) (*VM, error) {
+	var makeRequest = true
+	var vm *VM
+	var err error
+	for i := 0; i < s.client.retryCount+1 && makeRequest; i++ {
+		vm, err = s.Get(*ctx, environmentID, id)
+
+		if err != nil {
+			break
+		}
+
+		makeRequest = len(vm.Hardware.Disks) != expectedDiskCount
+
+		if makeRequest {
+			seconds := s.client.retryAfter
+			log.Printf("[INFO] retrying after %d second(s)\n", seconds)
+			time.Sleep(time.Duration(seconds) * time.Second)
+		}
+	}
+	return vm, nil
+}
+
+// wait for runstate
+func (s *VMsServiceClient) waitForRunstate(ctx *context.Context, environmentID string, id string, runstate VMRunstate) error {
+	var makeRequest = true
+	var err error
+	for i := 0; i < s.client.retryCount+1 && makeRequest; i++ {
+		vm, err := s.Get(*ctx, environmentID, id)
+
+		if err != nil {
+			break
+		}
+
+		makeRequest = *vm.Runstate != runstate
+
+		if makeRequest {
+			seconds := s.client.retryAfter
+			log.Printf("[INFO] retrying after %d second(s)\n", seconds)
+			time.Sleep(time.Duration(seconds) * time.Second)
+		}
+	}
+	return err
+}
+
 func (s *VMsServiceClient) buildPath(legacy bool, environmentID string, vmID string) string {
 	var path string
 	if legacy {
@@ -333,4 +545,40 @@ func (s *VMsServiceClient) buildPath(legacy bool, environmentID string, vmID str
 		path += vmsPath + vmID
 	}
 	return path
+}
+
+func updateFinalDiskList(vm VM, disks []Disk) {
+	for idx := range vm.Hardware.Disks {
+		// forget os disk
+		if idx > 0 {
+			for _, name := range disks {
+				if *name.ID == *vm.Hardware.Disks[idx].ID {
+					vm.Hardware.Disks[idx].Name = name.Name
+					break
+				}
+			}
+		}
+	}
+}
+
+// clear the removes from this phase
+func buildRemoveList(vm *VM, diskIDs []DiskIdentification) map[string]RemoveDisk {
+	removes := make(map[string]RemoveDisk, 0)
+	for idx, disk := range vm.Hardware.Disks {
+		if idx > 0 {
+			found := false
+			for _, diskID := range diskIDs {
+				if diskID.ID != nil && *diskID.ID == *disk.ID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				removes[*disk.ID] = RemoveDisk{
+					ID: strToPtr(*disk.ID),
+				}
+			}
+		}
+	}
+	return removes
 }

@@ -120,14 +120,14 @@ func TestFlattenPublishedServices(t *testing.T) {
 	}
 }
 
+// Not expecting OS disk here
 func TestFlattenDisks(t *testing.T) {
-
 	expected := make(map[string][]string)
-	expected["id"] = []string{"disk-1-1-scsi-0-0", "disk-1-1-scsi-0-1", "disk-1-1-scsi-0-2"}
+	expected["id"] = []string{"disk-1-1-scsi-0-1", "disk-1-1-scsi-0-2", "disk-1-1-scsi-0-3"}
 	expected["size"] = []string{"5120", "5121", "5120"}
 	expected["type"] = []string{"SCSI", "SCSI", "SCSI"}
 	expected["controller"] = []string{"0", "0", "0"}
-	expected["lun"] = []string{"0", "1", "2"}
+	expected["lun"] = []string{"1", "2", "3"}
 	expected["name"] = []string{"one", "two", "three"}
 
 	var disks []skytap.Disk
@@ -136,12 +136,8 @@ func TestFlattenDisks(t *testing.T) {
 		t.Fatal(err)
 	}
 	var diskResources = make([]map[string]interface{}, 0)
-	firstTime := make(map[int][]string)
-	otherTimes := make(map[string]string)
-	firstTime[5120] = []string{"one", "three"}
-	firstTime[5121] = []string{"two"}
 	for _, v := range disks {
-		diskResources = append(diskResources, flattenDisk(v, firstTime, otherTimes))
+		diskResources = append(diskResources, flattenDisk(v))
 	}
 	assert.True(t, len(diskResources) == 3, fmt.Sprintf("expecting: %d but received: %d", 3, len(diskResources)))
 	for i := 0; i < len(diskResources); i++ {
