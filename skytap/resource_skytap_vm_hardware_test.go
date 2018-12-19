@@ -76,7 +76,7 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					resource.TestCheckResourceAttr("skytap_vm.bar", "cpus", "4"),
-					resource.TestCheckResourceAttr("skytap_vm.bar", "ram", "4096g"),
+					resource.TestCheckResourceAttr("skytap_vm.bar", "ram", "4096"),
 					testAccCheckSkytapVMCPU(t, &vm, 4),
 					testAccCheckSkytapVMRAM(t, &vm, 4096),
 				),
