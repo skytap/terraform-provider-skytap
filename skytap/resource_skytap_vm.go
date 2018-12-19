@@ -474,7 +474,7 @@ func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	hardware, err := buildHardware(d)
+	hardware, err := updateHardware(d)
 	if err != nil {
 		return err
 	}
@@ -508,28 +508,38 @@ func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
 	return resourceSkytapVMRead(d, meta)
 }
 
-func buildHardware(d *schema.ResourceData) (*skytap.UpdateHardware, error) {
+func updateHardware(d *schema.ResourceData) (*skytap.UpdateHardware, error) {
 	var hardware *skytap.UpdateHardware
-	if v, ok := d.GetOk("disk"); ok && d.HasChange("disk") {
-		hardware = &skytap.UpdateHardware{}
-		hardware.UpdateDisks = &skytap.UpdateDisks{}
-		disks := v.(*schema.Set)
-		ids := make([]skytap.DiskIdentification, 0)
+	if _, ok := d.GetOk("disk"); ok && d.HasChange("disk") {
+		oldDisks, newDisks := d.GetChange("disk")
+		hardware = &skytap.UpdateHardware{
+			UpdateDisks: &skytap.UpdateDisks{},
+		}
+		disks := newDisks.(*schema.Set)
+		diskIDs := make([]skytap.DiskIdentification, 0)
 		adds := make([]int, 0)
-		// adds and initialise disk identification struct
+		// adds and initialises disk identification struct
 		for _, v2 := range disks.List() {
 			diskResource := v2.(map[string]interface{})
-			id := utils.String(diskResource["id"].(string))
-			if diskResource["id"].(string) == "" {
-				adds = append(adds, diskResource["size"].(int))
+			name := diskResource["name"].(string)
+			sizeNew := diskResource["size"].(int)
+			id, sizeOld := retrieveIDsFromOldState(oldDisks.(*schema.Set), name)
+			if id == "" { // new
+				adds = append(adds, sizeNew)
+			} else {
+				// confirm size is not reduced
+				if sizeOld > sizeNew {
+					return nil, fmt.Errorf("cannot shrink volume (%s) from size (%d) to size (%d)", name, sizeOld, sizeNew)
+				}
 			}
-			ids = append(ids, skytap.DiskIdentification{
-				ID: id, Name: utils.String(diskResource["name"].(string)), Size: utils.Int(diskResource["size"].(int)),
-			})
+			diskID := skytap.DiskIdentification{
+				ID: utils.String(id), Name: utils.String(name), Size: utils.Int(sizeNew),
+			}
+			diskIDs = append(diskIDs, diskID)
 		}
-		hardware.UpdateDisks.DiskIdentification = ids
+		hardware.UpdateDisks.DiskIdentification = diskIDs
 		if len(adds) > 0 {
-			log.Printf("[INFO] creating %d disks", len(adds))
+			log.Printf("[INFO] creating %d disk(s)", len(adds))
 			hardware.UpdateDisks.NewDisks = adds
 		}
 	}
@@ -547,6 +557,16 @@ func buildHardware(d *schema.ResourceData) (*skytap.UpdateHardware, error) {
 		hardware.RAM = utils.Int(v.(int))
 	}
 	return hardware, nil
+}
+
+func retrieveIDsFromOldState(d *schema.Set, name string) (string, int) {
+	for _, v := range d.List() {
+		diskResource := v.(map[string]interface{})
+		if diskResource["name"] == name {
+			return diskResource["id"].(string), diskResource["size"].(int)
+		}
+	}
+	return "", 0
 }
 
 func resourceSkytapVMDelete(d *schema.ResourceData, meta interface{}) error {

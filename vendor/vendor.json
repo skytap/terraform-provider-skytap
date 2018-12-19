@@ -757,13 +757,10 @@
 			"revisionTime": "2018-09-10T08:07:58Z"
 		},
 		{
-			"checksumSHA1": "etwNnqoOEgKcHsOn0QMbcewP2ss=",
-			"origin": "github.com/opencredo/skytap-sdk-go/skytap",
+			"checksumSHA1": "XpBsJuUAE2ZRvyZN+2DQrD+dWmA=",
 			"path": "github.com/skytap/skytap-sdk-go/skytap",
-			"revision": "1612b3f5e84c45eeb2efce8e82a053624457634c",
-			"revisionTime": "2018-12-19T13:54:36Z",
-			"version": "feature/cpu-update",
-			"versionExact": "feature/cpu-update"
+			"revision": "52b11705e09adcf9ae84bd2551dbb20e5e115740",
+			"revisionTime": "2018-12-19T19:54:44Z"
 		},
 		{
 			"checksumSHA1": "c6pbpF7eowwO59phRTpF8cQ80Z0=",
