@@ -57,7 +57,6 @@ func resourceSkytapVM() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.IntBetween(1, 12),
 			},
 
@@ -65,7 +64,6 @@ func resourceSkytapVM() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.IntBetween(256, 131072),
 			},
 
@@ -511,10 +509,9 @@ func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func buildHardware(d *schema.ResourceData) (*skytap.UpdateHardware, error) {
-	var hardware skytap.UpdateHardware
-
+	var hardware *skytap.UpdateHardware
 	if v, ok := d.GetOk("disk"); ok && d.HasChange("disk") {
-		hardware = skytap.UpdateHardware{}
+		hardware = &skytap.UpdateHardware{}
 		hardware.UpdateDisks = &skytap.UpdateDisks{}
 		disks := v.(*schema.Set)
 		ids := make([]skytap.DiskIdentification, 0)
@@ -537,7 +534,19 @@ func buildHardware(d *schema.ResourceData) (*skytap.UpdateHardware, error) {
 		}
 	}
 
-	return &hardware, nil
+	if v, ok := d.GetOk("cpus"); ok && d.HasChange("cpus") {
+		if hardware == nil {
+			hardware = &skytap.UpdateHardware{}
+		}
+		hardware.CPUs = utils.Int(v.(int))
+	}
+	if v, ok := d.GetOk("ram"); ok && d.HasChange("ram") {
+		if hardware == nil {
+			hardware = &skytap.UpdateHardware{}
+		}
+		hardware.RAM = utils.Int(v.(int))
+	}
+	return hardware, nil
 }
 
 func resourceSkytapVMDelete(d *schema.ResourceData, meta interface{}) error {
