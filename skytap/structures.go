@@ -67,6 +67,8 @@ func flattenDisk(v skytap.Disk) map[string]interface{} {
 	result["type"] = *v.Type
 	result["controller"] = *v.Controller
 	result["lun"] = *v.LUN
-	result["name"] = *v.Name
+	if v.Name != nil {
+		result["name"] = *v.Name
+	}
 	return result
 }
