@@ -60,11 +60,28 @@ func resourceSkytapVM() *schema.Resource {
 				ValidateFunc: validation.IntBetween(1, 12),
 			},
 
+			"max_cpus": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+
 			"ram": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: validation.IntBetween(256, 131072),
+			},
+
+			"max_ram": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+
+			"os_disk_size": {
+				Type:         schema.TypeInt,
+				Computed:     true,
+				Optional:     true,
+				ValidateFunc: validation.IntBetween(2048, 2096128),
 			},
 
 			"disk": {
@@ -422,13 +439,29 @@ func resourceSkytapVMRead(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
+	err = d.Set("max_cpus", vm.Hardware.MaxCPUs)
+	if err != nil {
+		return err
+	}
+	err = d.Set("max_ram", vm.Hardware.MaxRAM)
+	if err != nil {
+		return err
+	}
 	if len(vm.Interfaces) > 0 {
 		if err := d.Set("network_interface", flattenNetworkInterfaces(vm.Interfaces)); err != nil {
 			log.Printf("[ERROR] error flattening network interfaces: %v", err)
 			return err
 		}
 	}
-	if vm.Hardware != nil && len(vm.Hardware.Disks) > 0 {
+
+	if len(vm.Hardware.Disks) > 0 {
+		err = d.Set("os_disk_size", *vm.Hardware.Disks[0].Size)
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(vm.Hardware.Disks) > 1 {
 		var disks *schema.Set
 		if meta.(*SkytapClient).names == nil {
 			// add the names
@@ -468,7 +501,7 @@ func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	opts := skytap.UpdateVMRequest{}
 
-	if v, ok := d.GetOk("name"); ok {
+	if v, ok := d.GetOk("name"); ok && d.HasChange("name") {
 		if d.HasChange("name") {
 			opts.Name = utils.String(v.(string))
 		}
@@ -509,12 +542,11 @@ func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func updateHardware(d *schema.ResourceData) (*skytap.UpdateHardware, error) {
-	var hardware *skytap.UpdateHardware
+	var hardware = &skytap.UpdateHardware{
+		UpdateDisks: &skytap.UpdateDisks{},
+	}
 	if _, ok := d.GetOk("disk"); ok {
 		oldDisks, newDisks := d.GetChange("disk")
-		hardware = &skytap.UpdateHardware{
-			UpdateDisks: &skytap.UpdateDisks{},
-		}
 		disks := newDisks.(*schema.Set)
 		diskIDs := make([]skytap.DiskIdentification, 0)
 		adds := make([]int, 0)
@@ -527,9 +559,9 @@ func updateHardware(d *schema.ResourceData) (*skytap.UpdateHardware, error) {
 			if id == "" { // new
 				adds = append(adds, sizeNew)
 			} else {
-				// confirm size is not reduced
-				if sizeOld > sizeNew {
-					return nil, fmt.Errorf("cannot shrink volume (%s) from size (%d) to size (%d)", name, sizeOld, sizeNew)
+				err := checkDiskNotShrunk(sizeOld, sizeNew, name)
+				if err != nil {
+					return nil, err
 				}
 			}
 			diskID := skytap.DiskIdentification{
@@ -542,21 +574,51 @@ func updateHardware(d *schema.ResourceData) (*skytap.UpdateHardware, error) {
 			log.Printf("[INFO] creating %d disk(s)", len(adds))
 			hardware.UpdateDisks.NewDisks = adds
 		}
+	} else {
+		hardware.UpdateDisks.DiskIdentification = make([]skytap.DiskIdentification, 0)
 	}
 
-	if v, ok := d.GetOk("cpus"); ok && d.HasChange("cpus") {
-		if hardware == nil {
-			hardware = &skytap.UpdateHardware{}
+	if cpus, ok := d.GetOk("cpus"); ok && d.HasChange("cpus") {
+		hardware.CPUs = utils.Int(cpus.(int))
+		if maxCPUs, ok2 := d.GetOk("max_cpus"); ok2 {
+			if *hardware.CPUs > maxCPUs.(int) {
+				return nil, outOfRangeError("cpus", *hardware.CPUs, maxCPUs.(int))
+			}
+		} else {
+			return nil, fmt.Errorf("unable to read the 'max_cpus' element")
 		}
-		hardware.CPUs = utils.Int(v.(int))
 	}
-	if v, ok := d.GetOk("ram"); ok && d.HasChange("ram") {
-		if hardware == nil {
-			hardware = &skytap.UpdateHardware{}
+	if ram, ok := d.GetOk("ram"); ok && d.HasChange("ram") {
+		hardware.RAM = utils.Int(ram.(int))
+		if maxRAM, ok2 := d.GetOk("max_ram"); ok2 {
+			if *hardware.RAM > maxRAM.(int) {
+				return nil, outOfRangeError("ram", *hardware.RAM, maxRAM.(int))
+			}
+		} else {
+			return nil, fmt.Errorf("unable to read the 'max_ram' element")
 		}
-		hardware.RAM = utils.Int(v.(int))
 	}
+
+	if _, ok := d.GetOk("os_disk_size"); ok && d.HasChange("os_disk_size") {
+		sizeOld, sizeNew := d.GetChange("os_disk_size")
+		sizeOldInt := sizeOld.(int)
+		sizeNewInt := sizeNew.(int)
+		hardware.UpdateDisks.OSSize = utils.Int(sizeNewInt)
+		err := checkDiskNotShrunk(sizeOldInt, sizeNewInt, "OS")
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return hardware, nil
+}
+
+// Confirm size not shrunk
+func checkDiskNotShrunk(sizeOld int, sizeNew int, name string) error {
+	if sizeOld > sizeNew {
+		return fmt.Errorf("cannot shrink volume (%s) from size (%d) to size (%d)", name, sizeOld, sizeNew)
+	}
+	return nil
 }
 
 func retrieveIDsFromOldState(d *schema.Set, name string) (string, int) {
@@ -610,28 +672,37 @@ func resourceSkytapVMDelete(d *schema.ResourceData, meta interface{}) error {
 }
 
 func addVMHardware(d *schema.ResourceData, meta interface{}, client *skytap.VMsService, ctx *context.Context, vm *skytap.VM, environmentID string, id string) error {
-	opts := skytap.UpdateVMRequest{}
+	opts := skytap.UpdateVMRequest{
+		Hardware: &skytap.UpdateHardware{
+			UpdateDisks: &skytap.UpdateDisks{},
+		},
+	}
 
 	if v, ok := d.GetOk("name"); ok {
 		opts.Name = utils.String(v.(string))
 	}
 	if v, ok := d.GetOk("cpus"); ok {
-		if opts.Hardware == nil {
-			opts.Hardware = &skytap.UpdateHardware{}
-		}
 		opts.Hardware.CPUs = utils.Int(v.(int))
+		if *opts.Hardware.CPUs > *vm.Hardware.MaxCPUs {
+			return outOfRangeError("cpus", *opts.Hardware.CPUs, *vm.Hardware.MaxCPUs)
+		}
 	}
 	if v, ok := d.GetOk("ram"); ok {
-		if opts.Hardware == nil {
-			opts.Hardware = &skytap.UpdateHardware{}
-		}
 		opts.Hardware.RAM = utils.Int(v.(int))
-	}
-	if v, ok := d.GetOk("disk"); ok {
-		if opts.Hardware == nil {
-			opts.Hardware = &skytap.UpdateHardware{}
+		if *opts.Hardware.RAM > *vm.Hardware.MaxRAM {
+			return outOfRangeError("ram", *opts.Hardware.RAM, *vm.Hardware.MaxRAM)
 		}
-		opts.Hardware.UpdateDisks = &skytap.UpdateDisks{}
+	}
+	if v, ok := d.GetOk("os_disk_size"); ok {
+		sizeNew := v.(int)
+		opts.Hardware.UpdateDisks.OSSize = utils.Int(sizeNew)
+		err := checkDiskNotShrunk(*vm.Hardware.Disks[0].Size, sizeNew, "OS")
+		if err != nil {
+			return err
+		}
+	}
+
+	if v, ok := d.GetOk("disk"); ok {
 		disks := v.(*schema.Set)
 		log.Printf("[INFO] creating %d disks", disks.Len())
 		opts.Hardware.UpdateDisks.NewDisks = make([]int, d.Get("disk.#").(int))
@@ -643,34 +714,24 @@ func addVMHardware(d *schema.ResourceData, meta interface{}, client *skytap.VMsS
 				ID: nil, Name: utils.String(disk["name"].(string)), Size: utils.Int(disk["size"].(int)),
 			}
 		}
+	} else {
+		opts.Hardware.UpdateDisks.DiskIdentification = make([]skytap.DiskIdentification, 0)
 	}
 
-	if opts.Hardware != nil {
-		// check max cpu property
-		if opts.Hardware.CPUs != nil && *opts.Hardware.CPUs > *vm.Hardware.MaxCPUs {
-			return outOfRangeError("cpus", *opts.Hardware.CPUs, *vm.Hardware.MaxCPUs)
-		}
-		// check max ram property
-		if opts.Hardware.RAM != nil && *opts.Hardware.RAM > *vm.Hardware.MaxRAM {
-			return outOfRangeError("ram", *opts.Hardware.RAM, *vm.Hardware.MaxRAM)
-		}
+	log.Printf("[INFO] VM create update options: %#v", spew.Sdump(opts))
+	vmUpdated, err := (*client).Update(*ctx, environmentID, id, &opts)
+	if err != nil {
+		return fmt.Errorf("error updating vm (%s): %v", id, err)
 	}
+	log.Printf("[INFO] updated VM after create: %#v", spew.Sdump(vmUpdated))
+	// Have to do this here in order to capture `name`
+	meta.(*SkytapClient).names = flattenDisks(vmUpdated.Hardware.Disks)
 
-	if opts.Hardware != nil || opts.Name != nil {
-		log.Printf("[INFO] VM update options: %#v", spew.Sdump(opts))
-		vmUpdated, err := (*client).Update(*ctx, environmentID, id, &opts)
-		if err != nil {
-			return fmt.Errorf("error updating vm (%s): %v", id, err)
-		}
-		log.Printf("[INFO] updated VM: %#v", spew.Sdump(vmUpdated))
-		// Have to do this here in order to capture `name`
-		meta.(*SkytapClient).names = flattenDisks(vmUpdated.Hardware.Disks)
-	}
 	return nil
 }
 
 func outOfRangeError(field string, value int, max int) error {
-	return fmt.Errorf("the '%s' argument has been assigned %d which is more "+
+	return fmt.Errorf("the '%s' argument has been assigned (%d) which is more "+
 		"than the maximum allowed (%d) as defined by this VM",
 		field, value, max)
 }
