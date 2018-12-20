@@ -77,6 +77,66 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 	})
 }
 
+func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
+	//t.Parallel()
+
+	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
+		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=136409")
+		err := os.Setenv("SKYTAP_TEMPLATE_ID", "136409")
+		assert.NoError(t, err)
+	}
+	if os.Getenv("SKYTAP_VM_ID") == "" {
+		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=849656")
+		err := os.Setenv("SKYTAP_VM_ID", "849656")
+		assert.NoError(t, err)
+	}
+	newEnvTemplateID := os.Getenv("SKYTAP_TEMPLATE_ID")
+	if os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID") != "" {
+		newEnvTemplateID = os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID")
+		log.Printf("[DEBUG] SKYTAP_TEMPLATE_NEW_ENV_ID=%s", newEnvTemplateID)
+	}
+	uniqueSuffixEnv := acctest.RandInt()
+	var vm skytap.VM
+	var vmUpdated skytap.VM
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+					`"cpus" = 8
+									"disk" = {
+										"size" = 2048
+										"name" = "disk1"
+									}`),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
+					resource.TestCheckResourceAttr("skytap_vm.bar", "cpus", "8"),
+					testAccCheckSkytapVMCPU(t, &vm, 8),
+					testAccCheckSkytapVMDisks(t, &vm, []int{2048}),
+				),
+			},
+			{
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+					`"cpus" = 4
+									"disk" = {
+										"size" = 2048
+										"name" = "disk1"
+									}`),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vmUpdated),
+					testAccCheckSkytapVMDiskResource(t, "skytap_vm.bar", "1", []string{"disk1"}),
+					testAccCheckSkytapVMUpdated(t, &vm, &vmUpdated),
+					testAccCheckSkytapVMCPU(t, &vmUpdated, 4),
+					testAccCheckSkytapVMDisks(t, &vmUpdated, []int{2048}),
+				),
+			},
+		},
+	})
+}
+
 // To ensure the presence of a disk works unchanged
 func TestAccSkytapVMCPU_WithDisk(t *testing.T) {
 	//t.Parallel()
@@ -110,7 +170,7 @@ func TestAccSkytapVMCPU_WithDisk(t *testing.T) {
 					`"cpus" = 8
 									"disk" = {
 										"size" = 2048
-										"name" = "smaller"  
+										"name" = "smaller"
 									}`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
@@ -124,7 +184,7 @@ func TestAccSkytapVMCPU_WithDisk(t *testing.T) {
 					`"cpus" = 4
 									"disk" = {
 										"size" = 2048
-										"name" = "smaller"  
+										"name" = "smaller"
 									}`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vmUpdated),
@@ -326,11 +386,11 @@ func TestAccSkytapVMDisks_Create(t *testing.T) {
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
 					`"disk" = {
 										"size" = 2048
-										"name" = "smaller"  
+										"name" = "smaller"
 									}
 									"disk" = {
 										"size" = 2048
-										"name" = "smaller2"  
+										"name" = "smaller2"
 									}
 									"disk" = {
 										"size" = 2049
@@ -508,7 +568,7 @@ func TestAccSkytapVMDisk_Invalid(t *testing.T) {
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
 					`"disk" = {
 										"size" = 2047
-										"name" = "too small"  
+										"name" = "too small"
 									}`),
 				ExpectError: regexp.MustCompile(`config is invalid: skytap_vm.bar: expected disk.0.size to be in the range \(2048 - 2096128\), got 2047`),
 			},
@@ -516,7 +576,7 @@ func TestAccSkytapVMDisk_Invalid(t *testing.T) {
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
 					`"disk" = {
 										"size" = 2096129
-										"name" = "too big"  
+										"name" = "too big"
 									}`),
 				ExpectError: regexp.MustCompile(`config is invalid: skytap_vm.bar: expected disk.0.size to be in the range \(2048 - 2096128\), got 2096129`),
 			},
