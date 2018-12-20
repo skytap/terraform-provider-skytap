@@ -26,8 +26,31 @@ resource "skytap_vm" "vm" {
   vm_id = 456
   environment_id = 789
   name = "my vm"
+  
   cpu = 4
   ram = 4096
+  
+  os-disk-size = 40000
+  
+  disk = {
+    name = "my disk"
+    size = 4096
+  }
+  disk = {
+      name = "my other disk"
+      size = 4096
+  }
+  
+  network_interface = {
+     interface_type = "vmxnet3"
+     network_id = "${skytap_network.my_network}"
+     ip = "10.0.0.1"
+     hostname = "myhost"
+      
+    published_service = {
+      internal_port = 22
+    }
+  }
 }
 ```
 
@@ -39,18 +62,17 @@ The following arguments are supported:
 * `template_id` - (Required, Force New) ID of the template you want to create the vm from. If updating with a new one then the VM will be recreated.
 * `vm_id` - (Required, Force New) ID of the VM you want to create the VM from. If updating with a new one then the VM will be recreated.
 * `name` - (Optional, Computed) User-defined name. Limited to 100 characters. 
+
+~> **NOTE:** The name will be truncated to 33 UTF-8 characters after saving. If a name is not provided then the source VM's name will be used.
+
 * `cpus` - (Optional, Computed) Number of CPUs allocated to this virtual machine. Valid range is 1 to 12. Maximum limit depends on the `max_cpus` setting.
 * `ram` - (Optional, Computed) Amount of RAM allocated to this VM. Valid range is 256 and 131,072 (MB). Maximum limit depends on `max_ram` setting.
-* `disk` - (Optional) Array of virtual disks within the VM. The disk size is in MiB; it will be converted to GiB in the Skytap UI. The maximum disk size is 2,096,128 MiB (1.999 TiB).
+* `os_disk_size` - (Optional, Computed) The size of the virtual disk containing the VM's OS. The disk size is in MiB; it will be converted to GiB in the Skytap UI. The minimum disk size is governed by the existing disk's size; the maximum is 2096128 MiB (1.999 TiB).
+* `disk` - (Optional) Array of virtual disks within the VM. The disk size is in MiB; it will be converted to GiB in the Skytap UI.
 
   * `name` - (Required) A unique name for the disk.
-  * `id` - (Computed) The ID for the disk.
   * `size` - (Required) Specify the size of the disk. The new disk’s size should be provided in MiB. The minimum disk size is 2048 MiB; the maximum is 2096128 MiB (1.999 TiB).
-  * `type` - (Computed) The type of disk.
-  * `controller` - (Computed) The disk controller.
-  * `lun` - (Computed) The logical unit number of the disk (LUN).
 
-  ~> **NOTE:** The name will be truncated to 33 UTF-8 characters after saving. If a name is not provided then the source VM's name will be used.
 * `network_interface` - (Optional, Computed, ForceNew) A Skytap network adapter is a virtualized network interface card (also known as a network adapter). It is logically contained in a VM and attached to a network.
 
   * `interface_type` - (Required, Force New) Type of network that this network adapter is attached to.
@@ -67,6 +89,13 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id`: The ID of the VM.
+* `max-cpu`: The maximum possible CPU count of the VM.
+* `max-ram`: The maximum possible RAM count of the VM.
+* `disk`: The disks.
+  * `id` - The ID for the disk.
+  * `type` - The type of disk.
+  * `controller` - The disk controller.
+  * `lun` - The logical unit number of the disk (LUN).
 * `published_service`: The published services.
   * `id`: The published service's ID.
   * `external_id`: The published service's external ID.

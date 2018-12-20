@@ -202,6 +202,7 @@ type UpdateDisks struct {
 	NewDisks           []int                   `json:"new,omitempty"`
 	ExistingDisks      map[string]ExistingDisk `json:"existing,omitempty"`
 	DiskIdentification []DiskIdentification    `json:"identification,omitempty"`
+	OSSize             *int                    `json:"os_size,omitempty"`
 }
 
 // DiskIdentification defines a new size and name combination
@@ -330,6 +331,8 @@ func mostRecentVM(vms []VM) *VM {
 func (s *VMsServiceClient) updateHardware(ctx context.Context, environmentID string, id string, opts *UpdateVMRequest) (*VM, error) {
 	path := s.buildPath(false, environmentID, id)
 
+	osDiskSize := opts.Hardware.UpdateDisks.OSSize
+	opts.Hardware.UpdateDisks.OSSize = nil
 	diskIdentification := opts.Hardware.UpdateDisks.DiskIdentification
 	opts.Hardware.UpdateDisks.DiskIdentification = nil
 
@@ -349,6 +352,7 @@ func (s *VMsServiceClient) updateHardware(ctx context.Context, environmentID str
 
 	removes := buildRemoveList(currentVM, diskIdentification)
 	updates := buildUpdateList(currentVM, diskIdentification)
+	addOSDiskResize(osDiskSize, currentVM, updates)
 	if len(updates) > 0 {
 		opts.Hardware.UpdateDisks.ExistingDisks = updates
 	} else if len(opts.Hardware.UpdateDisks.NewDisks) == 0 {
@@ -561,4 +565,13 @@ func buildUpdateList(vm *VM, diskIDs []DiskIdentification) map[string]ExistingDi
 		}
 	}
 	return updates
+}
+
+func addOSDiskResize(osDiskSize *int, vm *VM, updates map[string]ExistingDisk) {
+	if osDiskSize != nil {
+		updates[*vm.Hardware.Disks[0].ID] = ExistingDisk{
+			ID:   vm.Hardware.Disks[0].ID,
+			Size: osDiskSize,
+		}
+	}
 }
