@@ -2,6 +2,7 @@ package skytap
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sort"
 	"time"
@@ -293,8 +294,8 @@ func (s *VMsServiceClient) Create(ctx context.Context, environmentID string, opt
 func (s *VMsServiceClient) Update(ctx context.Context, environmentID string, id string, opts *UpdateVMRequest) (*VM, error) {
 	if opts.Runstate != nil {
 		return s.changeRunstate(ctx, environmentID, id, opts)
-	} else if opts.Hardware != nil && opts.Hardware.UpdateDisks == nil {
-		return s.changeNameCPURAM(ctx, environmentID, id, opts)
+	} else if opts.Hardware == nil || opts.Hardware.UpdateDisks == nil || opts.Hardware.UpdateDisks.DiskIdentification == nil {
+		return nil, fmt.Errorf("expecting the DiskIdentification list to be populated")
 	}
 	return s.updateHardware(ctx, environmentID, id, opts)
 }
@@ -350,6 +351,8 @@ func (s *VMsServiceClient) updateHardware(ctx context.Context, environmentID str
 	updates := buildUpdateList(currentVM, diskIdentification)
 	if len(updates) > 0 {
 		opts.Hardware.UpdateDisks.ExistingDisks = updates
+	} else if len(opts.Hardware.UpdateDisks.NewDisks) == 0 {
+		opts.Hardware.UpdateDisks = nil
 	}
 
 	requestCreate, err := s.client.newRequest(ctx, "PUT", path, opts)
@@ -429,45 +432,6 @@ func (s *VMsServiceClient) changeRunstate(ctx context.Context, environmentID str
 	return &updatedVM, nil
 }
 
-func (s *VMsServiceClient) changeNameCPURAM(ctx context.Context, environmentID string, id string, opts *UpdateVMRequest) (*VM, error) {
-	path := s.buildPath(false, environmentID, id)
-
-	currentVM, err := s.Get(ctx, environmentID, id)
-	// if started stop
-	runstate := currentVM.Runstate
-	if *runstate == VMRunstateRunning {
-		_, err := s.changeRunstate(ctx, environmentID, id, &UpdateVMRequest{Runstate: vmRunStateToPtr(VMRunstateStopped)})
-		if err != nil {
-			return nil, err
-		}
-		err = s.waitForRunstate(&ctx, environmentID, id, VMRunstateStopped)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	requestCreate, err := s.client.newRequest(ctx, "PUT", path, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	var updatedVM VM
-	_, err = s.client.do(ctx, requestCreate, &updatedVM)
-	if err != nil {
-		return nil, err
-	}
-
-	// if stopped start
-	if *runstate == VMRunstateRunning {
-		_, err := s.changeRunstate(ctx, environmentID, id, &UpdateVMRequest{Runstate: vmRunStateToPtr(VMRunstateRunning)})
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return &updatedVM, nil
-}
-
 func matchUpExistingDisks(vm *VM, identifications []DiskIdentification, ignored map[string]ExistingDisk) {
 	for idx := range vm.Hardware.Disks {
 		// ignore os disk
@@ -505,6 +469,7 @@ func matchUpNewDisks(vm *VM, identifications []DiskIdentification, ignored map[s
 
 // wait for runstate
 func (s *VMsServiceClient) waitForRunstate(ctx *context.Context, environmentID string, id string, runstate VMRunstate) error {
+	log.Printf("[INFO] waiting for runstate (%s)\n", string(runstate))
 	var makeRequest = true
 	var err error
 	for i := 0; i < s.client.retryCount+1 && makeRequest; i++ {
@@ -520,6 +485,8 @@ func (s *VMsServiceClient) waitForRunstate(ctx *context.Context, environmentID s
 			seconds := s.client.retryAfter
 			log.Printf("[INFO] retrying after %d second(s)\n", seconds)
 			time.Sleep(time.Duration(seconds) * time.Second)
+		} else {
+			log.Printf("[INFO] runstate is now (%s)\n", string(runstate))
 		}
 	}
 	return err

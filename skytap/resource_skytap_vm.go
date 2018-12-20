@@ -510,7 +510,7 @@ func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
 
 func updateHardware(d *schema.ResourceData) (*skytap.UpdateHardware, error) {
 	var hardware *skytap.UpdateHardware
-	if _, ok := d.GetOk("disk"); ok && d.HasChange("disk") {
+	if _, ok := d.GetOk("disk"); ok {
 		oldDisks, newDisks := d.GetChange("disk")
 		hardware = &skytap.UpdateHardware{
 			UpdateDisks: &skytap.UpdateDisks{},
