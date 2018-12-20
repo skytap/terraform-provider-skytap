@@ -622,7 +622,7 @@ func TestAccSkytapVMDisk_OSChangeAfter(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vmUpdated),
 					testAccCheckSkytapVMUpdated(t, &vm, &vmUpdated),
-					resource.TestCheckResourceAttr("skytap_vm.bar", "os_disk_size", "4096"),
+					resource.TestCheckResourceAttr("skytap_vm.bar", "os_disk_size", "30721"),
 				),
 			},
 		},
