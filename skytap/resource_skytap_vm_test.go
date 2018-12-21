@@ -759,11 +759,10 @@ func getVM(rs *terraform.ResourceState, environmentID string) (*skytap.VM, error
 }
 
 func testAccCheckSkytapVMRunning(vm *skytap.VM) resource.TestCheckFunc {
+	if os.Getenv("SKYTAP_DISABLE_FORCE_RUNNING") == "" {
+		return resource.TestCheckResourceAttr("skytap_vm.bar", "runstate", string(skytap.VMRunstateRunning))
+	}
 	return func(s *terraform.State) error {
-		resource.TestCheckResourceAttr("skytap_vm.bar", "runstate", string(skytap.VMRunstateRunning))
-		if skytap.VMRunstateRunning != *vm.Runstate && os.Getenv("SKYTAP_DISABLE_FORCE_RUNNING") == "" {
-			return fmt.Errorf("vm (%s) is not running as expected", *vm.ID)
-		}
 		return nil
 	}
 }
