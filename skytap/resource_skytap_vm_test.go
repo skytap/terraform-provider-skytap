@@ -501,7 +501,11 @@ func TestAccCasandra(t *testing.T) {
 				Config:             testAccSkytapVMConfig_cassandra(newEnvTemplateID, os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), uniqueSuffixEnv, 22, "", ""),
 				ExpectNonEmptyPlan: false,
 			}, {
-				Config: testAccSkytapVMConfig_cassandra(newEnvTemplateID, os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), uniqueSuffixEnv, 23, `"published_service" = {"internal_port" = 8080}`,
+				Config: testAccSkytapVMConfig_cassandra(newEnvTemplateID, os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), uniqueSuffixEnv, 23,
+					`"published_service" = {
+						name = "web-internal"
+						"internal_port" = 8080
+					}`,
 					`"network_interface" = {
     	              "interface_type" = "vmxnet3"
         	          "network_id"     = "${skytap_network.dev_network.id}"
