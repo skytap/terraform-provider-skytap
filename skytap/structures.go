@@ -1,6 +1,8 @@
 package skytap
 
 import (
+	"fmt"
+
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/skytap/skytap-sdk-go/skytap"
 )
@@ -17,6 +19,7 @@ func flattenNetworkInterfaces(interfaces []skytap.Interface) *schema.Set {
 
 func flattenNetworkInterface(v skytap.Interface) map[string]interface{} {
 	result := make(map[string]interface{})
+	result["id"] = *v.ID
 	result["interface_type"] = string(*v.NICType)
 	result["network_id"] = *v.NetworkID
 	result["ip"] = *v.IP
@@ -27,10 +30,10 @@ func flattenNetworkInterface(v skytap.Interface) map[string]interface{} {
 	return result
 }
 
-func flattenPublishedServices(publishedServices []skytap.PublishedService) *schema.Set {
+func flattenPublishedServices(services []skytap.PublishedService) *schema.Set {
 	results := make([]interface{}, 0)
 
-	for _, v := range publishedServices {
+	for _, v := range services {
 		results = append(results, flattenPublishedService(v))
 	}
 
@@ -43,6 +46,9 @@ func flattenPublishedService(v skytap.PublishedService) map[string]interface{} {
 	result["internal_port"] = *v.InternalPort
 	result["external_ip"] = *v.ExternalIP
 	result["external_port"] = *v.ExternalPort
+	if v.Name != nil {
+		result["name"] = *v.Name
+	}
 	return result
 }
 
@@ -71,4 +77,31 @@ func flattenDisk(v skytap.Disk) map[string]interface{} {
 		result["name"] = *v.Name
 	}
 	return result
+}
+
+func getVMNetworkInterface(id string, vm *skytap.VM) (*skytap.Interface, error) {
+	for _, networkInterface := range vm.Interfaces {
+		if *networkInterface.ID == id {
+			return &networkInterface, nil
+		}
+	}
+	return nil, fmt.Errorf("could not find network interface (%s) in the VM", id)
+}
+
+func buildServices(interfaces *schema.Set) (map[string]int, map[string]string) {
+	ports := make(map[string]int)
+	ips := make(map[string]string)
+
+	for _, v := range interfaces.List() {
+		networkInterface := v.(map[string]interface{})
+		if _, ok := networkInterface["published_service"]; ok {
+			publishedServices := networkInterface["published_service"].(*schema.Set)
+			for _, v := range publishedServices.List() {
+				publishedService := v.(map[string]interface{})
+				ips[publishedService["name"].(string)] = publishedService["external_ip"].(string)
+				ports[publishedService["name"].(string)] = publishedService["external_port"].(int)
+			}
+		}
+	}
+	return ports, ips
 }

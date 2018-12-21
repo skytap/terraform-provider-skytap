@@ -24,7 +24,8 @@ type SkytapClient struct {
 	vmsClient               skytap.VMsService
 	interfacesClient        skytap.InterfacesService
 	publishedServicesClient skytap.PublishedServicesService
-	names                   interface{}
+	vmDisks                 interface{}
+	vmNetworks              interface{}
 }
 
 // Client creates a SkytapClient client

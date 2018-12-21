@@ -73,6 +73,7 @@ type PublishedService struct {
 	InternalPort *int    `json:"internal_port"`
 	ExternalIP   *string `json:"external_ip"`
 	ExternalPort *int    `json:"external_port"`
+	Name         *string `json:"name,omitempty"`
 }
 
 // CreatePublishedServiceRequest describes the create the publishedService data

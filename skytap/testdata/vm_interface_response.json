@@ -1,0 +1,40 @@
+[
+{
+"id": "nic-20246343-38367563-0",
+"ip": "192.168.0.1",
+"hostname": "wins2016s",
+"mac": "00:50:56:11:7D:D9",
+"services_count": 0,
+"services": [],
+"public_ips_count": 0,
+"public_ips": [],
+"vm_id": "37527239",
+"vm_name": "Windows Server 2016 Standard",
+"status": "Running",
+"network_id": "23917287",
+"network_name": "tftest-network-1",
+"network_url": "https://cloud.skytap.com/v2/configurations/40064014/networks/23917287",
+"network_type": "automatic",
+"network_subnet": "192.168.0.0/16",
+"nic_type": "vmxnet3",
+"secondary_ips": [],
+"public_ip_attachments": []
+},
+{
+"id": "nic-20246343-38367563-5",
+"ip": "192.168.0.2",
+"hostname": "wins2016s2",
+"mac": "00:50:56:07:40:3F",
+"services_count": 0,
+"services": [],
+"public_ips_count": 0,
+"public_ips": [],
+"vm_id": "37527239",
+"vm_name": "Windows Server 2016 Standard",
+"status": "Running",
+"network_id": "23917287",
+"nic_type": "e1000",
+"secondary_ips": [],
+"public_ip_attachments": []
+}
+]

@@ -12,70 +12,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const exampleInterfaceListResponse = `[
-    {
-        "id": "nic-20246343-38367563-0",
-        "ip": "192.168.0.1",
-        "hostname": "wins2016s",
-        "mac": "00:50:56:11:7D:D9",
-        "services_count": 0,
-        "services": [],
-        "public_ips_count": 0,
-        "public_ips": [],
-        "vm_id": "37527239",
-        "vm_name": "Windows Server 2016 Standard",
-        "status": "Running",
-        "network_id": "23917287",
-        "network_name": "tftest-network-1",
-        "network_url": "https://cloud.skytap.com/v2/configurations/40064014/networks/23917287",
-        "network_type": "automatic",
-        "network_subnet": "192.168.0.0/16",
-        "nic_type": "vmxnet3",
-        "secondary_ips": [],
-        "public_ip_attachments": []
-    },
-    {
-        "id": "nic-20246343-38367563-5",
-        "ip": "192.168.0.2",
-        "hostname": "wins2016s2",
-        "mac": "00:50:56:07:40:3F",
-        "services_count": 0,
-        "services": [],
-        "public_ips_count": 0,
-        "public_ips": [],
-        "vm_id": "37527239",
-        "vm_name": "Windows Server 2016 Standard",
-        "status": "Running",
-        "network_id": "23917287",
-        "nic_type": "e1000",
-        "secondary_ips": [],
-        "public_ip_attachments": []
-    }
-]`
-
-const examplePublishedServiceListResponse = `[
-    {
-        "id": "8080",
-        "internal_port": 8080,
-        "external_ip": "services-uswest.skytap.com",
-        "external_port": 26160
-    },
-    {
-        "id": "8081",
-        "internal_port": 8081,
-        "external_ip": "services-useast.skytap.com",
-        "external_port": 17785
-    }
-]`
-
 func TestFlattenInterfaces(t *testing.T) {
+
+	response := string(readTestFile(t, "vm_interface_response.json"))
 
 	expected := make(map[string][]string)
 	expected["ip"] = []string{"192.168.0.1", "192.168.0.2"}
 	expected["hostname"] = []string{"wins2016s", "wins2016s2"}
+	expected["id"] = []string{"nic-20246343-38367563-0", "nic-20246343-38367563-5"}
 
 	var interfaces []skytap.Interface
-	json.Unmarshal([]byte(exampleInterfaceListResponse), &interfaces)
+	err := json.Unmarshal([]byte(response), &interfaces)
+	if err != nil {
+		t.Fatal(err)
+	}
 	var networkInterfaces = make([]map[string]interface{}, 0)
 	for _, v := range interfaces {
 		networkInterfaces = append(networkInterfaces, flattenNetworkInterface(v))
@@ -92,14 +42,20 @@ func TestFlattenInterfaces(t *testing.T) {
 
 func TestFlattenPublishedServices(t *testing.T) {
 
+	response := string(readTestFile(t, "vm_interface_services_response.json"))
+
 	expected := make(map[string][]string)
 	expected["id"] = []string{"8080", "8081"}
 	expected["internal_port"] = []string{"8080", "8081"}
 	expected["external_ip"] = []string{"services-uswest.skytap.com", "services-useast.skytap.com"}
 	expected["external_port"] = []string{"26160", "17785"}
+	expected["name"] = []string{"one", "two"}
 
 	var services []skytap.PublishedService
-	json.Unmarshal([]byte(examplePublishedServiceListResponse), &services)
+	err := json.Unmarshal([]byte(response), &services)
+	if err != nil {
+		t.Fatal(err)
+	}
 	var publishedServices = make([]map[string]interface{}, 0)
 	for _, v := range services {
 		publishedServices = append(publishedServices, flattenPublishedService(v))
