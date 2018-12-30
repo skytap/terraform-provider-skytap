@@ -2,7 +2,6 @@ package skytap
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"testing"
 
@@ -12,9 +11,8 @@ import (
 func TestAccDataSourceSkytapTemplate_Basic(t *testing.T) {
 	//t.Parallel()
 
-	if os.Getenv("SKYTAP_TEMPLATE_NAME") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_NAME required to run skytap_template_datasource acceptance tests. Setting: SKYTAP_TEMPLATE_NAME=Advanced Import Appliance on Ubuntu 18.04.1")
-		os.Setenv("SKYTAP_TEMPLATE_NAME", "Advanced Import Appliance on Ubuntu 18.04.1")
+	if setEnv(t, "SKYTAP_TEMPLATE_NAME", "Advanced Import Appliance on Ubuntu 18.04.1") {
+		defer unsetEnv("SKYTAP_TEMPLATE_NAME")
 	}
 
 	resource.Test(t, resource.TestCase{
@@ -45,13 +43,11 @@ output "id" {
 func TestAccDataSourceSkytapTemplate_RegexMostRecent(t *testing.T) {
 	//t.Parallel()
 
-	if os.Getenv("SKYTAP_TEMPLATE_NAME") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_NAME required to run skytap_template_datasource acceptance tests. Setting: SKYTAP_TEMPLATE_NAME=Advanced Import Appliance on Ubuntu 18.04.1")
-		os.Setenv("SKYTAP_TEMPLATE_NAME", "Advanced Import Appliance on Ubuntu 18.04.1")
+	if setEnv(t, "SKYTAP_TEMPLATE_NAME", "Advanced Import Appliance on Ubuntu 18.04.1") {
+		defer unsetEnv("SKYTAP_TEMPLATE_NAME")
 	}
-	if os.Getenv("SKYTAP_TEMPLATE_NAME_PARTIAL") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_NAME_PARTIAL required to run skytap_template_datasource acceptance tests. Setting: SKYTAP_TEMPLATE_NAME_PARTIAL=18.04")
-		os.Setenv("SKYTAP_TEMPLATE_NAME_PARTIAL", "18.04")
+	if setEnv(t, "SKYTAP_TEMPLATE_NAME_PARTIAL", "Appliance on Ubuntu 18.04") {
+		defer unsetEnv("SKYTAP_TEMPLATE_NAME_PARTIAL")
 	}
 
 	resource.Test(t, resource.TestCase{

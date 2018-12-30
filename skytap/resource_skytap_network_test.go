@@ -54,9 +54,8 @@ func testSweepSkytapNetwork(region string) error {
 func TestAccSkytapNetwork_Basic(t *testing.T) {
 	//t.Parallel()
 
-	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_network_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=1473407")
-		os.Setenv("SKYTAP_TEMPLATE_ID", "1473407")
+	if setEnv(t, "SKYTAP_TEMPLATE_ID", "1473407") {
+		defer unsetEnv("SKYTAP_TEMPLATE_ID")
 	}
 
 	uniqueSuffixEnv := acctest.RandInt()
@@ -87,9 +86,8 @@ func TestAccSkytapNetwork_Basic(t *testing.T) {
 func TestAccSkytapNetwork_Update(t *testing.T) {
 	//t.Parallel()
 
-	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_network_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=1473407")
-		os.Setenv("SKYTAP_TEMPLATE_ID", "1473407")
+	if setEnv(t, "SKYTAP_TEMPLATE_ID", "1473407") {
+		defer unsetEnv("SKYTAP_TEMPLATE_ID")
 	}
 
 	uniqueSuffixEnv := acctest.RandInt()
