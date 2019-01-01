@@ -501,7 +501,7 @@ func (s *VMsServiceClient) waitForRunstate(ctx *context.Context, environmentID s
 
 		if makeRequest {
 			seconds := s.client.retryAfter
-			log.Printf("[INFO] retrying after %d second(s)\n", seconds)
+			log.Printf("[INFO] waiting for %d second(s)\n", seconds)
 			time.Sleep(time.Duration(seconds) * time.Second)
 		} else {
 			log.Printf("[INFO] runstate is now (%s)\n", string(runstate))

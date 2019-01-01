@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"sort"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -43,6 +44,7 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 				),
 			},
 			{
+				PreConfig: pause(),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
 					`"ram" = 8192`),
 				Check: resource.ComposeTestCheckFunc(
@@ -53,6 +55,7 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 				),
 			},
 			{
+				PreConfig: pause(),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
 					`"cpus" = 4
 									"ram" = 4096`),
@@ -66,6 +69,10 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 			},
 		},
 	})
+}
+
+func pause() func() {
+	return func() { time.Sleep(time.Duration(2) * time.Minute) }
 }
 
 func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
@@ -102,6 +109,7 @@ func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
 				),
 			},
 			{
+				PreConfig: pause(),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
 					`"cpus" = 4
 									"disk" = {
@@ -155,6 +163,7 @@ func TestAccSkytapVMCPU_WithDisk(t *testing.T) {
 				),
 			},
 			{
+				PreConfig: pause(),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
 					`"cpus" = 4
 									"disk" = {
@@ -202,6 +211,7 @@ func TestAccSkytapVMCPURAM_UpdateNPECheck(t *testing.T) {
 				),
 			},
 			{
+				PreConfig: pause(),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
 					`"cpus" = 8
 									"ram" = 2048`),
@@ -338,6 +348,7 @@ func TestAccSkytapVMDisks_Create(t *testing.T) {
 				),
 			},
 			{
+				PreConfig: pause(),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
 					`"disk" = {
 										"size" = 2048
@@ -386,6 +397,7 @@ func TestAccSkytapVMDisks_UpdateNPECheck(t *testing.T) {
 				),
 			},
 			{
+				PreConfig: pause(),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
 					`"disk" = {
 										"size" = 8000
@@ -434,6 +446,7 @@ func TestAccSkytapVMDisks_Resize(t *testing.T) {
 				),
 			},
 			{
+				PreConfig: pause(),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
 					`"disk" = {
 										"size" = 8192
@@ -526,6 +539,7 @@ func TestAccSkytapVMDisk_OS(t *testing.T) {
 				),
 			},
 			{
+				PreConfig: pause(),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
 					`"os_disk_size" = 30722`),
 				Check: resource.ComposeTestCheckFunc(
@@ -572,6 +586,7 @@ func TestAccSkytapVMDisk_OSChangeAfter(t *testing.T) {
 				),
 			},
 			{
+				PreConfig: pause(),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
 					`"os_disk_size" = 30721`),
 				Check: resource.ComposeTestCheckFunc(

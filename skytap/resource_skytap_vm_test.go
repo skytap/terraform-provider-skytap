@@ -167,6 +167,7 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 					testAccCheckSkytapInterfaceAttributes(t, "skytap_environment.foo", "skytap_network.baz", &vm, skytap.NICTypeVMXNet3, []string{"192.168.0.10", "192.168.0.11"}, []string{"bloggs-web", "bloggs-web2"}),
 				),
 			}, {
+				PreConfig: pause(),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
 					resource "skytap_network" "baz" {
   						"name"        		= "tftest-network-1"
@@ -191,6 +192,7 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 					testAccCheckSkytapInterfaceAttributes(t, "skytap_environment.foo", "skytap_network.baz", &vm, skytap.NICTypeVMXNet3, []string{"192.168.0.20", "192.168.0.21"}, []string{"bloggs-web3", "bloggs-web4"}),
 				),
 			}, {
+				PreConfig: pause(),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
 					resource "skytap_network" "baz" {
   						"name"        		= "tftest-network-1"
@@ -258,6 +260,7 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 					testAccCheckSkytapPublishedServiceAttributes(&vm, []int{8080, 8081}),
 				),
 			}, {
+				PreConfig: pause(),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
 					resource "skytap_network" "baz" {
   						"name"        		= "tftest-network-1"
@@ -284,6 +287,7 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 					testAccCheckSkytapPublishedServiceAttributes(&vm, []int{8082, 8083}),
 				),
 			}, {
+				PreConfig: pause(),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
 					resource "skytap_network" "baz" {
   						"name"        		= "tftest-network-1"
@@ -306,6 +310,7 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 					testAccCheckSkytapPublishedServiceAttributes(&vm, []int{8084}),
 				),
 			}, {
+				PreConfig: pause(),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
 					resource "skytap_network" "baz" {
   						"name"        		= "tftest-network-1"
@@ -445,6 +450,7 @@ func TestAccCasandra(t *testing.T) {
 				Config:             testAccSkytapVMConfig_cassandra(newEnvTemplateID, os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), uniqueSuffixEnv, 22, "", ""),
 				ExpectNonEmptyPlan: false,
 			}, {
+				PreConfig: pause(),
 				Config: testAccSkytapVMConfig_cassandra(newEnvTemplateID, os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), uniqueSuffixEnv, 23,
 					`"published_service" = {
 						name = "web-internal"
@@ -732,7 +738,12 @@ func getVM(rs *terraform.ResourceState, environmentID string) (*skytap.VM, error
 
 func testAccCheckSkytapVMRunning(vm *skytap.VM) resource.TestCheckFunc {
 	if os.Getenv("SKYTAP_DISABLE_FORCE_RUNNING") == "" {
-		return resource.TestCheckResourceAttr("skytap_vm.bar", "runstate", string(skytap.VMRunstateRunning))
+		return func(s *terraform.State) error {
+			if skytap.VMRunstateRunning == *vm.Runstate {
+				return nil
+			}
+			return fmt.Errorf("vm not running but in runstate (%s)", string(*vm.Runstate))
+		}
 	}
 	return func(s *terraform.State) error {
 		return nil
