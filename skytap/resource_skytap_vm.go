@@ -73,7 +73,6 @@ func resourceSkytapVM() *schema.Resource {
 				Type:     schema.TypeSet,
 				Set:      diskHash,
 				Optional: true,
-				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -87,7 +86,6 @@ func resourceSkytapVM() *schema.Resource {
 						"size": {
 							Type:         schema.TypeInt,
 							Required:     true,
-							ForceNew:     true,
 							ValidateFunc: validation.IntBetween(2048, 2096128),
 						},
 						"type": {
@@ -217,12 +215,12 @@ func resourceSkytapVMCreate(d *schema.ResourceData, meta interface{}) error {
 	if err = addNetworkAdapters(d, meta, *vm.ID); err != nil {
 		return err
 	}
-	if err = addVMHardware(d, &client, &ctx, vm, environmentID, vmID); err != nil {
+	if err = addVMHardware(d, meta, &client, &ctx, vm, environmentID, vmID); err != nil {
 		return err
 	}
 
 	forceRunning := true
-	if os.Getenv("SKYTAP_FORCE_RUNNING") == "1" {
+	if os.Getenv("SKYTAP_DISABLE_FORCE_RUNNING") == "1" {
 		log.Println("[INFO] not automatically running created VM")
 		forceRunning = false
 	}
@@ -432,13 +430,31 @@ func resourceSkytapVMRead(d *schema.ResourceData, meta interface{}) error {
 			return err
 		}
 	}
-	var diskResource *schema.Set
-	if v := d.Get("disk"); v != nil {
-		diskResource = v.(*schema.Set)
-	}
-	if err := d.Set("disk", flattenDisks(vm.Hardware.Disks, diskResource)); err != nil {
-		log.Printf("[ERROR] error flattening disks: %v", err)
-		return err
+	if vm.Hardware != nil && len(vm.Hardware.Disks) > 0 {
+		var disks *schema.Set
+		if meta.(*SkytapClient).names == nil {
+			// add the names
+			if v1 := d.Get("disk"); v1 != nil {
+				diskResources := v1.(*schema.Set)
+				for _, v2 := range diskResources.List() {
+					diskResource := v2.(map[string]interface{})
+					for idx := range vm.Hardware.Disks {
+						if *vm.Hardware.Disks[idx].ID == diskResource["id"].(string) {
+							vm.Hardware.Disks[idx].Name = utils.String(diskResource["name"].(string))
+							break
+						}
+					}
+				}
+			}
+			disks = flattenDisks(vm.Hardware.Disks)
+		} else {
+			disks = meta.(*SkytapClient).names.(*schema.Set)
+		}
+
+		if err := d.Set("disk", disks); err != nil {
+			log.Printf("[ERROR] error flattening disks: %v", err)
+			return err
+		}
 	}
 	log.Printf("[INFO] retrieved VM: %#v", spew.Sdump(vm))
 
@@ -455,14 +471,26 @@ func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
 	opts := skytap.UpdateVMRequest{}
 
 	if v, ok := d.GetOk("name"); ok {
-		opts.Name = utils.String(v.(string))
+		if d.HasChange("name") {
+			opts.Name = utils.String(v.(string))
+		}
 	}
+
+	hardware, err := buildHardware(d)
+	if err != nil {
+		return err
+	}
+	opts.Hardware = hardware
+
 	log.Printf("[INFO] VM update options: %#v", spew.Sdump(opts))
 	vm, err := client.Update(ctx, environmentID, id, &opts)
 	if err != nil {
 		return fmt.Errorf("error updating vm (%s): %v", id, err)
 	}
 	log.Printf("[INFO] updated VM: %#v", spew.Sdump(vm))
+
+	// Have to do this here in order to capture `name`
+	meta.(*SkytapClient).names = flattenDisks(vm.Hardware.Disks)
 
 	stateConf := &resource.StateChangeConf{
 		Pending:    getVMPendingUpdateRunstates(false),
@@ -480,6 +508,36 @@ func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	return resourceSkytapVMRead(d, meta)
+}
+
+func buildHardware(d *schema.ResourceData) (*skytap.UpdateHardware, error) {
+	var hardware skytap.UpdateHardware
+
+	if v, ok := d.GetOk("disk"); ok && d.HasChange("disk") {
+		hardware = skytap.UpdateHardware{}
+		hardware.UpdateDisks = &skytap.UpdateDisks{}
+		disks := v.(*schema.Set)
+		ids := make([]skytap.DiskIdentification, 0)
+		adds := make([]int, 0)
+		// adds and initialise disk identification struct
+		for _, v2 := range disks.List() {
+			diskResource := v2.(map[string]interface{})
+			id := utils.String(diskResource["id"].(string))
+			if diskResource["id"].(string) == "" {
+				adds = append(adds, diskResource["size"].(int))
+			}
+			ids = append(ids, skytap.DiskIdentification{
+				ID: id, Name: utils.String(diskResource["name"].(string)), Size: utils.Int(diskResource["size"].(int)),
+			})
+		}
+		hardware.UpdateDisks.DiskIdentification = ids
+		if len(adds) > 0 {
+			log.Printf("[INFO] creating %d disks", len(adds))
+			hardware.UpdateDisks.NewDisks = adds
+		}
+	}
+
+	return &hardware, nil
 }
 
 func resourceSkytapVMDelete(d *schema.ResourceData, meta interface{}) error {
@@ -522,7 +580,7 @@ func resourceSkytapVMDelete(d *schema.ResourceData, meta interface{}) error {
 	return err
 }
 
-func addVMHardware(d *schema.ResourceData, client *skytap.VMsService, ctx *context.Context, vm *skytap.VM, environmentID string, id string) error {
+func addVMHardware(d *schema.ResourceData, meta interface{}, client *skytap.VMsService, ctx *context.Context, vm *skytap.VM, environmentID string, id string) error {
 	opts := skytap.UpdateVMRequest{}
 
 	if v, ok := d.GetOk("name"); ok {
@@ -544,13 +602,17 @@ func addVMHardware(d *schema.ResourceData, client *skytap.VMsService, ctx *conte
 		if opts.Hardware == nil {
 			opts.Hardware = &skytap.UpdateHardware{}
 		}
-		opts.Hardware.NewDisks = &skytap.NewDisks{}
+		opts.Hardware.UpdateDisks = &skytap.UpdateDisks{}
 		disks := v.(*schema.Set)
 		log.Printf("[INFO] creating %d disks", disks.Len())
-		opts.Hardware.NewDisks.Sizes = make([]int, d.Get("disk.#").(int))
+		opts.Hardware.UpdateDisks.NewDisks = make([]int, d.Get("disk.#").(int))
+		opts.Hardware.UpdateDisks.DiskIdentification = make([]skytap.DiskIdentification, d.Get("disk.#").(int))
 		for idx, v := range disks.List() {
 			disk := v.(map[string]interface{})
-			opts.Hardware.NewDisks.Sizes[idx] = disk["size"].(int)
+			opts.Hardware.UpdateDisks.NewDisks[idx] = disk["size"].(int)
+			opts.Hardware.UpdateDisks.DiskIdentification[idx] = skytap.DiskIdentification{
+				ID: nil, Name: utils.String(disk["name"].(string)), Size: utils.Int(disk["size"].(int)),
+			}
 		}
 	}
 
@@ -565,13 +627,16 @@ func addVMHardware(d *schema.ResourceData, client *skytap.VMsService, ctx *conte
 		}
 	}
 
-	log.Printf("[INFO] VM update options: %#v", spew.Sdump(opts))
-	vm, err := (*client).Update(*ctx, environmentID, id, &opts)
-	if err != nil {
-		return fmt.Errorf("error updating vm (%s): %v", id, err)
+	if opts.Hardware != nil || opts.Name != nil {
+		log.Printf("[INFO] VM update options: %#v", spew.Sdump(opts))
+		vmUpdated, err := (*client).Update(*ctx, environmentID, id, &opts)
+		if err != nil {
+			return fmt.Errorf("error updating vm (%s): %v", id, err)
+		}
+		log.Printf("[INFO] updated VM: %#v", spew.Sdump(vmUpdated))
+		// Have to do this here in order to capture `name`
+		meta.(*SkytapClient).names = flattenDisks(vmUpdated.Hardware.Disks)
 	}
-	log.Printf("[INFO] updated VM: %#v", spew.Sdump(vm))
-
 	return nil
 }
 

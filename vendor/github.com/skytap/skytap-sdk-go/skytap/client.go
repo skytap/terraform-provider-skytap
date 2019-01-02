@@ -203,7 +203,10 @@ func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*htt
 		err = c.checkResponse(resp)
 
 		if err == nil {
-			readResponseBody(resp, v)
+			errBody := readResponseBody(resp, v)
+			if errBody != nil {
+				break
+			}
 			makeRequest = false
 		} else if err.(*ErrorResponse).RequiresRetry {
 			seconds := *err.(*ErrorResponse).RetryAfter
@@ -212,7 +215,10 @@ func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*htt
 		} else {
 			makeRequest = false
 		}
-		resp.Body.Close()
+		errBody := resp.Body.Close()
+		if errBody != nil {
+			break
+		}
 	}
 
 	return resp, err
