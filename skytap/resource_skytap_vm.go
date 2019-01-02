@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
@@ -66,6 +67,43 @@ func resourceSkytapVM() *schema.Resource {
 				Computed:     true,
 				ForceNew:     true,
 				ValidateFunc: validation.IntBetween(256, 131072),
+			},
+
+			"disk": {
+				Type:     schema.TypeSet,
+				Set:      diskHash,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"size": {
+							Type:         schema.TypeInt,
+							Required:     true,
+							ForceNew:     true,
+							ValidateFunc: validation.IntBetween(2048, 2096128),
+						},
+						"type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"controller": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"lun": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
 			},
 
 			"network_interface": {
@@ -179,8 +217,43 @@ func resourceSkytapVMCreate(d *schema.ResourceData, meta interface{}) error {
 	if err = addNetworkAdapters(d, meta, *vm.ID); err != nil {
 		return err
 	}
+	if err = addVMHardware(d, &client, &ctx, vm, environmentID, vmID); err != nil {
+		return err
+	}
 
-	return updateVMResource(d, meta, true)
+	forceRunning := true
+	if os.Getenv("SKYTAP_FORCE_RUNNING") == "1" {
+		log.Println("[INFO] not automatically running created VM")
+		forceRunning = false
+	}
+
+	if forceRunning {
+		opts := skytap.UpdateVMRequest{}
+		opts.Runstate = utils.VMRunstate(skytap.VMRunstateRunning)
+		log.Printf("[INFO] VM starting: %#v", spew.Sdump(opts))
+		vm, err := client.Update(ctx, environmentID, vmID, &opts)
+		if err != nil {
+			return fmt.Errorf("error starting vm (%s): %v", vmID, err)
+		}
+		log.Printf("[INFO] started VM: %#v", spew.Sdump(vm))
+	}
+
+	stateConf := &resource.StateChangeConf{
+		Pending:    getVMPendingUpdateRunstates(forceRunning),
+		Target:     getVMTargetUpdateRunstates(forceRunning),
+		Refresh:    vmRunstateRefreshFunc(d, meta),
+		Timeout:    d.Timeout(schema.TimeoutUpdate),
+		MinTimeout: minTimeout * time.Second,
+		Delay:      delay * time.Second,
+	}
+
+	log.Printf("[INFO] Waiting for VM (%s) to complete", d.Id())
+	_, err = stateConf.WaitForState()
+	if err != nil {
+		return fmt.Errorf("error waiting for VM (%s) to complete: %s", d.Id(), err)
+	}
+
+	return resourceSkytapVMRead(d, meta)
 }
 
 func waitForVMStopped(d *schema.ResourceData, meta interface{}) error {
@@ -337,15 +410,35 @@ func resourceSkytapVMRead(d *schema.ResourceData, meta interface{}) error {
 
 	// templateID and vmID are not set, as they are not returned by the VM response.
 	// If any of these attributes are changed, this VM will be rebuilt.
-	d.Set("environment_id", environmentID)
-	d.Set("name", vm.Name)
-	d.Set("cpus", vm.Hardware.CPUs)
-	d.Set("name", vm.Hardware.RAM)
+	err = d.Set("environment_id", environmentID)
+	if err != nil {
+		return err
+	}
+	err = d.Set("name", vm.Name)
+	if err != nil {
+		return err
+	}
+	err = d.Set("cpus", vm.Hardware.CPUs)
+	if err != nil {
+		return err
+	}
+	err = d.Set("ram", vm.Hardware.RAM)
+	if err != nil {
+		return err
+	}
 	if len(vm.Interfaces) > 0 {
 		if err := d.Set("network_interface", flattenNetworkInterfaces(vm.Interfaces)); err != nil {
 			log.Printf("[ERROR] error flattening network interfaces: %v", err)
 			return err
 		}
+	}
+	var diskResource *schema.Set
+	if v := d.Get("disk"); v != nil {
+		diskResource = v.(*schema.Set)
+	}
+	if err := d.Set("disk", flattenDisks(vm.Hardware.Disks, diskResource)); err != nil {
+		log.Printf("[ERROR] error flattening disks: %v", err)
+		return err
 	}
 	log.Printf("[INFO] retrieved VM: %#v", spew.Sdump(vm))
 
@@ -353,7 +446,40 @@ func resourceSkytapVMRead(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
-	return updateVMResource(d, meta, false)
+	client := meta.(*SkytapClient).vmsClient
+	ctx := meta.(*SkytapClient).StopContext
+
+	environmentID := d.Get("environment_id").(string)
+	id := d.Id()
+
+	opts := skytap.UpdateVMRequest{}
+
+	if v, ok := d.GetOk("name"); ok {
+		opts.Name = utils.String(v.(string))
+	}
+	log.Printf("[INFO] VM update options: %#v", spew.Sdump(opts))
+	vm, err := client.Update(ctx, environmentID, id, &opts)
+	if err != nil {
+		return fmt.Errorf("error updating vm (%s): %v", id, err)
+	}
+	log.Printf("[INFO] updated VM: %#v", spew.Sdump(vm))
+
+	stateConf := &resource.StateChangeConf{
+		Pending:    getVMPendingUpdateRunstates(false),
+		Target:     getVMTargetUpdateRunstates(false),
+		Refresh:    vmRunstateRefreshFunc(d, meta),
+		Timeout:    d.Timeout(schema.TimeoutUpdate),
+		MinTimeout: minTimeout * time.Second,
+		Delay:      delay * time.Second,
+	}
+
+	log.Printf("[INFO] Waiting for VM (%s) to complete", d.Id())
+	_, err = stateConf.WaitForState()
+	if err != nil {
+		return fmt.Errorf("error waiting for VM (%s) to complete: %s", d.Id(), err)
+	}
+
+	return resourceSkytapVMRead(d, meta)
 }
 
 func resourceSkytapVMDelete(d *schema.ResourceData, meta interface{}) error {
@@ -396,48 +522,7 @@ func resourceSkytapVMDelete(d *schema.ResourceData, meta interface{}) error {
 	return err
 }
 
-func updateVMResource(d *schema.ResourceData, meta interface{}, forceRunning bool) error {
-	client := meta.(*SkytapClient).vmsClient
-	ctx := meta.(*SkytapClient).StopContext
-
-	id := d.Id()
-
-	environmentID := d.Get("environment_id").(string)
-
-	err := updateVMResourceOptions(d, &client, &ctx, environmentID, id)
-	if err != nil {
-		return err
-	}
-	if forceRunning {
-		opts := skytap.UpdateVMRequest{}
-		opts.Runstate = utils.VMRunstate(skytap.VMRunstateRunning)
-		log.Printf("[INFO] VM starting: %#v", spew.Sdump(opts))
-		vm, err := client.Update(ctx, environmentID, id, &opts)
-		if err != nil {
-			return fmt.Errorf("error starting vm (%s): %v", id, err)
-		}
-		log.Printf("[INFO] started VM: %#v", spew.Sdump(vm))
-	}
-
-	stateConf := &resource.StateChangeConf{
-		Pending:    getVMPendingUpdateRunstates(forceRunning),
-		Target:     getVMTargetUpdateRunstates(forceRunning),
-		Refresh:    vmRunstateRefreshFunc(d, meta),
-		Timeout:    d.Timeout(schema.TimeoutUpdate),
-		MinTimeout: minTimeout * time.Second,
-		Delay:      delay * time.Second,
-	}
-
-	log.Printf("[INFO] Waiting for VM (%s) to complete", d.Id())
-	_, err = stateConf.WaitForState()
-	if err != nil {
-		return fmt.Errorf("error waiting for VM (%s) to complete: %s", d.Id(), err)
-	}
-
-	return resourceSkytapVMRead(d, meta)
-}
-
-func updateVMResourceOptions(d *schema.ResourceData, client *skytap.VMsService, ctx *context.Context, environmentID string, id string) error {
+func addVMHardware(d *schema.ResourceData, client *skytap.VMsService, ctx *context.Context, vm *skytap.VM, environmentID string, id string) error {
 	opts := skytap.UpdateVMRequest{}
 
 	if v, ok := d.GetOk("name"); ok {
@@ -455,23 +540,28 @@ func updateVMResourceOptions(d *schema.ResourceData, client *skytap.VMsService, 
 		}
 		opts.Hardware.RAM = utils.Int(v.(int))
 	}
+	if v, ok := d.GetOk("disk"); ok {
+		if opts.Hardware == nil {
+			opts.Hardware = &skytap.UpdateHardware{}
+		}
+		opts.Hardware.NewDisks = &skytap.NewDisks{}
+		disks := v.(*schema.Set)
+		log.Printf("[INFO] creating %d disks", disks.Len())
+		opts.Hardware.NewDisks.Sizes = make([]int, d.Get("disk.#").(int))
+		for idx, v := range disks.List() {
+			disk := v.(map[string]interface{})
+			opts.Hardware.NewDisks.Sizes[idx] = disk["size"].(int)
+		}
+	}
 
 	if opts.Hardware != nil {
-		vm, err := (*client).Get(*ctx, environmentID, id)
-		if err != nil {
-			return err
-		}
 		// check max cpu property
 		if opts.Hardware.CPUs != nil && *opts.Hardware.CPUs > *vm.Hardware.MaxCPUs {
-			return fmt.Errorf("the 'CPUs' argument has been assigned %d which is more "+
-				"than the maximum allowed (%d) as defined by this VM",
-				*opts.Hardware.CPUs, *vm.Hardware.MaxCPUs)
+			return outOfRangeError("cpus", *opts.Hardware.CPUs, *vm.Hardware.MaxCPUs)
 		}
 		// check max ram property
 		if opts.Hardware.RAM != nil && *opts.Hardware.RAM > *vm.Hardware.MaxRAM {
-			return fmt.Errorf("the 'RAM' argument has been assigned %d which is more "+
-				"than the maximum allowed (%d) as defined by this VM",
-				*opts.Hardware.RAM, *vm.Hardware.MaxRAM)
+			return outOfRangeError("ram", *opts.Hardware.RAM, *vm.Hardware.MaxRAM)
 		}
 	}
 
@@ -483,6 +573,12 @@ func updateVMResourceOptions(d *schema.ResourceData, client *skytap.VMsService, 
 	log.Printf("[INFO] updated VM: %#v", spew.Sdump(vm))
 
 	return nil
+}
+
+func outOfRangeError(field string, value int, max int) error {
+	return fmt.Errorf("the '%s' argument has been assigned %d which is more "+
+		"than the maximum allowed (%d) as defined by this VM",
+		field, value, max)
 }
 
 func vmRunstateRefreshFunc(
@@ -599,5 +695,16 @@ func publishedServiceHash(v interface{}) int {
 	var buf bytes.Buffer
 	m := v.(map[string]interface{})
 	buf.WriteString(fmt.Sprintf("%d-", m["internal_port"].(int)))
+	return hashcode.String(buf.String())
+}
+
+// Assemble the hash for the disk TypeSet attribute.
+func diskHash(v interface{}) int {
+	var buf bytes.Buffer
+	m := v.(map[string]interface{})
+	buf.WriteString(fmt.Sprintf("%d-", m["size"].(int)))
+	if d, ok := m["name"]; ok {
+		buf.WriteString(fmt.Sprintf("%s-", d.(string)))
+	}
 	return hashcode.String(buf.String())
 }

@@ -41,6 +41,14 @@ The following arguments are supported:
 * `name` - (Optional, Computed) User-defined name. Limited to 100 characters. 
 * `cpus` - (Optional, Computed, ForceNew) Number of CPUs allocated to this virtual machine. Valid range is 1 to 12. Maximum limit depends on the `max_cpus` setting.
 * `ram` - (Optional, Computed, ForceNew) Amount of RAM allocated to this VM. Valid range is 256 and 131,072 (MB). Maximum limit depends on `max_ram` setting.
+* `disk` - (Optional, ForceNew) Array of virtual disks within the VM. The disk size is in MiB; it will be converted to GiB in the Skytap UI. The maximum disk size is 2,096,128 MiB (1.999 TiB).
+
+  * `name` - (Required) A unique name for the disk.
+  * `id` - (Computed) The ID for the disk.
+  * `size` - (Required, Force New) Specify the size of the disk. The new disk’s size should be provided in MiB. The minimum disk size is 2048 MiB; the maximum is 2096128 MiB (1.999 TiB).
+  * `type` - (Computed) The type of disk.
+  * `controller` - (Computed) The disk controller.
+  * `lun` - (Computed) The logical unit number of the disk (LUN).
 
 
   ~> **NOTE:** The name will be truncated to 33 UTF-8 characters after saving. If a name is not provided then the source VM's name will be used.
