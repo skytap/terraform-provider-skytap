@@ -34,6 +34,7 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 	}
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
+	var vmUpdated skytap.VM
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -53,9 +54,10 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
 					`"cpus" = 8`),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vmUpdated),
 					resource.TestCheckResourceAttr("skytap_vm.bar", "cpus", "8"),
-					testAccCheckSkytapVMCPU(t, &vm, 8),
+					testAccCheckSkytapVMUpdated(t, &vm, &vmUpdated),
+					testAccCheckSkytapVMCPU(t, &vmUpdated, 8),
 				),
 			},
 			{
@@ -69,14 +71,14 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 			},
 			{
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
-					`"cpus" = 8
-									"ram" = 8192`),
+					`"cpus" = 4
+									"ram" = 4096`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
-					resource.TestCheckResourceAttr("skytap_vm.bar", "cpus", "8"),
-					resource.TestCheckResourceAttr("skytap_vm.bar", "ram", "8192"),
-					testAccCheckSkytapVMCPU(t, &vm, 8),
-					testAccCheckSkytapVMRAM(t, &vm, 8192),
+					resource.TestCheckResourceAttr("skytap_vm.bar", "cpus", "4"),
+					resource.TestCheckResourceAttr("skytap_vm.bar", "ram", "4096"),
+					testAccCheckSkytapVMCPU(t, &vm, 4),
+					testAccCheckSkytapVMRAM(t, &vm, 4096),
 				),
 			},
 		},
