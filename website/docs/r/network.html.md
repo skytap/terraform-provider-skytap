@@ -8,8 +8,8 @@ description: |-
 
 # skytap\_network
 
-Provides a Skytap Network resource. Networks are not top-level elements of the Skytap API. 
-Rather, they are elements properly contained within an environment. 
+Provides a Skytap Network resource. Networks are not top-level elements of the Skytap API.
+Rather, they are elements properly contained within an environment.
 Operations on them are implicitly on the containing environment.
 
 ## Example Usage
@@ -36,9 +36,11 @@ The following arguments are supported:
 * `domain` - (Required) Domain name for the Skytap network. Limited to 64 characters.
 
 ~> **NOTE:** Valid characters are lowercase letters, numbers, and hyphens. Cannot be blank, must not begin or end with a period, and must start and end with a letter or number. This field can be changed only when all virtual machines in the environment are stopped (not suspended or running).
+
 * `subnet` - (Required) Defines the subnet address and subnet mask size in CIDR format (for example, 10.0.0.0/24). IP addresses for the VMs are assigned from this subnet and standard network services (DNS resolution, CIFS share, routes to Internet) are defined appropriately for it.
 
 ~> **NOTE:** The subnet mask size must be between 16 and 29. Valid characters are lowercase letters, numbers, and hyphens. Cannot be blank, must not begin or end with a period, and must start and end with a letter or number.
+
 * `gateway` - (Optional, Computed) Gateway IP address.
 * `tunnelable` - (Optional) If true, this network can be connected to other networks.
 
