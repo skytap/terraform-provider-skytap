@@ -188,7 +188,7 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					testAccCheckSkytapInterfacesExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz", 2),
-					testAccCheckSkytapInterfaceAttributes("skytap_environment.foo", "skytap_network.baz", &vm, skytap.NICTypeVMXNet3, []string{"192.168.0.10", "192.168.0.11"}, []string{"bloggs-web", "bloggs-web2"}),
+					testAccCheckSkytapInterfaceAttributes(t, "skytap_environment.foo", "skytap_network.baz", &vm, skytap.NICTypeVMXNet3, []string{"192.168.0.10", "192.168.0.11"}, []string{"bloggs-web", "bloggs-web2"}),
 				),
 			}, {
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
@@ -212,7 +212,7 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					testAccCheckSkytapInterfacesExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz", 2),
-					testAccCheckSkytapInterfaceAttributes("skytap_environment.foo", "skytap_network.baz", &vm, skytap.NICTypeVMXNet3, []string{"192.168.0.20", "192.168.0.21"}, []string{"bloggs-web3", "bloggs-web4"}),
+					testAccCheckSkytapInterfaceAttributes(t, "skytap_environment.foo", "skytap_network.baz", &vm, skytap.NICTypeVMXNet3, []string{"192.168.0.20", "192.168.0.21"}, []string{"bloggs-web3", "bloggs-web4"}),
 				),
 			}, {
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
@@ -230,7 +230,7 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					testAccCheckSkytapInterfacesExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz", 1),
-					testAccCheckSkytapInterfaceAttributes("skytap_environment.foo", "skytap_network.baz", &vm, skytap.NICTypeVMXNet3, []string{"192.168.0.22"}, []string{"bloggs-web5"}),
+					testAccCheckSkytapInterfaceAttributes(t, "skytap_environment.foo", "skytap_network.baz", &vm, skytap.NICTypeVMXNet3, []string{"192.168.0.22"}, []string{"bloggs-web5"}),
 				),
 			},
 		},
@@ -241,13 +241,13 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 	//t.Parallel()
 
 	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=1473407")
-		err := os.Setenv("SKYTAP_TEMPLATE_ID", "1473407")
+		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=136409")
+		err := os.Setenv("SKYTAP_TEMPLATE_ID", "136409")
 		assert.NoError(t, err)
 	}
 	if os.Getenv("SKYTAP_VM_ID") == "" {
-		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=37865463")
-		err := os.Setenv("SKYTAP_VM_ID", "37865463")
+		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=849656")
+		err := os.Setenv("SKYTAP_VM_ID", "849656")
 		assert.NoError(t, err)
 	}
 	newEnvTemplateID := os.Getenv("SKYTAP_TEMPLATE_ID")
@@ -276,9 +276,11 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 						ip = "192.168.0.10"
 						hostname = "bloggs-web"
 						published_service {
+							name = "web0"
 							internal_port = 8080
 						}
 						published_service {
+							name = "web1"
 							internal_port = 8081
 						}
                   	}`, ``),
@@ -300,9 +302,11 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 						ip = "192.168.0.10"
 						hostname = "bloggs-web"
 						published_service {
+							name = "web2"
 							internal_port = 8082
 						}
 						published_service {
+							name = "web3"
 							internal_port = 8083
 						}
                   	}`, ``),
@@ -324,6 +328,7 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 						ip = "192.168.0.10"
 						hostname = "bloggs-web"
 						published_service {
+							name = "web4"
 							internal_port = 8084
 						}
                   	}`, ``),
@@ -345,6 +350,7 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 						ip = "192.168.0.10"
 						hostname = "bloggs-web"
 						published_service {
+							name = "web4"
 							internal_port = 8084
 						}
                   	}`, ``),
@@ -403,6 +409,70 @@ func TestAccSkytapVM_PublishedServiceBadNic(t *testing.T) {
 	})
 }
 
+func TestAccExternalPorts(t *testing.T) {
+
+	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
+		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=1473407")
+		err := os.Setenv("SKYTAP_TEMPLATE_ID", "1473407")
+		assert.NoError(t, err)
+	}
+	if os.Getenv("SKYTAP_VM_ID") == "" {
+		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=37865463")
+		err := os.Setenv("SKYTAP_VM_ID", "37865463")
+		assert.NoError(t, err)
+	}
+	newEnvTemplateID := os.Getenv("SKYTAP_TEMPLATE_ID")
+	if os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID") != "" {
+		newEnvTemplateID = os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID")
+		log.Printf("[DEBUG] SKYTAP_TEMPLATE_NEW_ENV_ID=%s", newEnvTemplateID)
+	}
+
+	uniqueSuffixEnv := acctest.RandInt()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSkytapVMConfig_cassandra(newEnvTemplateID, os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), uniqueSuffixEnv, 23,
+					`"published_service" = {"name" = "web-internal" "internal_port" = 8080}`,
+					`"network_interface" = {
+    	              "interface_type" = "vmxnet3"
+        	          "network_id"     = "${skytap_network.dev_network.id}"
+        	          "ip"         = "10.0.3.2"
+                      "hostname" = "myhost2"
+
+        	          "published_service" = {
+						"name" = "ssh"
+          	            "internal_port" = 22
+        	          }
+        	          "published_service" = {
+						"name" = "web"
+          	            "internal_port" = 80
+        	          }
+      	            }`),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapExternalPorts(t, "skytap_vm.cassandra1", "4"),
+				),
+			},
+		},
+	})
+}
+
+func testAccCheckSkytapExternalPorts(t *testing.T, vmName string, count string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rsVM, err := getResource(s, vmName)
+		if err != nil {
+			return err
+		}
+		assert.Equal(t, count, rsVM.Primary.Attributes["service_ports.%"], "empty map entry")
+		assert.Equal(t, count, rsVM.Primary.Attributes["service_ips.%"], "empty map entry")
+
+		return nil
+	}
+}
+
 func TestAccCasandra(t *testing.T) {
 
 	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
@@ -431,7 +501,11 @@ func TestAccCasandra(t *testing.T) {
 				Config:             testAccSkytapVMConfig_cassandra(newEnvTemplateID, os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), uniqueSuffixEnv, 22, "", ""),
 				ExpectNonEmptyPlan: false,
 			}, {
-				Config: testAccSkytapVMConfig_cassandra(newEnvTemplateID, os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), uniqueSuffixEnv, 23, `"published_service" = {"internal_port" = 8080}`,
+				Config: testAccSkytapVMConfig_cassandra(newEnvTemplateID, os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), uniqueSuffixEnv, 23,
+					`"published_service" = {
+						name = "web-internal"
+						"internal_port" = 8080
+					}`,
 					`"network_interface" = {
     	              "interface_type" = "vmxnet3"
         	          "network_id"     = "${skytap_network.dev_network.id}"
@@ -439,9 +513,11 @@ func TestAccCasandra(t *testing.T) {
                       "hostname" = "myhost2"
 
         	          "published_service" = {
+						name = "ssh"
           	            "internal_port" = 22
         	          }
         	          "published_service" = {
+						name = "web"
           	            "internal_port" = 80
         	          }
       	            }`),
@@ -479,6 +555,7 @@ func testAccSkytapVMConfig_cassandra(envTemplateID string, templateID string, vm
         "hostname" = "myhost"
 
         "published_service" = {
+          "name" = "service"
           "internal_port" = %d
         }
         %s
@@ -520,7 +597,7 @@ func testAccCheckSkytapPublishedServiceAttributes(vm *skytap.VM, ports []int) re
 	}
 }
 
-func testAccCheckSkytapInterfaceAttributes(environmentName string, networkName string, vm *skytap.VM, nicType skytap.NICType, ips []string, hostnames []string) resource.TestCheckFunc {
+func testAccCheckSkytapInterfaceAttributes(t *testing.T, environmentName string, networkName string, vm *skytap.VM, nicType skytap.NICType, ips []string, hostnames []string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 
 		rsEnvironment, err := getResource(s, environmentName)
@@ -562,6 +639,7 @@ func testAccCheckSkytapInterfaceAttributes(environmentName string, networkName s
 			if *adapter.NetworkID != *net.ID {
 				return fmt.Errorf("the interface network IDs (%s) are not configured as expected (%s)", *adapter.NetworkID, *net.ID)
 			}
+			assert.NotNil(t, adapter.ID)
 		}
 		return nil
 	}
@@ -681,11 +759,10 @@ func getVM(rs *terraform.ResourceState, environmentID string) (*skytap.VM, error
 }
 
 func testAccCheckSkytapVMRunning(vm *skytap.VM) resource.TestCheckFunc {
+	if os.Getenv("SKYTAP_DISABLE_FORCE_RUNNING") == "" {
+		return resource.TestCheckResourceAttr("skytap_vm.bar", "runstate", string(skytap.VMRunstateRunning))
+	}
 	return func(s *terraform.State) error {
-		resource.TestCheckResourceAttr("skytap_vm.bar", "runstate", string(skytap.VMRunstateRunning))
-		if skytap.VMRunstateRunning != *vm.Runstate && os.Getenv("SKYTAP_DISABLE_FORCE_RUNNING") == "" {
-			return fmt.Errorf("vm (%s) is not running as expected", *vm.ID)
-		}
 		return nil
 	}
 }

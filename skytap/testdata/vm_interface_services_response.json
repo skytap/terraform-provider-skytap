@@ -1,0 +1,16 @@
+[
+  {
+    "id": "8080",
+    "internal_port": 8080,
+    "external_ip": "services-uswest.skytap.com",
+    "external_port": 26160,
+    "name": "one"
+  },
+  {
+    "id": "8081",
+    "internal_port": 8081,
+    "external_ip": "services-useast.skytap.com",
+    "external_port": 17785,
+    "name": "two"
+  }
+]
