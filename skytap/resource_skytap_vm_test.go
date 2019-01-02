@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/skytap/skytap-sdk-go/skytap"
+	"github.com/stretchr/testify/assert"
 	"github.com/terraform-providers/terraform-provider-skytap/skytap/utils"
 )
 
@@ -75,7 +76,7 @@ func TestAccSkytapVM_Basic(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapVMConfig_basic(os.Getenv("SKYTAP_TEMPLATE_ID"), uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "name = \"test\"", ""),
+				Config: testAccSkytapVMConfig_basic(os.Getenv("SKYTAP_TEMPLATE_ID"), uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "name = \"test\"", "", ``),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "test"),
@@ -108,7 +109,7 @@ func TestAccSkytapVM_Update(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapVMConfig_basic(os.Getenv("SKYTAP_TEMPLATE_ID"), uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", ""),
+				Config: testAccSkytapVMConfig_basic(os.Getenv("SKYTAP_TEMPLATE_ID"), uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "", ``),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					resource.TestCheckResourceAttrSet("skytap_vm.bar", "name"),
@@ -117,7 +118,7 @@ func TestAccSkytapVM_Update(t *testing.T) {
 			},
 			{
 				Config: testAccSkytapVMConfig_basic(os.Getenv("SKYTAP_TEMPLATE_ID"), uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"),
-					fmt.Sprintf("name = \"tftest-vm-%d\"", uniqueSuffixVM), ""),
+					fmt.Sprintf("name = \"tftest-vm-%d\"", uniqueSuffixVM), "", ``),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("skytap_vm.bar", "name", fmt.Sprintf("tftest-vm-%d", uniqueSuffixVM)),
 					testAccCheckSkytapVMRunning(&vm),
@@ -165,7 +166,7 @@ func TestAccSkytapVM_Interface(t *testing.T) {
                     	network_id = "${skytap_network.baz.id}"
 						ip = "192.168.0.11"
 						hostname = "bloggs-web2"
-                  	}`),
+                  	}`, ``),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					testAccCheckSkytapInterfacesExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz", 2),
@@ -189,7 +190,7 @@ func TestAccSkytapVM_Interface(t *testing.T) {
                    		network_id = "${skytap_network.baz.id}"
 						ip = "192.168.0.21"
 						hostname = "bloggs-web4"
-                 	}`),
+                 	}`, ``),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					testAccCheckSkytapInterfacesExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz", 2),
@@ -207,7 +208,7 @@ func TestAccSkytapVM_Interface(t *testing.T) {
                    		network_id = "${skytap_network.baz.id}"
 						ip = "192.168.0.22"
 						hostname = "bloggs-web5"
-                 	}`),
+                 	}`, ``),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					testAccCheckSkytapInterfacesExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz", 1),
@@ -256,7 +257,7 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 						published_service {
 							internal_port = 8081
 						}
-                  	}`),
+                  	}`, ``),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					testAccCheckSkytapInterfacesExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz", 1),
@@ -280,7 +281,7 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 						published_service {
 							internal_port = 8083
 						}
-                  	}`),
+                  	}`, ``),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					testAccCheckSkytapInterfacesExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz", 1),
@@ -301,7 +302,7 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 						published_service {
 							internal_port = 8084
 						}
-                  	}`),
+                  	}`, ``),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					testAccCheckSkytapInterfacesExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz", 1),
@@ -322,7 +323,7 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 						published_service {
 							internal_port = 8084
 						}
-                  	}`),
+                  	}`, ``),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					testAccCheckSkytapInterfacesExists("skytap_environment.foo", "skytap_vm.bar", "skytap_network.baz", 1),
@@ -365,7 +366,7 @@ func TestAccSkytapVM_PublishedServiceBadNic(t *testing.T) {
                     	network_id = "${skytap_network.baz.id}"
 						ip = "192.168.0.10"
 						hostname = "bloggs-web"
-                  	}`),
+                  	}`, ``),
 				ExpectError: regexp.MustCompile(`error creating interface: POST (.*?): 422 \(request "(.*?)"\)`),
 			},
 		},
@@ -409,6 +410,118 @@ func TestAccCasandra(t *testing.T) {
         	          }
       	            }`),
 				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+func TestAccSkytapVMCPURam_Create(t *testing.T) {
+	//t.Parallel()
+
+	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
+		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=1473407")
+		os.Setenv("SKYTAP_TEMPLATE_ID", "1473407")
+	}
+	if os.Getenv("SKYTAP_VM_ID") == "" {
+		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=37865463")
+		os.Setenv("SKYTAP_VM_ID", "37865463")
+	}
+
+	uniqueSuffixEnv := acctest.RandInt()
+	var vm skytap.VM
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSkytapVMConfig_basic(os.Getenv("SKYTAP_TEMPLATE_ID"), uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+					`"cpus" = 12`),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
+					resource.TestCheckResourceAttr("skytap_vm.bar", "cpus", "12"),
+					testAccCheckSkytapVMCPU(t, &vm, 12),
+				),
+			},
+			{
+				Config: testAccSkytapVMConfig_basic(os.Getenv("SKYTAP_TEMPLATE_ID"), uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+					`"ram" = 8192`),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
+					resource.TestCheckResourceAttr("skytap_vm.bar", "ram", "8192"),
+					testAccCheckSkytapVMRAM(t, &vm, 8192),
+				),
+			},
+			{
+				Config: testAccSkytapVMConfig_basic(os.Getenv("SKYTAP_TEMPLATE_ID"), uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+					`"cpus" = 12
+									"ram" = 8192`),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
+					resource.TestCheckResourceAttr("skytap_vm.bar", "cpus", "12"),
+					resource.TestCheckResourceAttr("skytap_vm.bar", "ram", "8192"),
+					testAccCheckSkytapVMCPU(t, &vm, 12),
+					testAccCheckSkytapVMRAM(t, &vm, 8192),
+				),
+			},
+		},
+	})
+}
+
+func TestAccSkytapVMCPU_Invalid(t *testing.T) {
+	//t.Parallel()
+
+	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
+		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=1473407")
+		os.Setenv("SKYTAP_TEMPLATE_ID", "1473407")
+	}
+	if os.Getenv("SKYTAP_VM_ID") == "" {
+		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=37865463")
+		os.Setenv("SKYTAP_VM_ID", "37865463")
+	}
+
+	uniqueSuffixEnv := acctest.RandInt()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSkytapVMConfig_basic(os.Getenv("SKYTAP_TEMPLATE_ID"), uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+					`"cpus" = 121
+									"ram" = 819000000002`),
+				ExpectError: regexp.MustCompile(`config is invalid: 2 problems:*`),
+			},
+		},
+	})
+}
+
+func TestAccSkytapVMCPU_OutOfRange(t *testing.T) {
+	//t.Parallel()
+
+	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
+		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=136409")
+		os.Setenv("SKYTAP_TEMPLATE_ID", "136409")
+	}
+	if os.Getenv("SKYTAP_VM_ID") == "" {
+		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=849656")
+		os.Setenv("SKYTAP_VM_ID", "849656")
+	}
+
+	uniqueSuffixEnv := acctest.RandInt()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSkytapVMConfig_basic(os.Getenv("SKYTAP_TEMPLATE_ID"), uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+					`"cpus" = 12
+									"ram" = 131072`),
+				ExpectError: regexp.MustCompile(`the 'CPUs' argument has been assigned 12 which is more than the maximum allowed \(8\) as defined by this VM`),
 			},
 		},
 	})
@@ -603,7 +716,7 @@ func testAccCheckSkytapInterfacesExists(environmentName string, vmName string, n
 	}
 }
 
-func testAccSkytapVMConfig_basic(envTemplateID string, uniqueSuffixEnv int, network string, VMTemplateID string, VMID string, name string, networkInterface string) string {
+func testAccSkytapVMConfig_basic(envTemplateID string, uniqueSuffixEnv int, network string, VMTemplateID string, VMID string, name string, networkInterface string, hardware string) string {
 	config := fmt.Sprintf(`
  	resource "skytap_environment" "foo" {
  		template_id = "%s"
@@ -619,8 +732,9 @@ func testAccSkytapVMConfig_basic(envTemplateID string, uniqueSuffixEnv int, netw
  		vm_id      		  = "%s"
 		%s
         %s
+		%s
  	}
- `, envTemplateID, vmEnvironmentPrefix, uniqueSuffixEnv, network, VMTemplateID, VMID, name, networkInterface)
+ `, envTemplateID, vmEnvironmentPrefix, uniqueSuffixEnv, network, VMTemplateID, VMID, name, networkInterface, hardware)
 	return config
 }
 
@@ -648,6 +762,20 @@ func testAccCheckSkytapVMRunning(vm *skytap.VM) resource.TestCheckFunc {
 		if skytap.VMRunstateRunning != *vm.Runstate {
 			return fmt.Errorf("vm (%s) is not running as expected", *vm.ID)
 		}
+		return nil
+	}
+}
+
+func testAccCheckSkytapVMCPU(t *testing.T, vm *skytap.VM, cpus int) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		assert.Equal(t, cpus, *vm.Hardware.CPUs, "cpus")
+		return nil
+	}
+}
+
+func testAccCheckSkytapVMRAM(t *testing.T, vm *skytap.VM, ram int) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		assert.Equal(t, ram, *vm.Hardware.RAM, "ram")
 		return nil
 	}
 }

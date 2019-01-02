@@ -26,6 +26,8 @@ resource "skytap_vm" "vm" {
   vm_id = 456
   environment_id = 789
   name = "my vm"
+  cpu = 4
+  ram = 4096
 }
 ```
 
@@ -36,7 +38,10 @@ The following arguments are supported:
 * `environment_id` - (Required, Force New) ID of the environment you want to add the VM to. If updating with a new one then the VM will be recreated.
 * `template_id` - (Required, Force New) ID of the template you want to create the vm from. If updating with a new one then the VM will be recreated.
 * `vm_id` - (Required, Force New) ID of the VM you want to create the VM from. If updating with a new one then the VM will be recreated.
-* `name` - (Optional, Computed) User-defined name. Limited to 100 characters.
+* `name` - (Optional, Computed) User-defined name. Limited to 100 characters. 
+* `cpus` - (Optional, Computed, ForceNew) Number of CPUs allocated to this virtual machine. Valid range is 1 to 12. Maximum limit depends on the `max_cpus` setting.
+* `ram` - (Optional, Computed, ForceNew) Amount of RAM allocated to this VM. Valid range is 256 and 131,072 (MB). Maximum limit depends on `max_ram` setting.
+
 
   ~> **NOTE:** The name will be truncated to 33 UTF-8 characters after saving. If a name is not provided then the source VM's name will be used.
 

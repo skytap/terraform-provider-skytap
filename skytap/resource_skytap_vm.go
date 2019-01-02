@@ -2,12 +2,13 @@ package skytap
 
 import (
 	"bytes"
+	"context"
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
-	"github.com/hashicorp/terraform/helper/hashcode"
 	"log"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
@@ -49,6 +50,22 @@ func resourceSkytapVM() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: validation.NoZeroValues,
+			},
+
+			"cpus": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.IntBetween(1, 12),
+			},
+
+			"ram": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.IntBetween(256, 131072),
 			},
 
 			"network_interface": {
@@ -322,6 +339,8 @@ func resourceSkytapVMRead(d *schema.ResourceData, meta interface{}) error {
 	// If any of these attributes are changed, this VM will be rebuilt.
 	d.Set("environment_id", environmentID)
 	d.Set("name", vm.Name)
+	d.Set("cpus", vm.Hardware.CPUs)
+	d.Set("name", vm.Hardware.RAM)
 	if len(vm.Interfaces) > 0 {
 		if err := d.Set("network_interface", flattenNetworkInterfaces(vm.Interfaces)); err != nil {
 			log.Printf("[ERROR] error flattening network interfaces: %v", err)
@@ -385,22 +404,20 @@ func updateVMResource(d *schema.ResourceData, meta interface{}, forceRunning boo
 
 	environmentID := d.Get("environment_id").(string)
 
-	opts := skytap.UpdateVMRequest{}
-
-	if forceRunning {
-		opts.Runstate = utils.VMRunstate(skytap.VMRunstateRunning)
-	}
-	if v, ok := d.GetOk("name"); ok {
-		opts.Name = utils.String(v.(string))
-	}
-
-	log.Printf("[INFO] VM update options: %#v", spew.Sdump(opts))
-	vm, err := client.Update(ctx, environmentID, id, &opts)
+	err := updateVMResourceOptions(d, &client, &ctx, environmentID, id)
 	if err != nil {
-		return fmt.Errorf("error updating vm (%s): %v", id, err)
+		return err
 	}
-
-	log.Printf("[INFO] updated VM: %#v", spew.Sdump(vm))
+	if forceRunning {
+		opts := skytap.UpdateVMRequest{}
+		opts.Runstate = utils.VMRunstate(skytap.VMRunstateRunning)
+		log.Printf("[INFO] VM starting: %#v", spew.Sdump(opts))
+		vm, err := client.Update(ctx, environmentID, id, &opts)
+		if err != nil {
+			return fmt.Errorf("error starting vm (%s): %v", id, err)
+		}
+		log.Printf("[INFO] started VM: %#v", spew.Sdump(vm))
+	}
 
 	stateConf := &resource.StateChangeConf{
 		Pending:    getVMPendingUpdateRunstates(forceRunning),
@@ -418,6 +435,54 @@ func updateVMResource(d *schema.ResourceData, meta interface{}, forceRunning boo
 	}
 
 	return resourceSkytapVMRead(d, meta)
+}
+
+func updateVMResourceOptions(d *schema.ResourceData, client *skytap.VMsService, ctx *context.Context, environmentID string, id string) error {
+	opts := skytap.UpdateVMRequest{}
+
+	if v, ok := d.GetOk("name"); ok {
+		opts.Name = utils.String(v.(string))
+	}
+	if v, ok := d.GetOk("cpus"); ok {
+		if opts.Hardware == nil {
+			opts.Hardware = &skytap.UpdateHardware{}
+		}
+		opts.Hardware.CPUs = utils.Int(v.(int))
+	}
+	if v, ok := d.GetOk("ram"); ok {
+		if opts.Hardware == nil {
+			opts.Hardware = &skytap.UpdateHardware{}
+		}
+		opts.Hardware.RAM = utils.Int(v.(int))
+	}
+
+	if opts.Hardware != nil {
+		vm, err := (*client).Get(*ctx, environmentID, id)
+		if err != nil {
+			return err
+		}
+		// check max cpu property
+		if opts.Hardware.CPUs != nil && *opts.Hardware.CPUs > *vm.Hardware.MaxCPUs {
+			return fmt.Errorf("the 'CPUs' argument has been assigned %d which is more "+
+				"than the maximum allowed (%d) as defined by this VM",
+				*opts.Hardware.CPUs, *vm.Hardware.MaxCPUs)
+		}
+		// check max ram property
+		if opts.Hardware.RAM != nil && *opts.Hardware.RAM > *vm.Hardware.MaxRAM {
+			return fmt.Errorf("the 'RAM' argument has been assigned %d which is more "+
+				"than the maximum allowed (%d) as defined by this VM",
+				*opts.Hardware.RAM, *vm.Hardware.MaxRAM)
+		}
+	}
+
+	log.Printf("[INFO] VM update options: %#v", spew.Sdump(opts))
+	vm, err := (*client).Update(*ctx, environmentID, id, &opts)
+	if err != nil {
+		return fmt.Errorf("error updating vm (%s): %v", id, err)
+	}
+	log.Printf("[INFO] updated VM: %#v", spew.Sdump(vm))
+
+	return nil
 }
 
 func vmRunstateRefreshFunc(
