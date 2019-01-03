@@ -728,7 +728,7 @@ func updateHardware(d *schema.ResourceData) (*skytap.UpdateHardware, error) {
 
 	if cpus, ok := d.GetOk("cpus"); ok && d.HasChange("cpus") {
 		hardware.CPUs = utils.Int(cpus.(int))
-		if maxCPUs, ok2 := d.GetOk("max_cpus"); ok2 {
+		if maxCPUs, maxOK := d.GetOk("max_cpus"); maxOK {
 			if *hardware.CPUs > maxCPUs.(int) {
 				return nil, outOfRangeError("cpus", *hardware.CPUs, maxCPUs.(int))
 			}
@@ -738,7 +738,7 @@ func updateHardware(d *schema.ResourceData) (*skytap.UpdateHardware, error) {
 	}
 	if ram, ok := d.GetOk("ram"); ok && d.HasChange("ram") {
 		hardware.RAM = utils.Int(ram.(int))
-		if maxRAM, ok2 := d.GetOk("max_ram"); ok2 {
+		if maxRAM, maxOK := d.GetOk("max_ram"); maxOK {
 			if *hardware.RAM > maxRAM.(int) {
 				return nil, outOfRangeError("ram", *hardware.RAM, maxRAM.(int))
 			}
