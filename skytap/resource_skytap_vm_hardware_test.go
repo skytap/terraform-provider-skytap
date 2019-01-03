@@ -88,7 +88,7 @@ func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					resource.TestCheckResourceAttr("skytap_vm.bar", "cpus", "8"),
-					testAccCheckSkytapVMDiskResource(t, "skytap_vm.bar", "1", []string{"smaller"}),
+					testAccCheckSkytapVMDiskResource(t, "skytap_vm.bar", "1", []string{"disk1"}),
 					testAccCheckSkytapVMCPU(t, &vm, 8),
 					testAccCheckSkytapVMDisks(t, &vm, []int{2048}),
 				),
