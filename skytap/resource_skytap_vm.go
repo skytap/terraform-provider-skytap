@@ -223,6 +223,9 @@ func resourceSkytapVMCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
+	log.Printf("[INFO] pausing for %d minute(s)", 1)
+	time.Sleep(time.Duration(1) * time.Minute)
+
 	log.Printf("[INFO] VM create")
 	log.Printf("[DEBUG] VM create options: %#v", spew.Sdump(createOpts))
 	vm, err := client.Create(ctx, environmentID, &createOpts)
