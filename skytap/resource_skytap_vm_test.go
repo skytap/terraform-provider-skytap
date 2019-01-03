@@ -436,7 +436,23 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "", ``),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
+					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "test"),
+					testAccCheckSkytapVMRunning(&vm),
+				),
+			},
+			{
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "name = \"test\"", "", ``),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
+					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "test"),
+					testAccCheckSkytapVMRunning(&vm),
+				),
+			},
+			{
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "name = \"test\"", "",
 					`"cpus" = 8`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
@@ -446,7 +462,7 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 			},
 			{
 				PreConfig: pause(),
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "name = \"test\"", "",
 					`"ram" = 8192`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vmUpdated),
@@ -457,7 +473,7 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 			},
 			{
 				PreConfig: pause(),
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "name = \"test\"", "",
 					`"cpus" = 4
 									"ram" = 4096`),
 				Check: resource.ComposeTestCheckFunc(
