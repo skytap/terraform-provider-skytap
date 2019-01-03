@@ -20,6 +20,7 @@ import (
 
 const (
 	vmEnvironmentPrefix = "tftest-vm"
+	MINUTES             = 2
 )
 
 func init() {
@@ -102,6 +103,7 @@ func TestAccSkytapVM_Update(t *testing.T) {
 				),
 			},
 			{
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID,
 					fmt.Sprintf("name = \"tftest-vm-%d\"", uniqueSuffixVM), "", ``),
 				Check: resource.ComposeTestCheckFunc(
@@ -150,7 +152,6 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 					testAccCheckSkytapInterfaceAttributes(t, "skytap_environment.foo", "skytap_network.baz", &vm, skytap.NICTypeVMXNet3, []string{"192.168.0.10", "192.168.0.11"}, []string{"bloggs-web", "bloggs-web2"}),
 				),
 			}, {
-				PreConfig: pause(),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
 					resource "skytap_network" "baz" {
   						"name"        		= "tftest-network-1"
@@ -175,7 +176,6 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 					testAccCheckSkytapInterfaceAttributes(t, "skytap_environment.foo", "skytap_network.baz", &vm, skytap.NICTypeVMXNet3, []string{"192.168.0.20", "192.168.0.21"}, []string{"bloggs-web3", "bloggs-web4"}),
 				),
 			}, {
-				PreConfig: pause(),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
 					resource "skytap_network" "baz" {
   						"name"        		= "tftest-network-1"
@@ -237,7 +237,6 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 					testAccCheckSkytapPublishedServiceAttributes(&vm, []int{8080, 8081}),
 				),
 			}, {
-				PreConfig: pause(),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
 					resource "skytap_network" "baz" {
   						"name"        		= "tftest-network-1"
@@ -264,7 +263,6 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 					testAccCheckSkytapPublishedServiceAttributes(&vm, []int{8082, 8083}),
 				),
 			}, {
-				PreConfig: pause(),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
 					resource "skytap_network" "baz" {
   						"name"        		= "tftest-network-1"
@@ -287,7 +285,6 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 					testAccCheckSkytapPublishedServiceAttributes(&vm, []int{8084}),
 				),
 			}, {
-				PreConfig: pause(),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
 					resource "skytap_network" "baz" {
   						"name"        		= "tftest-network-1"
@@ -395,7 +392,6 @@ func TestAccSkytapVM_Typical(t *testing.T) {
 				Config:             testAccSkytapVMConfig_typical(newEnvTemplateID, templateID, vmID, uniqueSuffixEnv, 22, "", ""),
 				ExpectNonEmptyPlan: false,
 			}, {
-				PreConfig: pause(),
 				Config: testAccSkytapVMConfig_typical(newEnvTemplateID, templateID, vmID, uniqueSuffixEnv, 23,
 					`"published_service" = {
 						name = "web-internal"
@@ -439,12 +435,13 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "", ``),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
-					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "test"),
+					resource.TestCheckResourceAttrSet("skytap_vm.bar", "name"),
 					testAccCheckSkytapVMRunning(&vm),
 				),
 			},
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "name = \"test\"", "", ``),
+				PreConfig: pause(MINUTES),
+				Config:    testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "name = \"test\"", "", ``),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "test"),
@@ -452,6 +449,7 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 				),
 			},
 			{
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "name = \"test\"", "",
 					`"cpus" = 8`),
 				Check: resource.ComposeTestCheckFunc(
@@ -461,7 +459,7 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 				),
 			},
 			{
-				PreConfig: pause(),
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "name = \"test\"", "",
 					`"ram" = 8192`),
 				Check: resource.ComposeTestCheckFunc(
@@ -472,7 +470,7 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 				),
 			},
 			{
-				PreConfig: pause(),
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "name = \"test\"", "",
 					`"cpus" = 4
 									"ram" = 4096`),
@@ -518,7 +516,7 @@ func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
 				),
 			},
 			{
-				PreConfig: pause(),
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"cpus" = 4
 									"disk" = {
@@ -561,7 +559,7 @@ func TestAccSkytapVMCPURAM_UpdateNPECheck(t *testing.T) {
 				),
 			},
 			{
-				PreConfig: pause(),
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"cpus" = 8
 									"ram" = 2048`),
@@ -674,7 +672,7 @@ func TestAccSkytapVMDisks_Create(t *testing.T) {
 				),
 			},
 			{
-				PreConfig: pause(),
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"disk" = {
 										"size" = 2048
@@ -717,7 +715,7 @@ func TestAccSkytapVMDisks_UpdateNPECheck(t *testing.T) {
 				),
 			},
 			{
-				PreConfig: pause(),
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"disk" = {
 										"size" = 8000
@@ -760,7 +758,7 @@ func TestAccSkytapVMDisks_Resize(t *testing.T) {
 				),
 			},
 			{
-				PreConfig: pause(),
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"disk" = {
 										"size" = 8192
@@ -841,7 +839,7 @@ func TestAccSkytapVMDisk_OS(t *testing.T) {
 				),
 			},
 			{
-				PreConfig: pause(),
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"os_disk_size" = 30722`),
 				Check: resource.ComposeTestCheckFunc(
@@ -882,7 +880,7 @@ func TestAccSkytapVMDisk_OSChangeAfter(t *testing.T) {
 				),
 			},
 			{
-				PreConfig: pause(),
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"os_disk_size" = 30721`),
 				Check: resource.ComposeTestCheckFunc(
@@ -1164,10 +1162,6 @@ func testAccCheckSkytapVMRunning(vm *skytap.VM) resource.TestCheckFunc {
 	}
 }
 
-func pause() func() {
-	return func() { time.Sleep(time.Duration(2) * time.Minute) }
-}
-
 func testAccCheckSkytapVMCPU(t *testing.T, vm *skytap.VM, cpus int) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		assert.Equal(t, cpus, *vm.Hardware.CPUs, "cpus")
@@ -1236,5 +1230,12 @@ func testAccCheckSkytapVMOSDisk(t *testing.T, vm *skytap.VM, size int) resource.
 	return func(s *terraform.State) error {
 		assert.Equal(t, size, *vm.Hardware.Disks[0].Size)
 		return nil
+	}
+}
+
+func pause(minutes int) func() {
+	return func() {
+		log.Printf("[INFO] pausing for %d minutes", minutes)
+		time.Sleep(time.Duration(minutes) * time.Minute)
 	}
 }

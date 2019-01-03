@@ -32,6 +32,7 @@ func NICType(nicType skytap.NICType) *skytap.NICType {
 	return &nicType
 }
 
+// GetEnv retrieves an environment variable with a default value
 func GetEnv(key, fallback string) string {
 	value := fallback
 	if v, ok := os.LookupEnv(key); ok {
