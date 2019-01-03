@@ -697,7 +697,7 @@ func updateHardware(d *schema.ResourceData) (*skytap.UpdateHardware, error) {
 		oldDisks, newDisks := d.GetChange("disk")
 		disks := newDisks.(*schema.Set)
 		diskIDs := make([]skytap.DiskIdentification, 0)
-		adds := make([]int, 0)
+		disksNew := make([]int, 0)
 		// adds and initialises disk identification struct
 		for _, v2 := range disks.List() {
 			diskResource := v2.(map[string]interface{})
@@ -705,7 +705,7 @@ func updateHardware(d *schema.ResourceData) (*skytap.UpdateHardware, error) {
 			sizeNew := diskResource["size"].(int)
 			id, sizeOld := retrieveIDsFromOldState(oldDisks.(*schema.Set), name)
 			if id == "" { // new
-				adds = append(adds, sizeNew)
+				disksNew = append(disksNew, sizeNew)
 			} else {
 				err := checkDiskNotShrunk(sizeOld, sizeNew, name)
 				if err != nil {
@@ -718,9 +718,9 @@ func updateHardware(d *schema.ResourceData) (*skytap.UpdateHardware, error) {
 			diskIDs = append(diskIDs, diskID)
 		}
 		hardware.UpdateDisks.DiskIdentification = diskIDs
-		if len(adds) > 0 {
-			log.Printf("[INFO] creating %d disk(s)", len(adds))
-			hardware.UpdateDisks.NewDisks = adds
+		if len(disksNew) > 0 {
+			log.Printf("[INFO] creating %d disk(s)", len(disksNew))
+			hardware.UpdateDisks.NewDisks = disksNew
 		}
 	} else {
 		hardware.UpdateDisks.DiskIdentification = make([]skytap.DiskIdentification, 0)
