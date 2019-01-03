@@ -94,14 +94,14 @@ func resourceSkytapVM() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						"id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"size": {
 							Type:         schema.TypeInt,
 							Required:     true,
 							ValidateFunc: validation.IntBetween(2048, 2096128),
+						},
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
 						},
 						"type": {
 							Type:     schema.TypeString,
@@ -139,10 +139,6 @@ func resourceSkytapVM() *schema.Resource {
 							ForceNew:     true,
 							ValidateFunc: validation.NoZeroValues,
 						},
-						"id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"ip": {
 							Type:         schema.TypeString,
 							Required:     true,
@@ -154,6 +150,10 @@ func resourceSkytapVM() *schema.Resource {
 							Required:     true,
 							ForceNew:     true,
 							ValidateFunc: validation.NoZeroValues,
+						},
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
 						},
 
 						"published_service": {
@@ -175,11 +175,11 @@ func resourceSkytapVM() *schema.Resource {
 										ForceNew:     true,
 										ValidateFunc: validation.NoZeroValues,
 									},
-									"external_ip": {
+									"id": {
 										Type:     schema.TypeString,
 										Computed: true,
 									},
-									"id": {
+									"external_ip": {
 										Type:     schema.TypeString,
 										Computed: true,
 									},

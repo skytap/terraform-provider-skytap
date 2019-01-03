@@ -28,6 +28,37 @@ resource "skytap_vm" "vm" {
   name = "my vm"
   cpu = 4
   ram = 4096
+  
+  os_disk_size = 40000
+  	  
+  disk = {
+    name = "my disk"
+    size = 4096
+  }
+  disk = {
+      name = "my other disk"
+      size = 4096
+  }
+  
+  network_interface = {
+     interface_type = "vmxnet3"
+     network_id = "${skytap_network.my_network.id}"
+     ip = "10.0.0.1"
+     hostname = "myhost"
+      
+    published_service = {
+      name = "ssh"
+      internal_port = 22
+    }
+  }
+}
+
+# Will work after VM resource is created
+output "ssh_ip" {
+  value = "${skytap_vm.vm.service_ips.ssh}"
+}
+output "ssh_port" {
+  value = "${skytap_vm.vm.service_ports.ssh}"
 }
 ```
 
@@ -41,15 +72,11 @@ The following arguments are supported:
 * `name` - (Optional, Computed) User-defined name. Limited to 100 characters. 
 * `cpus` - (Optional, Computed) Number of CPUs allocated to this virtual machine. Valid range is 1 to 12. Maximum limit depends on the `max_cpus` setting.
 * `ram` - (Optional, Computed) Amount of RAM allocated to this VM. Valid range is 256 and 131,072 (MB). Maximum limit depends on `max_ram` setting.
+* `os_disk_size` - (Optional, Computed) The size of the OS disk. The disk size is in MiB; it will be converted to GiB in the Skytap UI. The maximum disk size is 2,096,128 MiB (1.999 TiB).
 * `disk` - (Optional) Array of virtual disks within the VM. The disk size is in MiB; it will be converted to GiB in the Skytap UI. The maximum disk size is 2,096,128 MiB (1.999 TiB).
 
   * `name` - (Required) A unique name for the disk.
-  * `id` - (Computed) The ID for the disk.
   * `size` - (Required) Specify the size of the disk. The new disk’s size should be provided in MiB. The minimum disk size is 2048 MiB; the maximum is 2096128 MiB (1.999 TiB).
-  * `type` - (Computed) The type of disk.
-  * `controller` - (Computed) The disk controller.
-  * `lun` - (Computed) The logical unit number of the disk (LUN).
-
 
   ~> **NOTE:** The name will be truncated to 33 UTF-8 characters after saving. If a name is not provided then the source VM's name will be used.
 
@@ -62,6 +89,7 @@ The following arguments are supported:
 
   ~> **NOTE:** Published services exist and are managed as aspects of network interfaces—that is, as part of the overall environment element.
 
+    * `name` - (Required, Force New) A unique name for the published service.
     * `internal_port` - (Required, Force New) The port that is exposed on the interface. Typically this will be dictated by standard usage (e.g., port 80 for http traffic, port 22 for SSH).
 
 ## Attributes Reference
@@ -69,7 +97,19 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id`: The ID of the VM.
+* `max_cpus`: Maximum settable CPUs for this VM.
+* `max_ram`: RAM settable CPUs for this VM.
+* `disk`: The disks.
+   * `id`: The ID for the disk.
+   * `type`: The type of disk.
+   * `controller`: The disk controller.
+   * `lun`: The logical unit number of the disk (LUN).
+* `network_interface`: The network adapters.
+  * `id`: The network adapter's ID.
 * `published_service`: The published services.
   * `id`: The published service's ID.
   * `external_ip`: The published service's external IP.
   * `external_port`: Each published service's external port.
+
+* `service_ips`: A map of external IP addresses. The key is the name of a published service - as defined in the `published_service` block.
+* `service_ports`: A map of external ports. The key is the name of a published service - as defined in the `published_service` block.
