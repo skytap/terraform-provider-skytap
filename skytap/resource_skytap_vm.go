@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
@@ -260,10 +259,6 @@ func resourceSkytapVMCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	forceRunning := true
-	if os.Getenv("SKYTAP_DISABLE_FORCE_RUNNING") == "1" {
-		log.Println("[INFO] not automatically running created VM")
-		forceRunning = false
-	}
 
 	if forceRunning {
 		opts := skytap.UpdateVMRequest{}
