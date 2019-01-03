@@ -416,9 +416,7 @@ func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
 	opts := skytap.UpdateVMRequest{}
 
 	if v, ok := d.GetOk("name"); ok && d.HasChange("name") {
-		if d.HasChange("name") {
-			opts.Name = utils.String(v.(string))
-		}
+		opts.Name = utils.String(v.(string))
 	}
 
 	hardware, err := updateHardware(d)
