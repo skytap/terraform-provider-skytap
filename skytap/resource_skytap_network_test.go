@@ -3,7 +3,6 @@ package skytap
 import (
 	"fmt"
 	"log"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/acctest"
@@ -54,10 +53,7 @@ func testSweepSkytapNetwork(region string) error {
 func TestAccSkytapNetwork_Basic(t *testing.T) {
 	//t.Parallel()
 
-	if setEnv(t, "SKYTAP_TEMPLATE_ID", "1473407") {
-		defer unsetEnv("SKYTAP_TEMPLATE_ID")
-	}
-
+	templateID := getEnv("SKYTAP_TEMPLATE_ID", "1473407")
 	uniqueSuffixEnv := acctest.RandInt()
 	uniqueSuffixNet := acctest.RandInt()
 	var network skytap.Network
@@ -68,7 +64,7 @@ func TestAccSkytapNetwork_Basic(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapNetworkConfig_basic(os.Getenv("SKYTAP_TEMPLATE_ID"), uniqueSuffixEnv, uniqueSuffixNet, "skytap.io", "192.168.1.0/24", "", true),
+				Config: testAccSkytapNetworkConfig_basic(templateID, uniqueSuffixEnv, uniqueSuffixNet, "skytap.io", "192.168.1.0/24", "", true),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapNetworkExists("skytap_environment.foo", "skytap_network.bar", &network),
 					resource.TestCheckResourceAttrSet("skytap_network.bar", "environment_id"),
@@ -86,10 +82,7 @@ func TestAccSkytapNetwork_Basic(t *testing.T) {
 func TestAccSkytapNetwork_Update(t *testing.T) {
 	//t.Parallel()
 
-	if setEnv(t, "SKYTAP_TEMPLATE_ID", "1473407") {
-		defer unsetEnv("SKYTAP_TEMPLATE_ID")
-	}
-
+	templateID := getEnv("SKYTAP_TEMPLATE_ID", "1473407")
 	uniqueSuffixEnv := acctest.RandInt()
 	uniqueSuffixInitial := acctest.RandInt()
 	uniqueSuffixUpdate := acctest.RandInt()
@@ -101,7 +94,7 @@ func TestAccSkytapNetwork_Update(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapNetworkConfig_basic(os.Getenv("SKYTAP_TEMPLATE_ID"), uniqueSuffixEnv, uniqueSuffixInitial, "skytap.io", "192.168.1.0/24", "gateway = \"192.168.1.1\"", true),
+				Config: testAccSkytapNetworkConfig_basic(templateID, uniqueSuffixEnv, uniqueSuffixInitial, "skytap.io", "192.168.1.0/24", "gateway = \"192.168.1.1\"", true),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapNetworkExists("skytap_environment.foo", "skytap_network.bar", &network),
 					resource.TestCheckResourceAttr("skytap_network.bar", "name", fmt.Sprintf("tftest-network-%d", uniqueSuffixInitial)),
@@ -112,7 +105,7 @@ func TestAccSkytapNetwork_Update(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSkytapNetworkConfig_basic(os.Getenv("SKYTAP_TEMPLATE_ID"), uniqueSuffixEnv, uniqueSuffixUpdate, "skytap.com", "192.168.2.0/24", "gateway = \"192.168.2.1\"", false),
+				Config: testAccSkytapNetworkConfig_basic(templateID, uniqueSuffixEnv, uniqueSuffixUpdate, "skytap.com", "192.168.2.0/24", "gateway = \"192.168.2.1\"", false),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapNetworkExists("skytap_environment.foo", "skytap_network.bar", &network),
 					resource.TestCheckResourceAttr("skytap_network.bar", "name", fmt.Sprintf("tftest-network-%d", uniqueSuffixUpdate)),

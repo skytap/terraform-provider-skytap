@@ -58,13 +58,7 @@ func testSweepSkytapVM(region string) error {
 func TestAccSkytapVM_Basic(t *testing.T) {
 	//t.Parallel()
 
-	templateSet, vmSet, newEnvTemplateID := setupEnvironment(t, "1473407", "37865463")
-	if templateSet {
-		defer unsetEnv("SKYTAP_TEMPLATE_ID")
-	}
-	if vmSet {
-		defer unsetEnv("SKYTAP_VM_ID")
-	}
+	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 
@@ -74,7 +68,7 @@ func TestAccSkytapVM_Basic(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "name = \"test\"", "", ``),
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "name = \"test\"", "", ``),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "test"),
@@ -88,13 +82,7 @@ func TestAccSkytapVM_Basic(t *testing.T) {
 func TestAccSkytapVM_Update(t *testing.T) {
 	//t.Parallel()
 
-	templateSet, vmSet, newEnvTemplateID := setupEnvironment(t, "1473407", "37865463")
-	if templateSet {
-		defer unsetEnv("SKYTAP_TEMPLATE_ID")
-	}
-	if vmSet {
-		defer unsetEnv("SKYTAP_VM_ID")
-	}
+	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
 	uniqueSuffixEnv := acctest.RandInt()
 	uniqueSuffixVM := acctest.RandInt()
 	var vm skytap.VM
@@ -105,7 +93,7 @@ func TestAccSkytapVM_Update(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "", ``),
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "", ``),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					resource.TestCheckResourceAttrSet("skytap_vm.bar", "name"),
@@ -113,7 +101,7 @@ func TestAccSkytapVM_Update(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"),
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID,
 					fmt.Sprintf("name = \"tftest-vm-%d\"", uniqueSuffixVM), "", ``),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("skytap_vm.bar", "name", fmt.Sprintf("tftest-vm-%d", uniqueSuffixVM)),
@@ -127,13 +115,7 @@ func TestAccSkytapVM_Update(t *testing.T) {
 func TestAccSkytapVM_Interface(t *testing.T) {
 	//t.Parallel()
 
-	templateSet, vmSet, newEnvTemplateID := setupEnvironment(t, "1473407", "37865463")
-	if templateSet {
-		defer unsetEnv("SKYTAP_TEMPLATE_ID")
-	}
-	if vmSet {
-		defer unsetEnv("SKYTAP_VM_ID")
-	}
+	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 
@@ -148,7 +130,7 @@ func TestAccSkytapVM_Interface(t *testing.T) {
   						"name"        		= "tftest-network-1"
 						"domain"      		= "mydomain.com"
   						"environment_id" 	= "${skytap_environment.foo.id}"
-  						"subnet"      		= "192.168.0.0/16"}`, os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "name = \"test\"", `
+  						"subnet"      		= "192.168.0.0/16"}`, templateID, vmID, "name = \"test\"", `
                   	network_interface {
                     	interface_type = "vmxnet3"
                     	network_id = "${skytap_network.baz.id}"
@@ -173,7 +155,7 @@ func TestAccSkytapVM_Interface(t *testing.T) {
   						"name"        		= "tftest-network-1"
 						"domain"      		= "mydomain.com"
   						"environment_id" 	= "${skytap_environment.foo.id}"
-  						"subnet"      		= "192.168.0.0/16"}`, os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "name = \"test\"", `
+  						"subnet"      		= "192.168.0.0/16"}`, templateID, vmID, "name = \"test\"", `
                  	network_interface {
                    		interface_type = "vmxnet3"
                    		network_id = "${skytap_network.baz.id}"
@@ -198,7 +180,7 @@ func TestAccSkytapVM_Interface(t *testing.T) {
   						"name"        		= "tftest-network-1"
 						"domain"      		= "mydomain.com"
   						"environment_id" 	= "${skytap_environment.foo.id}"
-  						"subnet"      		= "192.168.0.0/16"}`, os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "name = \"test\"", `
+  						"subnet"      		= "192.168.0.0/16"}`, templateID, vmID, "name = \"test\"", `
                  	network_interface {
                    	interface_type = "vmxnet3"
                    		network_id = "${skytap_network.baz.id}"
@@ -218,13 +200,7 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 func TestAccSkytapVM_PublishedService(t *testing.T) {
 	//t.Parallel()
 
-	templateSet, vmSet, newEnvTemplateID := setupEnvironment(t, "136409", "849656")
-	if templateSet {
-		defer unsetEnv("SKYTAP_TEMPLATE_ID")
-	}
-	if vmSet {
-		defer unsetEnv("SKYTAP_VM_ID")
-	}
+	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 
@@ -239,7 +215,7 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
   						"name"        		= "tftest-network-1"
 						"domain"      		= "mydomain.com"
   						"environment_id" 	= "${skytap_environment.foo.id}"
-  						"subnet"      		= "192.168.0.0/16"}`, os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "name = \"test\"", `
+  						"subnet"      		= "192.168.0.0/16"}`, templateID, vmID, "name = \"test\"", `
                   	network_interface {
                     	interface_type = "vmxnet3"
                     	network_id = "${skytap_network.baz.id}"
@@ -266,7 +242,7 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
   						"name"        		= "tftest-network-1"
 						"domain"      		= "mydomain.com"
   						"environment_id" 	= "${skytap_environment.foo.id}"
-  						"subnet"      		= "192.168.0.0/16"}`, os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "name = \"test\"", `
+  						"subnet"      		= "192.168.0.0/16"}`, templateID, vmID, "name = \"test\"", `
                   	network_interface {
                     	interface_type = "vmxnet3"
                     	network_id = "${skytap_network.baz.id}"
@@ -293,7 +269,7 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
   						"name"        		= "tftest-network-1"
 						"domain"      		= "mydomain.com"
   						"environment_id" 	= "${skytap_environment.foo.id}"
-  						"subnet"      		= "192.168.0.0/16"}`, os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "name = \"test\"", `
+  						"subnet"      		= "192.168.0.0/16"}`, templateID, vmID, "name = \"test\"", `
                   	network_interface {
                     	interface_type = "vmxnet3"
                     	network_id = "${skytap_network.baz.id}"
@@ -316,7 +292,7 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
   						"name"        		= "tftest-network-1"
 						"domain"      		= "mydomain.com"
   						"environment_id" 	= "${skytap_environment.foo.id}"
-  						"subnet"      		= "192.168.0.0/16"}`, os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "name = \"test\"", `
+  						"subnet"      		= "192.168.0.0/16"}`, templateID, vmID, "name = \"test\"", `
                   	network_interface {
                     	interface_type = "e1000"
                     	network_id = "${skytap_network.baz.id}"
@@ -341,13 +317,7 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 func TestAccSkytapVM_PublishedServiceBadNic(t *testing.T) {
 	//t.Parallel()
 
-	templateSet, vmSet, newEnvTemplateID := setupEnvironment(t, "1473407", "37865463")
-	if templateSet {
-		defer unsetEnv("SKYTAP_TEMPLATE_ID")
-	}
-	if vmSet {
-		defer unsetEnv("SKYTAP_VM_ID")
-	}
+	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
 	uniqueSuffixEnv := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
@@ -361,7 +331,7 @@ func TestAccSkytapVM_PublishedServiceBadNic(t *testing.T) {
   						"name"        		= "tftest-network-1"
 						"domain"      		= "mydomain.com"
   						"environment_id" 	= "${skytap_environment.foo.id}"
-  						"subnet"      		= "192.168.0.0/16"}`, os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "name = \"test\"", `
+  						"subnet"      		= "192.168.0.0/16"}`, templateID, vmID, "name = \"test\"", `
                   	network_interface {
                     	interface_type = "e1000e"
                     	network_id = "${skytap_network.baz.id}"
@@ -376,14 +346,7 @@ func TestAccSkytapVM_PublishedServiceBadNic(t *testing.T) {
 
 func TestAccExternalPorts(t *testing.T) {
 
-	templateSet, vmSet, newEnvTemplateID := setupEnvironment(t, "1473407", "37865463")
-	if templateSet {
-		defer unsetEnv("SKYTAP_TEMPLATE_ID")
-	}
-	if vmSet {
-		defer unsetEnv("SKYTAP_VM_ID")
-	}
-
+	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
 	uniqueSuffixEnv := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
@@ -392,7 +355,7 @@ func TestAccExternalPorts(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapVMConfig_cassandra(newEnvTemplateID, os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), uniqueSuffixEnv, 23,
+				Config: testAccSkytapVMConfig_cassandra(newEnvTemplateID, templateID, vmID, uniqueSuffixEnv, 23,
 					`"published_service" = {"name" = "web-internal" "internal_port" = 8080}`,
 					`"network_interface" = {
     	              "interface_type" = "vmxnet3"
@@ -432,13 +395,7 @@ func testAccCheckSkytapExternalPorts(t *testing.T, vmName string, count string) 
 
 func TestAccCasandra(t *testing.T) {
 
-	templateSet, vmSet, newEnvTemplateID := setupEnvironment(t, "1473407", "37865463")
-	if templateSet {
-		defer unsetEnv("SKYTAP_TEMPLATE_ID")
-	}
-	if vmSet {
-		defer unsetEnv("SKYTAP_VM_ID")
-	}
+	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
 	uniqueSuffixEnv := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
@@ -447,11 +404,11 @@ func TestAccCasandra(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:             testAccSkytapVMConfig_cassandra(newEnvTemplateID, os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), uniqueSuffixEnv, 22, "", ""),
+				Config:             testAccSkytapVMConfig_cassandra(newEnvTemplateID, templateID, vmID, uniqueSuffixEnv, 22, "", ""),
 				ExpectNonEmptyPlan: false,
 			}, {
 				PreConfig: pause(),
-				Config: testAccSkytapVMConfig_cassandra(newEnvTemplateID, os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), uniqueSuffixEnv, 23,
+				Config: testAccSkytapVMConfig_cassandra(newEnvTemplateID, templateID, vmID, uniqueSuffixEnv, 23,
 					`"published_service" = {
 						name = "web-internal"
 						"internal_port" = 8080
@@ -477,32 +434,24 @@ func TestAccCasandra(t *testing.T) {
 	})
 }
 
-func setupEnvironment(t *testing.T, templateID string, vmID string) (bool, bool, string) {
-	templateSet := setEnv(t, "SKYTAP_TEMPLATE_ID", templateID)
-	vmSet := setEnv(t, "SKYTAP_VM_ID", vmID)
-	newEnvTemplateID := os.Getenv("SKYTAP_TEMPLATE_ID")
-	if os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID") != "" {
-		newEnvTemplateID = os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID")
-		log.Printf("[DEBUG] SKYTAP_TEMPLATE_NEW_ENV_ID=%s", newEnvTemplateID)
-	}
-	return templateSet, vmSet, newEnvTemplateID
+func setupEnvironmentWithKeys(templateKey string, templateIDFallback string, vmKey string, vmIDFallback string) (string, string, string) {
+	templateID := getEnv(templateKey, templateIDFallback)
+	vmID := getEnv(vmKey, vmIDFallback)
+	newEnvTemplateID := getEnv("SKYTAP_TEMPLATE_NEW_ENV_ID", templateID)
+	return templateID, vmID, newEnvTemplateID
 }
 
-func setEnv(t *testing.T, key string, value string) bool {
-	if os.Getenv(key) == "" {
-		log.Printf("[WARN] variable required to run skytap_vm_resource acceptance tests. Setting: %s=%s", key, value)
-		err := os.Setenv(key, value)
-		assert.NoError(t, err)
-		return true
-	}
-	return false
+func setupEnvironment(templateIDFallback string, vmIDFallback string) (string, string, string) {
+	return setupEnvironmentWithKeys("SKYTAP_TEMPLATE_ID", templateIDFallback, "SKYTAP_VM_ID", vmIDFallback)
 }
 
-func unsetEnv(variable string) {
-	err := os.Unsetenv(variable)
-	if err != nil {
-		log.Printf("[ERROR] could not unset environment variable (%s)", variable)
+func getEnv(key, fallback string) string {
+	value := fallback
+	if v, ok := os.LookupEnv(key); ok {
+		value = v
 	}
+	log.Printf("[DEBUG] %s=%s", key, value)
+	return value
 }
 
 func testAccSkytapVMConfig_cassandra(envTemplateID string, templateID string, vmID string, uniqueSuffixEnv int, existingPort int, extraPublishedService string, extraNIC string) string {

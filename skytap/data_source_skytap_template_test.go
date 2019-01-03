@@ -2,7 +2,6 @@ package skytap
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
@@ -11,16 +10,14 @@ import (
 func TestAccDataSourceSkytapTemplate_Basic(t *testing.T) {
 	//t.Parallel()
 
-	if setEnv(t, "SKYTAP_TEMPLATE_NAME", "Advanced Import Appliance on Ubuntu 18.04.1") {
-		defer unsetEnv("SKYTAP_TEMPLATE_NAME")
-	}
+	name := getEnv("SKYTAP_TEMPLATE_NAME", "Advanced Import Appliance on Ubuntu 18.04.1")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceSkytapTemplateConfig_basic(),
+				Config: testAccDataSourceSkytapTemplateConfig_basic(name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.skytap_template.foo", "id"),
 				),
@@ -29,7 +26,7 @@ func TestAccDataSourceSkytapTemplate_Basic(t *testing.T) {
 	})
 }
 
-func testAccDataSourceSkytapTemplateConfig_basic() string {
+func testAccDataSourceSkytapTemplateConfig_basic(name string) string {
 	return fmt.Sprintf(`
 data "skytap_template" "foo" {
 	name = "%s"
@@ -37,35 +34,31 @@ data "skytap_template" "foo" {
 
 output "id" {
   value = "${data.skytap_template.foo.id}"
-}`, os.Getenv("SKYTAP_TEMPLATE_NAME"))
+}`, name)
 }
 
 func TestAccDataSourceSkytapTemplate_RegexMostRecent(t *testing.T) {
 	//t.Parallel()
 
-	if setEnv(t, "SKYTAP_TEMPLATE_NAME", "Advanced Import Appliance on Ubuntu 18.04.1") {
-		defer unsetEnv("SKYTAP_TEMPLATE_NAME")
-	}
-	if setEnv(t, "SKYTAP_TEMPLATE_NAME_PARTIAL", "Appliance on Ubuntu 18.04") {
-		defer unsetEnv("SKYTAP_TEMPLATE_NAME_PARTIAL")
-	}
+	name := getEnv("SKYTAP_TEMPLATE_NAME", "Advanced Import Appliance on Ubuntu 18.04.1")
+	namePartial := getEnv("SKYTAP_TEMPLATE_NAME_PARTIAL", "Appliance on Ubuntu 18.04")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceSkytapTemplateConfig_regexMostRecent(),
+				Config: testAccDataSourceSkytapTemplateConfig_regexMostRecent(namePartial),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.skytap_template.foo", "id"),
-					resource.TestCheckResourceAttr("data.skytap_template.foo", "name", os.Getenv("SKYTAP_TEMPLATE_NAME")),
+					resource.TestCheckResourceAttr("data.skytap_template.foo", "name", name),
 				),
 			},
 		},
 	})
 }
 
-func testAccDataSourceSkytapTemplateConfig_regexMostRecent() string {
+func testAccDataSourceSkytapTemplateConfig_regexMostRecent(partial string) string {
 	return fmt.Sprintf(`
 data "skytap_template" "foo" {
 	name = "%s"
@@ -74,5 +67,5 @@ data "skytap_template" "foo" {
 
 output "id" {
   value = "${data.skytap_template.foo.id}"
-}`, os.Getenv("SKYTAP_TEMPLATE_NAME_PARTIAL"))
+}`, partial)
 }
