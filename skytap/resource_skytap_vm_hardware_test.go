@@ -64,6 +64,7 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 	})
 }
 
+// To ensure the presence of a disk works unchanged
 func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
 	//t.Parallel()
 
@@ -87,6 +88,7 @@ func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					resource.TestCheckResourceAttr("skytap_vm.bar", "cpus", "8"),
+					testAccCheckSkytapVMDiskResource(t, "skytap_vm.bar", "1", []string{"smaller"}),
 					testAccCheckSkytapVMCPU(t, &vm, 8),
 					testAccCheckSkytapVMDisks(t, &vm, []int{2048}),
 				),
@@ -101,58 +103,11 @@ func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
 									}`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vmUpdated),
+					resource.TestCheckResourceAttr("skytap_vm.bar", "cpus", "4"),
 					testAccCheckSkytapVMDiskResource(t, "skytap_vm.bar", "1", []string{"disk1"}),
 					testAccCheckSkytapVMUpdated(t, &vm, &vmUpdated),
 					testAccCheckSkytapVMCPU(t, &vmUpdated, 4),
 					testAccCheckSkytapVMDisks(t, &vmUpdated, []int{2048}),
-				),
-			},
-		},
-	})
-}
-
-// To ensure the presence of a disk works unchanged
-func TestAccSkytapVMCPU_WithDisk(t *testing.T) {
-	//t.Parallel()
-
-	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
-	uniqueSuffixEnv := acctest.RandInt()
-	var vm skytap.VM
-	var vmUpdated skytap.VM
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
-					`"cpus" = 8
-									"disk" = {
-										"size" = 2048
-										"name" = "smaller"
-									}`),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
-					resource.TestCheckResourceAttr("skytap_vm.bar", "cpus", "8"),
-					testAccCheckSkytapVMCPU(t, &vm, 8),
-					testAccCheckSkytapVMDiskResource(t, "skytap_vm.bar", "1", []string{"smaller"}),
-				),
-			},
-			{
-				PreConfig: pause(),
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
-					`"cpus" = 4
-									"disk" = {
-										"size" = 2048
-										"name" = "smaller"
-									}`),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vmUpdated),
-					resource.TestCheckResourceAttr("skytap_vm.bar", "cpus", "4"),
-					testAccCheckSkytapVMDiskResource(t, "skytap_vm.bar", "1", []string{"smaller"}),
-					testAccCheckSkytapVMUpdated(t, &vm, &vmUpdated),
-					testAccCheckSkytapVMCPU(t, &vmUpdated, 4),
 				),
 			},
 		},
