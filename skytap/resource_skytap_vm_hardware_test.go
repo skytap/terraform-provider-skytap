@@ -64,10 +64,6 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 	})
 }
 
-func pause() func() {
-	return func() { time.Sleep(time.Duration(2) * time.Minute) }
-}
-
 func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
 	//t.Parallel()
 
@@ -518,6 +514,10 @@ func TestAccSkytapVMDisk_OSChangeAfter(t *testing.T) {
 			},
 		},
 	})
+}
+
+func pause() func() {
+	return func() { time.Sleep(time.Duration(2) * time.Minute) }
 }
 
 func testAccCheckSkytapVMCPU(t *testing.T, vm *skytap.VM, cpus int) resource.TestCheckFunc {

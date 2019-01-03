@@ -380,19 +380,6 @@ func TestAccExternalPorts(t *testing.T) {
 	})
 }
 
-func testAccCheckSkytapExternalPorts(t *testing.T, vmName string, count string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rsVM, err := getResource(s, vmName)
-		if err != nil {
-			return err
-		}
-		assert.Equal(t, count, rsVM.Primary.Attributes["service_ports.%"], "empty map entry")
-		assert.Equal(t, count, rsVM.Primary.Attributes["service_ips.%"], "empty map entry")
-
-		return nil
-	}
-}
-
 func TestAccCasandra(t *testing.T) {
 
 	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
@@ -432,6 +419,19 @@ func TestAccCasandra(t *testing.T) {
 			},
 		},
 	})
+}
+
+func testAccCheckSkytapExternalPorts(t *testing.T, vmName string, count string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rsVM, err := getResource(s, vmName)
+		if err != nil {
+			return err
+		}
+		assert.Equal(t, count, rsVM.Primary.Attributes["service_ports.%"], "empty map entry")
+		assert.Equal(t, count, rsVM.Primary.Attributes["service_ips.%"], "empty map entry")
+
+		return nil
+	}
 }
 
 func setupEnvironmentWithKeys(templateKey string, templateIDFallback string, vmKey string, vmIDFallback string) (string, string, string) {
