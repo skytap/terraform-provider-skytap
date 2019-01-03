@@ -368,10 +368,7 @@ func resourceSkytapVMReadAfterCreateUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	if len(vm.Hardware.Disks) > 0 {
-		err = d.Set("os_disk_size", *vm.Hardware.Disks[0].Size)
-		if err != nil {
-			return err
-		}
+		d.Set("os_disk_size", *vm.Hardware.Disks[0].Size)
 	}
 
 	if len(vm.Hardware.Disks) > 1 {
