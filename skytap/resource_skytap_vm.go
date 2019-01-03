@@ -321,30 +321,13 @@ func resourceSkytapVMReadAfterCreateUpdate(d *schema.ResourceData, meta interfac
 
 	// templateID and vmID are not set, as they are not returned by the VM response.
 	// If any of these attributes are changed, this VM will be rebuilt.
-	err = d.Set("environment_id", environmentID)
-	if err != nil {
-		return err
-	}
-	err = d.Set("name", vm.Name)
-	if err != nil {
-		return err
-	}
-	err = d.Set("cpus", vm.Hardware.CPUs)
-	if err != nil {
-		return err
-	}
-	err = d.Set("ram", vm.Hardware.RAM)
-	if err != nil {
-		return err
-	}
-	err = d.Set("max_cpus", vm.Hardware.MaxCPUs)
-	if err != nil {
-		return err
-	}
-	err = d.Set("max_ram", vm.Hardware.MaxRAM)
-	if err != nil {
-		return err
-	}
+	d.Set("environment_id", environmentID)
+	d.Set("name", vm.Name)
+	d.Set("cpus", vm.Hardware.CPUs)
+	d.Set("ram", vm.Hardware.RAM)
+	d.Set("max_cpus", vm.Hardware.MaxCPUs)
+	d.Set("max_ram", vm.Hardware.MaxRAM)
+
 	if len(vm.Interfaces) > 0 {
 		var networks *schema.Set
 		if vmNetworks == nil {
