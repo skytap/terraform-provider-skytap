@@ -355,7 +355,7 @@ func TestAccExternalPorts(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapVMConfig_cassandra(newEnvTemplateID, templateID, vmID, uniqueSuffixEnv, 23,
+				Config: testAccSkytapVMConfig_typical(newEnvTemplateID, templateID, vmID, uniqueSuffixEnv, 23,
 					`"published_service" = {"name" = "web-internal" "internal_port" = 8080}`,
 					`"network_interface" = {
     	              "interface_type" = "vmxnet3"
@@ -380,7 +380,7 @@ func TestAccExternalPorts(t *testing.T) {
 	})
 }
 
-func TestAccCasandra(t *testing.T) {
+func TestAccSkytapVM_Typical(t *testing.T) {
 
 	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
 	uniqueSuffixEnv := acctest.RandInt()
@@ -391,11 +391,11 @@ func TestAccCasandra(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:             testAccSkytapVMConfig_cassandra(newEnvTemplateID, templateID, vmID, uniqueSuffixEnv, 22, "", ""),
+				Config:             testAccSkytapVMConfig_typical(newEnvTemplateID, templateID, vmID, uniqueSuffixEnv, 22, "", ""),
 				ExpectNonEmptyPlan: false,
 			}, {
 				PreConfig: pause(),
-				Config: testAccSkytapVMConfig_cassandra(newEnvTemplateID, templateID, vmID, uniqueSuffixEnv, 23,
+				Config: testAccSkytapVMConfig_typical(newEnvTemplateID, templateID, vmID, uniqueSuffixEnv, 23,
 					`"published_service" = {
 						name = "web-internal"
 						"internal_port" = 8080
@@ -435,9 +435,9 @@ func testAccCheckSkytapExternalPorts(t *testing.T, vmName string, count string) 
 }
 
 func setupEnvironmentWithKeys(templateKey string, templateIDFallback string, vmKey string, vmIDFallback string) (string, string, string) {
-	templateID := getEnv(templateKey, templateIDFallback)
-	vmID := getEnv(vmKey, vmIDFallback)
-	newEnvTemplateID := getEnv("SKYTAP_TEMPLATE_NEW_ENV_ID", templateID)
+	templateID := utils.GetEnv(templateKey, templateIDFallback)
+	vmID := utils.GetEnv(vmKey, vmIDFallback)
+	newEnvTemplateID := utils.GetEnv("SKYTAP_TEMPLATE_NEW_ENV_ID", templateID)
 	return templateID, vmID, newEnvTemplateID
 }
 
@@ -445,16 +445,7 @@ func setupEnvironment(templateIDFallback string, vmIDFallback string) (string, s
 	return setupEnvironmentWithKeys("SKYTAP_TEMPLATE_ID", templateIDFallback, "SKYTAP_VM_ID", vmIDFallback)
 }
 
-func getEnv(key, fallback string) string {
-	value := fallback
-	if v, ok := os.LookupEnv(key); ok {
-		value = v
-	}
-	log.Printf("[DEBUG] %s=%s", key, value)
-	return value
-}
-
-func testAccSkytapVMConfig_cassandra(envTemplateID string, templateID string, vmID string, uniqueSuffixEnv int, existingPort int, extraPublishedService string, extraNIC string) string {
+func testAccSkytapVMConfig_typical(envTemplateID string, templateID string, vmID string, uniqueSuffixEnv int, existingPort int, extraPublishedService string, extraNIC string) string {
 	config := fmt.Sprintf(`
 
     resource "skytap_environment" "my_new_environment" {

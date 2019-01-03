@@ -49,7 +49,7 @@ func testSweepSkytapEnvironment(region string) error {
 func TestAccSkytapEnvironment_Basic(t *testing.T) {
 	//t.Parallel()
 
-	templateID := getEnv("SKYTAP_TEMPLATE_ID", "1473407")
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
 	uniqueSuffix := acctest.RandInt()
 	var environment skytap.Environment
 
@@ -80,8 +80,8 @@ func TestAccSkytapEnvironment_Basic(t *testing.T) {
 func TestAccSkytapEnvironment_UpdateTemplate(t *testing.T) {
 	//t.Parallel()
 
-	templateID := getEnv("SKYTAP_TEMPLATE_ID", "1473407")
-	template2ID := getEnv("SKYTAP_TEMPLATE_ID2", "1473347")
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
+	template2ID := utils.GetEnv("SKYTAP_TEMPLATE_ID2", "1473347")
 	rInt := acctest.RandInt()
 	var environment skytap.Environment
 

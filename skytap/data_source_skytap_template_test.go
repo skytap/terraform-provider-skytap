@@ -5,12 +5,13 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/terraform-providers/terraform-provider-skytap/skytap/utils"
 )
 
 func TestAccDataSourceSkytapTemplate_Basic(t *testing.T) {
 	//t.Parallel()
 
-	name := getEnv("SKYTAP_TEMPLATE_NAME", "Advanced Import Appliance on Ubuntu 18.04.1")
+	name := utils.GetEnv("SKYTAP_TEMPLATE_NAME", "Advanced Import Appliance on Ubuntu 18.04.1")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
@@ -40,8 +41,8 @@ output "id" {
 func TestAccDataSourceSkytapTemplate_RegexMostRecent(t *testing.T) {
 	//t.Parallel()
 
-	name := getEnv("SKYTAP_TEMPLATE_NAME", "Advanced Import Appliance on Ubuntu 18.04.1")
-	namePartial := getEnv("SKYTAP_TEMPLATE_NAME_PARTIAL", "Appliance on Ubuntu 18.04")
+	name := utils.GetEnv("SKYTAP_TEMPLATE_NAME", "Advanced Import Appliance on Ubuntu 18.04.1")
+	namePartial := utils.GetEnv("SKYTAP_TEMPLATE_NAME_PARTIAL", "Appliance on Ubuntu 18.04")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
