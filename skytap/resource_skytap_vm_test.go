@@ -58,7 +58,7 @@ func testSweepSkytapVM(region string) error {
 func TestAccSkytapVM_Basic(t *testing.T) {
 	//t.Parallel()
 
-	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 
@@ -82,7 +82,7 @@ func TestAccSkytapVM_Basic(t *testing.T) {
 func TestAccSkytapVM_Update(t *testing.T) {
 	//t.Parallel()
 
-	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 	uniqueSuffixVM := acctest.RandInt()
 	var vm skytap.VM
@@ -115,7 +115,7 @@ func TestAccSkytapVM_Update(t *testing.T) {
 func TestAccSkytapVM_Interface(t *testing.T) {
 	//t.Parallel()
 
-	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 
@@ -200,7 +200,7 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 func TestAccSkytapVM_PublishedService(t *testing.T) {
 	//t.Parallel()
 
-	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 
@@ -317,7 +317,7 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 func TestAccSkytapVM_PublishedServiceBadNic(t *testing.T) {
 	//t.Parallel()
 
-	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
@@ -346,7 +346,7 @@ func TestAccSkytapVM_PublishedServiceBadNic(t *testing.T) {
 
 func TestAccExternalPorts(t *testing.T) {
 
-	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
@@ -382,7 +382,7 @@ func TestAccExternalPorts(t *testing.T) {
 
 func TestAccSkytapVM_Typical(t *testing.T) {
 
-	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
@@ -434,15 +434,15 @@ func testAccCheckSkytapExternalPorts(t *testing.T, vmName string, count string) 
 	}
 }
 
-func setupEnvironmentWithKeys(templateKey string, templateIDFallback string, vmKey string, vmIDFallback string) (string, string, string) {
-	templateID := utils.GetEnv(templateKey, templateIDFallback)
-	vmID := utils.GetEnv(vmKey, vmIDFallback)
-	newEnvTemplateID := utils.GetEnv("SKYTAP_TEMPLATE_NEW_ENV_ID", templateID)
-	return templateID, vmID, newEnvTemplateID
+func setupNonDefaultEnvironment(templateKey string, templateIDFallback string, vmKey string, vmIDFallback string) (templateID, vmID, newEnvTemplateID string) {
+	templateID = utils.GetEnv(templateKey, templateIDFallback)
+	vmID = utils.GetEnv(vmKey, vmIDFallback)
+	newEnvTemplateID = utils.GetEnv("SKYTAP_TEMPLATE_NEW_ENV_ID", templateID)
+	return
 }
 
-func setupEnvironment(templateIDFallback string, vmIDFallback string) (string, string, string) {
-	return setupEnvironmentWithKeys("SKYTAP_TEMPLATE_ID", templateIDFallback, "SKYTAP_VM_ID", vmIDFallback)
+func setupEnvironment() (string, string, string) {
+	return setupNonDefaultEnvironment("SKYTAP_TEMPLATE_ID", "1473407", "SKYTAP_VM_ID", "37865463")
 }
 
 func testAccSkytapVMConfig_typical(envTemplateID string, templateID string, vmID string, uniqueSuffixEnv int, existingPort int, extraPublishedService string, extraNIC string) string {

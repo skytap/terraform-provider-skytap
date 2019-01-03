@@ -17,7 +17,7 @@ import (
 func TestAccSkytapVMCPURam_Create(t *testing.T) {
 	//t.Parallel()
 
-	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 	var vmUpdated skytap.VM
@@ -68,7 +68,7 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
 	//t.Parallel()
 
-	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 	var vmUpdated skytap.VM
@@ -117,7 +117,7 @@ func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
 func TestAccSkytapVMCPURAM_UpdateNPECheck(t *testing.T) {
 	//t.Parallel()
 
-	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 	var vmUpdated skytap.VM
@@ -152,7 +152,7 @@ func TestAccSkytapVMCPURAM_UpdateNPECheck(t *testing.T) {
 func TestAccSkytapVMCPURAM_Invalid(t *testing.T) {
 	//t.Parallel()
 
-	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
@@ -173,7 +173,7 @@ func TestAccSkytapVMCPURAM_Invalid(t *testing.T) {
 func TestAccSkytapVMCPU_OutOfRange(t *testing.T) {
 	//t.Parallel()
 
-	templateID, vmID, newEnvTemplateID := setupEnvironmentWithKeys("SKYTAP_TEMPLATE_OUTOFRANGE_ID", "136409", "SKYTAP_VM_OUTOFRANGE_ID", "849656")
+	templateID, vmID, newEnvTemplateID := setupNonDefaultEnvironment("SKYTAP_TEMPLATE_OUTOFRANGE_ID", "136409", "SKYTAP_VM_OUTOFRANGE_ID", "849656")
 	uniqueSuffixEnv := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
@@ -194,7 +194,7 @@ func TestAccSkytapVMCPU_OutOfRange(t *testing.T) {
 func TestAccSkytapVMCPU_OutOfRangeAfterUpdate(t *testing.T) {
 	//t.Parallel()
 
-	templateID, vmID, newEnvTemplateID := setupEnvironmentWithKeys("SKYTAP_TEMPLATE_OUTOFRANGE_ID", "136409", "SKYTAP_VM_OUTOFRANGE_ID", "849656")
+	templateID, vmID, newEnvTemplateID := setupNonDefaultEnvironment("SKYTAP_TEMPLATE_OUTOFRANGE_ID", "136409", "SKYTAP_VM_OUTOFRANGE_ID", "849656")
 	uniqueSuffixEnv := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
@@ -219,7 +219,7 @@ func TestAccSkytapVMCPU_OutOfRangeAfterUpdate(t *testing.T) {
 func TestAccSkytapVMDisks_Create(t *testing.T) {
 	//t.Parallel()
 
-	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 	var vmUpdated skytap.VM
@@ -275,7 +275,7 @@ func TestAccSkytapVMDisks_Create(t *testing.T) {
 func TestAccSkytapVMDisks_UpdateNPECheck(t *testing.T) {
 	//t.Parallel()
 
-	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 	var vmUpdated skytap.VM
@@ -313,7 +313,7 @@ func TestAccSkytapVMDisks_UpdateNPECheck(t *testing.T) {
 func TestAccSkytapVMDisks_Resize(t *testing.T) {
 	//t.Parallel()
 
-	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 	var vmUpdated skytap.VM
@@ -364,7 +364,7 @@ func TestAccSkytapVMDisks_Resize(t *testing.T) {
 func TestAccSkytapVMDisk_Invalid(t *testing.T) {
 	//t.Parallel()
 
-	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
@@ -395,7 +395,7 @@ func TestAccSkytapVMDisk_Invalid(t *testing.T) {
 func TestAccSkytapVMDisk_OS(t *testing.T) {
 	//t.Parallel()
 
-	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 	var vmUpdated skytap.VM
@@ -439,7 +439,7 @@ func TestAccSkytapVMDisk_OS(t *testing.T) {
 func TestAccSkytapVMDisk_OSChangeAfter(t *testing.T) {
 	//t.Parallel()
 
-	templateID, vmID, newEnvTemplateID := setupEnvironment("1473407", "37865463")
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 	var vmUpdated skytap.VM
