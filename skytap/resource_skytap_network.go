@@ -82,7 +82,8 @@ func resourceSkytapNetworkCreate(d *schema.ResourceData, meta interface{}) error
 		opts.Gateway = utils.String(v.(string))
 	}
 
-	log.Printf("[INFO] network create options: %#v", spew.Sdump(opts))
+	log.Printf("[INFO] network create")
+	log.Printf("[DEBUG] network create options: %#v", spew.Sdump(opts))
 	network, err := client.Create(ctx, environmentID, &opts)
 	if err != nil {
 		return fmt.Errorf("error creating network: %v", err)
@@ -94,7 +95,8 @@ func resourceSkytapNetworkCreate(d *schema.ResourceData, meta interface{}) error
 	networkID := *network.ID
 	d.SetId(networkID)
 
-	log.Printf("[INFO] network created: %#v", spew.Sdump(network))
+	log.Printf("[INFO] network created: %s", *network.ID)
+	log.Printf("[DEBUG] network created: %#v", spew.Sdump(network))
 
 	if err = waitForEnvironmentReady(d, meta, environmentID); err != nil {
 		return err
@@ -129,7 +131,8 @@ func resourceSkytapNetworkRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("gateway", network.Gateway)
 	d.Set("tunnelable", network.Tunnelable)
 
-	log.Printf("[INFO] network retrieved: %#v", spew.Sdump(network))
+	log.Printf("[INFO] network retrieved: %s", id)
+	log.Printf("[DEBUG] network retrieved: %#v", spew.Sdump(network))
 
 	return err
 }
@@ -157,13 +160,15 @@ func resourceSkytapNetworkUpdate(d *schema.ResourceData, meta interface{}) error
 		opts.Gateway = utils.String(v.(string))
 	}
 
-	log.Printf("[INFO] network update options: %#v", spew.Sdump(opts))
+	log.Printf("[INFO] network update: %s", id)
+	log.Printf("[DEBUG] network update options: %#v", spew.Sdump(opts))
 	network, err := client.Update(ctx, environmentID, id, &opts)
 	if err != nil {
 		return fmt.Errorf("error updating network (%s): %v", id, err)
 	}
 
-	log.Printf("[INFO] network updated: %#v", spew.Sdump(network))
+	log.Printf("[INFO] network updated: %s", id)
+	log.Printf("[DEBUG] network updated: %#v", spew.Sdump(network))
 
 	if err = waitForEnvironmentReady(d, meta, environmentID); err != nil {
 		return err

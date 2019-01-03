@@ -115,7 +115,8 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 		opts.ShutdownAtTime = utils.String(v.(string))
 	}
 
-	log.Printf("[INFO] environment create options: %#v", spew.Sdump(opts))
+	log.Printf("[INFO] environment create")
+	log.Printf("[DEBUG] environment create options: %#v", spew.Sdump(opts))
 	environment, err := client.Create(ctx, &opts)
 	if err != nil {
 		return fmt.Errorf("error creating environment: %v", err)
@@ -127,7 +128,8 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 	environmentID := *environment.ID
 	d.SetId(environmentID)
 
-	log.Printf("[INFO] environment created: %#v", spew.Sdump(environment))
+	log.Printf("[INFO] environment created: %s", *environment.ID)
+	log.Printf("[DEBUG] environment created: %#v", spew.Sdump(environment))
 
 	stateConf := &resource.StateChangeConf{
 		Pending:    environmentPendingCreateRunstates,
@@ -176,7 +178,8 @@ func resourceSkytapEnvironmentRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("shutdown_on_idle", environment.ShutdownOnIdle)
 	d.Set("shutdown_at_time", environment.ShutdownAtTime)
 
-	log.Printf("[INFO] environment retrieved: %#v", spew.Sdump(environment))
+	log.Printf("[INFO] environment retrieved: %s", id)
+	log.Printf("[DEBUG] environment retrieved: %#v", spew.Sdump(environment))
 
 	return err
 }
@@ -217,13 +220,15 @@ func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) e
 		opts.ShutdownAtTime = utils.String(v.(string))
 	}
 
-	log.Printf("[INFO] environment update options: %#v", spew.Sdump(opts))
+	log.Printf("[INFO] environment update: %s", id)
+	log.Printf("[DEBUG] environment update options: %#v", spew.Sdump(opts))
 	environment, err := client.Update(ctx, id, &opts)
 	if err != nil {
 		return fmt.Errorf("error updating environment (%s): %v", id, err)
 	}
 
-	log.Printf("[INFO] environment updated: %#v", spew.Sdump(environment))
+	log.Printf("[INFO] environment updated: %s", id)
+	log.Printf("[DEBUG] environment updated: %#v", spew.Sdump(environment))
 
 	if err = waitForEnvironmentReady(d, meta, *environment.ID); err != nil {
 		return err
