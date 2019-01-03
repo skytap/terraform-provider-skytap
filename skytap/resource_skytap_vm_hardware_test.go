@@ -173,7 +173,7 @@ func TestAccSkytapVMCPURAM_Invalid(t *testing.T) {
 func TestAccSkytapVMCPU_OutOfRange(t *testing.T) {
 	//t.Parallel()
 
-	templateID, vmID, newEnvTemplateID := setupEnvironmentWithKeys("SKYTAP_TEMPLATE_OUTOFRANGE_ID","136409", "SKYTAP_VM_OUTOFRANGE_ID", "849656")
+	templateID, vmID, newEnvTemplateID := setupEnvironmentWithKeys("SKYTAP_TEMPLATE_OUTOFRANGE_ID", "136409", "SKYTAP_VM_OUTOFRANGE_ID", "849656")
 	uniqueSuffixEnv := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
@@ -194,7 +194,7 @@ func TestAccSkytapVMCPU_OutOfRange(t *testing.T) {
 func TestAccSkytapVMCPU_OutOfRangeAfterUpdate(t *testing.T) {
 	//t.Parallel()
 
-	templateID, vmID, newEnvTemplateID := setupEnvironmentWithKeys("SKYTAP_TEMPLATE_OUTOFRANGE_ID","136409", "SKYTAP_VM_OUTOFRANGE_ID", "849656")
+	templateID, vmID, newEnvTemplateID := setupEnvironmentWithKeys("SKYTAP_TEMPLATE_OUTOFRANGE_ID", "136409", "SKYTAP_VM_OUTOFRANGE_ID", "849656")
 	uniqueSuffixEnv := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
