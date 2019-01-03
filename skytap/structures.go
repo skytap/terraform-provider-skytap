@@ -98,8 +98,11 @@ func buildServices(interfaces *schema.Set) (map[string]int, map[string]string) {
 			publishedServices := networkInterface["published_service"].(*schema.Set)
 			for _, v := range publishedServices.List() {
 				publishedService := v.(map[string]interface{})
-				ips[publishedService["name"].(string)] = publishedService["external_ip"].(string)
-				ports[publishedService["name"].(string)] = publishedService["external_port"].(int)
+				// check if terraform is managing the published services
+				if publishedService["name"] != nil {
+					ips[publishedService["name"].(string)] = publishedService["external_ip"].(string)
+					ports[publishedService["name"].(string)] = publishedService["external_port"].(int)
+				}
 			}
 		}
 	}
