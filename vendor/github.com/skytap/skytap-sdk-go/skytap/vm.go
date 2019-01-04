@@ -286,14 +286,17 @@ func (s *VMsServiceClient) Create(ctx context.Context, environmentID string, opt
 
 	// The create method returns an environment. The ID of the VM is not specified.
 	// It is necessary to retrieve the most recently created vm.
-	createdVM := mostRecentVM(createdEnvironment.VMs)
+	createdVM, err := mostRecentVM(&createdEnvironment)
+	if err != nil {
+		return nil, err
+	}
 
 	return createdVM, nil
 }
 
 // Update a vm
 func (s *VMsServiceClient) Update(ctx context.Context, environmentID string, id string, opts *UpdateVMRequest) (*VM, error) {
-	if opts.Runstate != nil {
+	if opts.Runstate != nil && opts.Hardware == nil {
 		return s.changeRunstate(ctx, environmentID, id, opts)
 	} else if opts.Hardware == nil || opts.Hardware.UpdateDisks == nil || opts.Hardware.UpdateDisks.DiskIdentification == nil {
 		return nil, fmt.Errorf("expecting the DiskIdentification list to be populated")
@@ -319,13 +322,17 @@ func (s *VMsServiceClient) Delete(ctx context.Context, environmentID string, id 
 }
 
 // mostRecentVM returns the mose recent VM given a list of VMs
-func mostRecentVM(vms []VM) *VM {
+func mostRecentVM(environment *Environment) (*VM, error) {
+	vms := environment.VMs
+	if len(vms) == 0 {
+		return nil, fmt.Errorf("could not find any VMs in environment (%s)", *environment.ID)
+	}
 	sort.Slice(vms, func(i, j int) bool {
 		time1, _ := time.Parse(timestampFormat, *vms[i].CreatedAt)
 		time2, _ := time.Parse(timestampFormat, *vms[j].CreatedAt)
 		return time1.After(time2)
 	})
-	return &vms[0]
+	return &vms[0], nil
 }
 
 func (s *VMsServiceClient) updateHardware(ctx context.Context, environmentID string, id string, opts *UpdateVMRequest) (*VM, error) {
@@ -337,6 +344,9 @@ func (s *VMsServiceClient) updateHardware(ctx context.Context, environmentID str
 	opts.Hardware.UpdateDisks.DiskIdentification = nil
 
 	currentVM, err := s.Get(ctx, environmentID, id)
+	if err != nil {
+		return nil, err
+	}
 	// if started stop
 	runstate := currentVM.Runstate
 	if *runstate == VMRunstateRunning {
@@ -376,6 +386,9 @@ func (s *VMsServiceClient) updateHardware(ctx context.Context, environmentID str
 		return nil, err
 	}
 	updatedVM, err = s.Get(ctx, environmentID, id)
+	if err != nil {
+		return nil, err
+	}
 
 	matchUpExistingDisks(updatedVM, diskIdentification, removes)
 	matchUpNewDisks(updatedVM, diskIdentification, removes)
@@ -402,7 +415,9 @@ func (s *VMsServiceClient) updateHardware(ctx context.Context, environmentID str
 			return nil, err
 		}
 		updatedVM, err = s.Get(ctx, environmentID, id)
-
+		if err != nil {
+			return nil, err
+		}
 		// update new list of disks
 		updateFinalDiskList(updatedVM, disks)
 	}
@@ -478,7 +493,6 @@ func (s *VMsServiceClient) waitForRunstate(ctx *context.Context, environmentID s
 	var err error
 	for i := 0; i < s.client.retryCount+1 && makeRequest; i++ {
 		vm, err := s.Get(*ctx, environmentID, id)
-
 		if err != nil {
 			break
 		}
@@ -487,7 +501,7 @@ func (s *VMsServiceClient) waitForRunstate(ctx *context.Context, environmentID s
 
 		if makeRequest {
 			seconds := s.client.retryAfter
-			log.Printf("[INFO] retrying after %d second(s)\n", seconds)
+			log.Printf("[INFO] waiting for %d second(s)\n", seconds)
 			time.Sleep(time.Duration(seconds) * time.Second)
 		} else {
 			log.Printf("[INFO] runstate is now (%s)\n", string(runstate))

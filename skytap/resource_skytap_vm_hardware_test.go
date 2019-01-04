@@ -2,11 +2,10 @@ package skytap
 
 import (
 	"fmt"
-	"log"
-	"os"
 	"regexp"
 	"sort"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -18,21 +17,7 @@ import (
 func TestAccSkytapVMCPURam_Create(t *testing.T) {
 	//t.Parallel()
 
-	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=136409")
-		err := os.Setenv("SKYTAP_TEMPLATE_ID", "136409")
-		assert.NoError(t, err)
-	}
-	if os.Getenv("SKYTAP_VM_ID") == "" {
-		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=849656")
-		err := os.Setenv("SKYTAP_VM_ID", "849656")
-		assert.NoError(t, err)
-	}
-	newEnvTemplateID := os.Getenv("SKYTAP_TEMPLATE_ID")
-	if os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID") != "" {
-		newEnvTemplateID = os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID")
-		log.Printf("[DEBUG] SKYTAP_TEMPLATE_NEW_ENV_ID=%s", newEnvTemplateID)
-	}
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 	var vmUpdated skytap.VM
@@ -43,7 +28,7 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"cpus" = 8`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
@@ -52,7 +37,8 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				PreConfig: pause(),
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"ram" = 8192`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vmUpdated),
@@ -62,7 +48,8 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				PreConfig: pause(),
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"cpus" = 4
 									"ram" = 4096`),
 				Check: resource.ComposeTestCheckFunc(
@@ -77,24 +64,11 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 	})
 }
 
+// To ensure the presence of a disk works unchanged
 func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
 	//t.Parallel()
 
-	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=136409")
-		err := os.Setenv("SKYTAP_TEMPLATE_ID", "136409")
-		assert.NoError(t, err)
-	}
-	if os.Getenv("SKYTAP_VM_ID") == "" {
-		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=849656")
-		err := os.Setenv("SKYTAP_VM_ID", "849656")
-		assert.NoError(t, err)
-	}
-	newEnvTemplateID := os.Getenv("SKYTAP_TEMPLATE_ID")
-	if os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID") != "" {
-		newEnvTemplateID = os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID")
-		log.Printf("[DEBUG] SKYTAP_TEMPLATE_NEW_ENV_ID=%s", newEnvTemplateID)
-	}
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 	var vmUpdated skytap.VM
@@ -105,7 +79,7 @@ func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"cpus" = 8
 									"disk" = {
 										"size" = 2048
@@ -114,12 +88,14 @@ func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					resource.TestCheckResourceAttr("skytap_vm.bar", "cpus", "8"),
+					testAccCheckSkytapVMDiskResource(t, "skytap_vm.bar", "1", []string{"disk1"}),
 					testAccCheckSkytapVMCPU(t, &vm, 8),
 					testAccCheckSkytapVMDisks(t, &vm, []int{2048}),
 				),
 			},
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				PreConfig: pause(),
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"cpus" = 4
 									"disk" = {
 										"size" = 2048
@@ -127,6 +103,7 @@ func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
 									}`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vmUpdated),
+					resource.TestCheckResourceAttr("skytap_vm.bar", "cpus", "4"),
 					testAccCheckSkytapVMDiskResource(t, "skytap_vm.bar", "1", []string{"disk1"}),
 					testAccCheckSkytapVMUpdated(t, &vm, &vmUpdated),
 					testAccCheckSkytapVMCPU(t, &vmUpdated, 4),
@@ -137,85 +114,10 @@ func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
 	})
 }
 
-// To ensure the presence of a disk works unchanged
-func TestAccSkytapVMCPU_WithDisk(t *testing.T) {
-	//t.Parallel()
-
-	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=136409")
-		err := os.Setenv("SKYTAP_TEMPLATE_ID", "136409")
-		assert.NoError(t, err)
-	}
-	if os.Getenv("SKYTAP_VM_ID") == "" {
-		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=849656")
-		err := os.Setenv("SKYTAP_VM_ID", "849656")
-		assert.NoError(t, err)
-	}
-	newEnvTemplateID := os.Getenv("SKYTAP_TEMPLATE_ID")
-	if os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID") != "" {
-		newEnvTemplateID = os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID")
-		log.Printf("[DEBUG] SKYTAP_TEMPLATE_NEW_ENV_ID=%s", newEnvTemplateID)
-	}
-	uniqueSuffixEnv := acctest.RandInt()
-	var vm skytap.VM
-	var vmUpdated skytap.VM
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
-					`"cpus" = 8
-									"disk" = {
-										"size" = 2048
-										"name" = "smaller"
-									}`),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
-					resource.TestCheckResourceAttr("skytap_vm.bar", "cpus", "8"),
-					testAccCheckSkytapVMCPU(t, &vm, 8),
-					testAccCheckSkytapVMDiskResource(t, "skytap_vm.bar", "1", []string{"smaller"}),
-				),
-			},
-			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
-					`"cpus" = 4
-									"disk" = {
-										"size" = 2048
-										"name" = "smaller"
-									}`),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vmUpdated),
-					resource.TestCheckResourceAttr("skytap_vm.bar", "cpus", "4"),
-					testAccCheckSkytapVMUpdated(t, &vm, &vmUpdated),
-					testAccCheckSkytapVMCPU(t, &vmUpdated, 4),
-					testAccCheckSkytapVMDiskResource(t, "skytap_vm.bar", "1", []string{"smaller"}),
-				),
-			},
-		},
-	})
-}
-
 func TestAccSkytapVMCPURAM_UpdateNPECheck(t *testing.T) {
 	//t.Parallel()
 
-	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=136409")
-		err := os.Setenv("SKYTAP_TEMPLATE_ID", "136409")
-		assert.NoError(t, err)
-	}
-	if os.Getenv("SKYTAP_VM_ID") == "" {
-		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=849656")
-		err := os.Setenv("SKYTAP_VM_ID", "849656")
-		assert.NoError(t, err)
-	}
-	newEnvTemplateID := os.Getenv("SKYTAP_TEMPLATE_ID")
-	if os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID") != "" {
-		newEnvTemplateID = os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID")
-		log.Printf("[DEBUG] SKYTAP_TEMPLATE_NEW_ENV_ID=%s", newEnvTemplateID)
-	}
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 	var vmUpdated skytap.VM
@@ -226,7 +128,7 @@ func TestAccSkytapVMCPURAM_UpdateNPECheck(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					``),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
@@ -235,7 +137,8 @@ func TestAccSkytapVMCPURAM_UpdateNPECheck(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				PreConfig: pause(),
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"cpus" = 8
 									"ram" = 2048`),
 				Check: resource.ComposeTestCheckFunc(
@@ -249,21 +152,7 @@ func TestAccSkytapVMCPURAM_UpdateNPECheck(t *testing.T) {
 func TestAccSkytapVMCPURAM_Invalid(t *testing.T) {
 	//t.Parallel()
 
-	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=1473407")
-		err := os.Setenv("SKYTAP_TEMPLATE_ID", "1473407")
-		assert.NoError(t, err)
-	}
-	if os.Getenv("SKYTAP_VM_ID") == "" {
-		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=37865463")
-		err := os.Setenv("SKYTAP_VM_ID", "37865463")
-		assert.NoError(t, err)
-	}
-	newEnvTemplateID := os.Getenv("SKYTAP_TEMPLATE_ID")
-	if os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID") != "" {
-		newEnvTemplateID = os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID")
-		log.Printf("[DEBUG] SKYTAP_TEMPLATE_NEW_ENV_ID=%s", newEnvTemplateID)
-	}
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
@@ -272,7 +161,7 @@ func TestAccSkytapVMCPURAM_Invalid(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"cpus" = 121
 									"ram" = 819000000002`),
 				ExpectError: regexp.MustCompile(`config is invalid: 2 problems:*`),
@@ -284,21 +173,7 @@ func TestAccSkytapVMCPURAM_Invalid(t *testing.T) {
 func TestAccSkytapVMCPU_OutOfRange(t *testing.T) {
 	//t.Parallel()
 
-	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=136409")
-		err := os.Setenv("SKYTAP_TEMPLATE_ID", "136409")
-		assert.NoError(t, err)
-	}
-	if os.Getenv("SKYTAP_VM_ID") == "" {
-		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=849656")
-		err := os.Setenv("SKYTAP_VM_ID", "849656")
-		assert.NoError(t, err)
-	}
-	newEnvTemplateID := os.Getenv("SKYTAP_TEMPLATE_ID")
-	if os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID") != "" {
-		newEnvTemplateID = os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID")
-		log.Printf("[DEBUG] SKYTAP_TEMPLATE_NEW_ENV_ID=%s", newEnvTemplateID)
-	}
+	templateID, vmID, newEnvTemplateID := setupNonDefaultEnvironment("SKYTAP_TEMPLATE_OUTOFRANGE_ID", "136409", "SKYTAP_VM_OUTOFRANGE_ID", "849656")
 	uniqueSuffixEnv := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
@@ -307,7 +182,7 @@ func TestAccSkytapVMCPU_OutOfRange(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"cpus" = 12
 									"ram" = 131072`),
 				ExpectError: regexp.MustCompile(`the 'cpus' argument has been assigned \(12\) which is more than the maximum allowed \(8\) as defined by this VM`),
@@ -319,21 +194,7 @@ func TestAccSkytapVMCPU_OutOfRange(t *testing.T) {
 func TestAccSkytapVMCPU_OutOfRangeAfterUpdate(t *testing.T) {
 	//t.Parallel()
 
-	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=136409")
-		err := os.Setenv("SKYTAP_TEMPLATE_ID", "136409")
-		assert.NoError(t, err)
-	}
-	if os.Getenv("SKYTAP_VM_ID") == "" {
-		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=849656")
-		err := os.Setenv("SKYTAP_VM_ID", "849656")
-		assert.NoError(t, err)
-	}
-	newEnvTemplateID := os.Getenv("SKYTAP_TEMPLATE_ID")
-	if os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID") != "" {
-		newEnvTemplateID = os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID")
-		log.Printf("[DEBUG] SKYTAP_TEMPLATE_NEW_ENV_ID=%s", newEnvTemplateID)
-	}
+	templateID, vmID, newEnvTemplateID := setupNonDefaultEnvironment("SKYTAP_TEMPLATE_OUTOFRANGE_ID", "136409", "SKYTAP_VM_OUTOFRANGE_ID", "849656")
 	uniqueSuffixEnv := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
@@ -342,11 +203,11 @@ func TestAccSkytapVMCPU_OutOfRangeAfterUpdate(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					``),
 			},
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"cpus" = 12
 									"ram" = 131072`),
 				ExpectError: regexp.MustCompile(`the 'cpus' argument has been assigned \(12\) which is more than the maximum allowed \(8\) as defined by this VM`),
@@ -358,21 +219,7 @@ func TestAccSkytapVMCPU_OutOfRangeAfterUpdate(t *testing.T) {
 func TestAccSkytapVMDisks_Create(t *testing.T) {
 	//t.Parallel()
 
-	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=136409")
-		err := os.Setenv("SKYTAP_TEMPLATE_ID", "136409")
-		assert.NoError(t, err)
-	}
-	if os.Getenv("SKYTAP_VM_ID") == "" {
-		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=849656")
-		err := os.Setenv("SKYTAP_VM_ID", "849656")
-		assert.NoError(t, err)
-	}
-	newEnvTemplateID := os.Getenv("SKYTAP_TEMPLATE_ID")
-	if os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID") != "" {
-		newEnvTemplateID = os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID")
-		log.Printf("[DEBUG] SKYTAP_TEMPLATE_NEW_ENV_ID=%s", newEnvTemplateID)
-	}
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 	var vmUpdated skytap.VM
@@ -383,7 +230,7 @@ func TestAccSkytapVMDisks_Create(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"disk" = {
 										"size" = 2048
 										"name" = "smaller"
@@ -403,7 +250,8 @@ func TestAccSkytapVMDisks_Create(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				PreConfig: pause(),
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"disk" = {
 										"size" = 2048
 										"name" = "smaller2"  # stays the same
@@ -427,21 +275,7 @@ func TestAccSkytapVMDisks_Create(t *testing.T) {
 func TestAccSkytapVMDisks_UpdateNPECheck(t *testing.T) {
 	//t.Parallel()
 
-	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=136409")
-		err := os.Setenv("SKYTAP_TEMPLATE_ID", "136409")
-		assert.NoError(t, err)
-	}
-	if os.Getenv("SKYTAP_VM_ID") == "" {
-		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=849656")
-		err := os.Setenv("SKYTAP_VM_ID", "849656")
-		assert.NoError(t, err)
-	}
-	newEnvTemplateID := os.Getenv("SKYTAP_TEMPLATE_ID")
-	if os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID") != "" {
-		newEnvTemplateID = os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID")
-		log.Printf("[DEBUG] SKYTAP_TEMPLATE_NEW_ENV_ID=%s", newEnvTemplateID)
-	}
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 	var vmUpdated skytap.VM
@@ -452,14 +286,15 @@ func TestAccSkytapVMDisks_UpdateNPECheck(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					``),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 				),
 			},
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				PreConfig: pause(),
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"disk" = {
 										"size" = 8000
 										"name" = "smaller"
@@ -478,21 +313,7 @@ func TestAccSkytapVMDisks_UpdateNPECheck(t *testing.T) {
 func TestAccSkytapVMDisks_Resize(t *testing.T) {
 	//t.Parallel()
 
-	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=136409")
-		err := os.Setenv("SKYTAP_TEMPLATE_ID", "136409")
-		assert.NoError(t, err)
-	}
-	if os.Getenv("SKYTAP_VM_ID") == "" {
-		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=849656")
-		err := os.Setenv("SKYTAP_VM_ID", "849656")
-		assert.NoError(t, err)
-	}
-	newEnvTemplateID := os.Getenv("SKYTAP_TEMPLATE_ID")
-	if os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID") != "" {
-		newEnvTemplateID = os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID")
-		log.Printf("[DEBUG] SKYTAP_TEMPLATE_NEW_ENV_ID=%s", newEnvTemplateID)
-	}
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 	var vmUpdated skytap.VM
@@ -503,7 +324,7 @@ func TestAccSkytapVMDisks_Resize(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"disk" = {
 										"size" = 8000
 										"name" = "smaller"
@@ -515,7 +336,8 @@ func TestAccSkytapVMDisks_Resize(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				PreConfig: pause(),
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"disk" = {
 										"size" = 8192
 										"name" = "smaller"
@@ -528,7 +350,7 @@ func TestAccSkytapVMDisks_Resize(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"disk" = {
 										"size" = 6000
 										"name" = "smaller"
@@ -542,21 +364,7 @@ func TestAccSkytapVMDisks_Resize(t *testing.T) {
 func TestAccSkytapVMDisk_Invalid(t *testing.T) {
 	//t.Parallel()
 
-	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=1473407")
-		err := os.Setenv("SKYTAP_TEMPLATE_ID", "1473407")
-		assert.NoError(t, err)
-	}
-	if os.Getenv("SKYTAP_VM_ID") == "" {
-		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=37865463")
-		err := os.Setenv("SKYTAP_VM_ID", "37865463")
-		assert.NoError(t, err)
-	}
-	newEnvTemplateID := os.Getenv("SKYTAP_TEMPLATE_ID")
-	if os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID") != "" {
-		newEnvTemplateID = os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID")
-		log.Printf("[DEBUG] SKYTAP_TEMPLATE_NEW_ENV_ID=%s", newEnvTemplateID)
-	}
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
@@ -565,7 +373,7 @@ func TestAccSkytapVMDisk_Invalid(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"disk" = {
 										"size" = 2047
 										"name" = "too small"
@@ -573,7 +381,7 @@ func TestAccSkytapVMDisk_Invalid(t *testing.T) {
 				ExpectError: regexp.MustCompile(`config is invalid: skytap_vm.bar: expected disk.0.size to be in the range \(2048 - 2096128\), got 2047`),
 			},
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"disk" = {
 										"size" = 2096129
 										"name" = "too big"
@@ -587,21 +395,7 @@ func TestAccSkytapVMDisk_Invalid(t *testing.T) {
 func TestAccSkytapVMDisk_OS(t *testing.T) {
 	//t.Parallel()
 
-	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=1473407")
-		err := os.Setenv("SKYTAP_TEMPLATE_ID", "1473407")
-		assert.NoError(t, err)
-	}
-	if os.Getenv("SKYTAP_VM_ID") == "" {
-		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=37865463")
-		err := os.Setenv("SKYTAP_VM_ID", "37865463")
-		assert.NoError(t, err)
-	}
-	newEnvTemplateID := os.Getenv("SKYTAP_TEMPLATE_ID")
-	if os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID") != "" {
-		newEnvTemplateID = os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID")
-		log.Printf("[DEBUG] SKYTAP_TEMPLATE_NEW_ENV_ID=%s", newEnvTemplateID)
-	}
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 	var vmUpdated skytap.VM
@@ -612,7 +406,7 @@ func TestAccSkytapVMDisk_OS(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"os_disk_size" = 30721`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
@@ -623,7 +417,8 @@ func TestAccSkytapVMDisk_OS(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				PreConfig: pause(),
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"os_disk_size" = 30722`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vmUpdated),
@@ -633,7 +428,7 @@ func TestAccSkytapVMDisk_OS(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"os_disk_size" = 3000`),
 				ExpectError: regexp.MustCompile(`cannot shrink volume \(OS\) from size \(30722\) to size \(3000\)`),
 			},
@@ -644,21 +439,7 @@ func TestAccSkytapVMDisk_OS(t *testing.T) {
 func TestAccSkytapVMDisk_OSChangeAfter(t *testing.T) {
 	//t.Parallel()
 
-	if os.Getenv("SKYTAP_TEMPLATE_ID") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_TEMPLATE_ID=1473407")
-		err := os.Setenv("SKYTAP_TEMPLATE_ID", "1473407")
-		assert.NoError(t, err)
-	}
-	if os.Getenv("SKYTAP_VM_ID") == "" {
-		log.Printf("[WARN] SKYTAP_VM_ID required to run skytap_vm_resource acceptance tests. Setting: SKYTAP_VM_ID=37865463")
-		err := os.Setenv("SKYTAP_VM_ID", "37865463")
-		assert.NoError(t, err)
-	}
-	newEnvTemplateID := os.Getenv("SKYTAP_TEMPLATE_ID")
-	if os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID") != "" {
-		newEnvTemplateID = os.Getenv("SKYTAP_TEMPLATE_NEW_ENV_ID")
-		log.Printf("[DEBUG] SKYTAP_TEMPLATE_NEW_ENV_ID=%s", newEnvTemplateID)
-	}
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 	var vmUpdated skytap.VM
@@ -669,7 +450,7 @@ func TestAccSkytapVMDisk_OSChangeAfter(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					``),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
@@ -677,7 +458,8 @@ func TestAccSkytapVMDisk_OSChangeAfter(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", os.Getenv("SKYTAP_TEMPLATE_ID"), os.Getenv("SKYTAP_VM_ID"), "", "",
+				PreConfig: pause(),
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"os_disk_size" = 30721`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vmUpdated),
@@ -687,6 +469,10 @@ func TestAccSkytapVMDisk_OSChangeAfter(t *testing.T) {
 			},
 		},
 	})
+}
+
+func pause() func() {
+	return func() { time.Sleep(time.Duration(2) * time.Minute) }
 }
 
 func testAccCheckSkytapVMCPU(t *testing.T, vm *skytap.VM, cpus int) resource.TestCheckFunc {

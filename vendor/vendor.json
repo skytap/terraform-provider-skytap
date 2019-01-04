@@ -757,10 +757,10 @@
 			"revisionTime": "2018-09-10T08:07:58Z"
 		},
 		{
-			"checksumSHA1": "O5S83Z2heS0lA4uEbo0D8XqbNq8=",
+			"checksumSHA1": "5prWc7RxBp+FW8LLC/KlfdgOU7w=",
 			"path": "github.com/skytap/skytap-sdk-go/skytap",
-			"revision": "529cd6ba2e5c57e5b830690b73fce8074e3c43e1",
-			"revisionTime": "2018-12-21T10:23:05Z",
+			"revision": "ca05522dfcbc104f97801451b750acafccd09f39",
+			"revisionTime": "2019-01-01T18:56:23Z",
 			"version": "v2",
 			"versionExact": "v2"
 		},

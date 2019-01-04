@@ -1,6 +1,9 @@
 package utils
 
 import (
+	"log"
+	"os"
+
 	"github.com/skytap/skytap-sdk-go/skytap"
 )
 
@@ -27,4 +30,13 @@ func VMRunstate(runstate skytap.VMRunstate) *skytap.VMRunstate {
 // NICType returns a pointer to a NICType literal
 func NICType(nicType skytap.NICType) *skytap.NICType {
 	return &nicType
+}
+
+func GetEnv(key, fallback string) string {
+	value := fallback
+	if v, ok := os.LookupEnv(key); ok {
+		value = v
+	}
+	log.Printf("[DEBUG] %s=%s", key, value)
+	return value
 }

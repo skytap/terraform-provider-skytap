@@ -2,27 +2,23 @@ package skytap
 
 import (
 	"fmt"
-	"log"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/terraform-providers/terraform-provider-skytap/skytap/utils"
 )
 
 func TestAccDataSourceSkytapTemplate_Basic(t *testing.T) {
 	//t.Parallel()
 
-	if os.Getenv("SKYTAP_TEMPLATE_NAME") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_NAME required to run skytap_template_datasource acceptance tests. Setting: SKYTAP_TEMPLATE_NAME=Advanced Import Appliance on Ubuntu 18.04.1")
-		os.Setenv("SKYTAP_TEMPLATE_NAME", "Advanced Import Appliance on Ubuntu 18.04.1")
-	}
+	name := utils.GetEnv("SKYTAP_TEMPLATE_NAME", "Advanced Import Appliance on Ubuntu 18.04.1")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceSkytapTemplateConfig_basic(),
+				Config: testAccDataSourceSkytapTemplateConfig_basic(name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.skytap_template.foo", "id"),
 				),
@@ -31,7 +27,7 @@ func TestAccDataSourceSkytapTemplate_Basic(t *testing.T) {
 	})
 }
 
-func testAccDataSourceSkytapTemplateConfig_basic() string {
+func testAccDataSourceSkytapTemplateConfig_basic(name string) string {
 	return fmt.Sprintf(`
 data "skytap_template" "foo" {
 	name = "%s"
@@ -39,37 +35,31 @@ data "skytap_template" "foo" {
 
 output "id" {
   value = "${data.skytap_template.foo.id}"
-}`, os.Getenv("SKYTAP_TEMPLATE_NAME"))
+}`, name)
 }
 
 func TestAccDataSourceSkytapTemplate_RegexMostRecent(t *testing.T) {
 	//t.Parallel()
 
-	if os.Getenv("SKYTAP_TEMPLATE_NAME") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_NAME required to run skytap_template_datasource acceptance tests. Setting: SKYTAP_TEMPLATE_NAME=Advanced Import Appliance on Ubuntu 18.04.1")
-		os.Setenv("SKYTAP_TEMPLATE_NAME", "Advanced Import Appliance on Ubuntu 18.04.1")
-	}
-	if os.Getenv("SKYTAP_TEMPLATE_NAME_PARTIAL") == "" {
-		log.Printf("[WARN] SKYTAP_TEMPLATE_NAME_PARTIAL required to run skytap_template_datasource acceptance tests. Setting: SKYTAP_TEMPLATE_NAME_PARTIAL=18.04")
-		os.Setenv("SKYTAP_TEMPLATE_NAME_PARTIAL", "18.04")
-	}
+	name := utils.GetEnv("SKYTAP_TEMPLATE_NAME", "Advanced Import Appliance on Ubuntu 18.04.1")
+	namePartial := utils.GetEnv("SKYTAP_TEMPLATE_NAME_PARTIAL", "Appliance on Ubuntu 18.04")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceSkytapTemplateConfig_regexMostRecent(),
+				Config: testAccDataSourceSkytapTemplateConfig_regexMostRecent(namePartial),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.skytap_template.foo", "id"),
-					resource.TestCheckResourceAttr("data.skytap_template.foo", "name", os.Getenv("SKYTAP_TEMPLATE_NAME")),
+					resource.TestCheckResourceAttr("data.skytap_template.foo", "name", name),
 				),
 			},
 		},
 	})
 }
 
-func testAccDataSourceSkytapTemplateConfig_regexMostRecent() string {
+func testAccDataSourceSkytapTemplateConfig_regexMostRecent(partial string) string {
 	return fmt.Sprintf(`
 data "skytap_template" "foo" {
 	name = "%s"
@@ -78,5 +68,5 @@ data "skytap_template" "foo" {
 
 output "id" {
   value = "${data.skytap_template.foo.id}"
-}`, os.Getenv("SKYTAP_TEMPLATE_NAME_PARTIAL"))
+}`, partial)
 }
