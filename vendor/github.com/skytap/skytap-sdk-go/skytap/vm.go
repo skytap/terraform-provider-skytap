@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"sort"
 	"time"
 )
@@ -278,10 +279,23 @@ func (s *VMsServiceClient) Create(ctx context.Context, environmentID string, opt
 		return nil, err
 	}
 
+	// Retry to work around 422 errors on creating a vm.
 	var createdEnvironment Environment
-	_, err = s.client.do(ctx, req, &createdEnvironment)
-	if err != nil {
-		return nil, err
+	var makeRequest = true
+	for i := 0; i < s.client.retryCount+1 && makeRequest; i++ {
+		_, err = s.client.do(ctx, req, &createdEnvironment)
+		if err == nil {
+			log.Printf("[INFO] VM created\n")
+			makeRequest = false
+		} else {
+			errorResponse := err.(*ErrorResponse)
+			if http.StatusUnprocessableEntity == errorResponse.Response.StatusCode {
+				log.Printf("[INFO] 422 error received: waiting for %d second(s)\n", s.client.retryAfter)
+				time.Sleep(time.Duration(s.client.retryAfter) * time.Second)
+			} else {
+				return nil, err
+			}
+		}
 	}
 
 	// The create method returns an environment. The ID of the VM is not specified.
