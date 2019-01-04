@@ -1,8 +1,10 @@
 package skytap
 
 import (
+	"bytes"
 	"fmt"
 
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/skytap/skytap-sdk-go/skytap"
 )
@@ -107,4 +109,44 @@ func buildServices(interfaces *schema.Set) (map[string]int, map[string]string) {
 		}
 	}
 	return ports, ips
+}
+
+// Assemble the hash for the network TypeSet attribute.
+func networkInterfaceHash(v interface{}) int {
+	var buf bytes.Buffer
+	m := v.(map[string]interface{})
+	buf.WriteString(fmt.Sprintf("%s-", m["interface_type"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["network_id"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["ip"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["hostname"].(string)))
+	if d, ok := m["published_service"]; ok {
+		publishedServices := d.(*schema.Set).List()
+		for _, e := range publishedServices {
+			buf.WriteString(fmt.Sprintf("%d-", publishedServiceHash(e)))
+		}
+	}
+
+	return hashcode.String(buf.String())
+}
+
+// Assemble the hash for the published services TypeSet attribute.
+func publishedServiceHash(v interface{}) int {
+	var buf bytes.Buffer
+	m := v.(map[string]interface{})
+	buf.WriteString(fmt.Sprintf("%d-", m["internal_port"].(int)))
+	if d, ok := m["name"]; ok {
+		buf.WriteString(fmt.Sprintf("%s-", d.(string)))
+	}
+	return hashcode.String(buf.String())
+}
+
+// Assemble the hash for the disk TypeSet attribute.
+func diskHash(v interface{}) int {
+	var buf bytes.Buffer
+	m := v.(map[string]interface{})
+	buf.WriteString(fmt.Sprintf("%d-", m["size"].(int)))
+	if d, ok := m["name"]; ok {
+		buf.WriteString(fmt.Sprintf("%s-", d.(string)))
+	}
+	return hashcode.String(buf.String())
 }
