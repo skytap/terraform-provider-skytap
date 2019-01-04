@@ -30,7 +30,7 @@ The following arguments are supported:
 
 * `name` - (Required) User-defined project name.
 * `summary` - (Optional) User-defined description of project.
-* `auto_add_role_name` - (Optional) If set to `viewer`, `participant`, `editor`, or `manager`, Skytap will assign the specified project role to every new user added to the project. The project role roles of existing project members will be unchanged. If auto-add is disabled, this field will be null.
+* `auto_add_role_name` - (Optional) If this field is set to `viewer`, `participant`, `editor`, or `manager`, new users added to your Skytap account are automatically added to this project with the specified project role. Existing users aren’t affected by this setting. If the field is set to `null`, new users aren’t automatically added to the project. For additional details, see [Automatically adding new users to a project](https://help.skytap.com/csh-project-automatic-role.html).
 * `show_project_members` - (Optional) Determines whether projects members can view a list of other project members. False by default.
 
 ## Attributes Reference
