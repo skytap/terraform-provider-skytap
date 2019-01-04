@@ -11,7 +11,7 @@ IMPROVEMENTS:
 * `resource/skytap_vm` : Retry on 422 error when creating ([#18](https://github.com/terraform-providers/terraform-provider-skytap/issues/18))
 * Improve logging ([#18](https://github.com/terraform-providers/terraform-provider-skytap/issues/18))
 
-BIG FIXES:
+BUG FIXES:
 
 * `resource/skytap_vm` : Fix documentation on published services. ([#4](https://github.com/terraform-providers/terraform-provider-skytap/issues/4))
 * `resource/skytap_project` : Fix documentation on auto add roles. ([#12](https://github.com/terraform-providers/terraform-provider-skytap/issues/12))
