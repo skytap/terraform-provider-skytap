@@ -16,14 +16,3 @@ func ResponseErrorIsNotFound(responseError error) bool {
 
 	return false
 }
-
-// ResponseErrorIsUnprocessableEntity returns true if the error is UnprocessableEntity
-func ResponseErrorIsUnprocessableEntity(responseError error) bool {
-	if r, ok := responseError.(*skytap.ErrorResponse); ok {
-		if r.Response.StatusCode == http.StatusUnprocessableEntity {
-			return true
-		}
-	}
-
-	return false
-}
