@@ -55,17 +55,12 @@ func (s *Server) Check(ctx context.Context, in *healthpb.HealthCheckRequest) (*h
 			Status: healthpb.HealthCheckResponse_SERVING,
 		}, nil
 	}
-	if servingStatus, ok := s.statusMap[in.Service]; ok {
+	if status, ok := s.statusMap[in.Service]; ok {
 		return &healthpb.HealthCheckResponse{
-			Status: servingStatus,
+			Status: status,
 		}, nil
 	}
 	return nil, status.Error(codes.NotFound, "unknown service")
-}
-
-// Watch implements `service Health`.
-func (s *Server) Watch(in *healthpb.HealthCheckRequest, stream healthpb.Health_WatchServer) error {
-	return status.Error(codes.Unimplemented, "Watching is not supported")
 }
 
 // SetServingStatus is called when need to reset the serving status of a service
