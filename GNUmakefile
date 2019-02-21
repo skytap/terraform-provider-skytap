@@ -35,8 +35,6 @@ fmtcheck:
 errcheck:
 	@sh -c "'$(CURDIR)/scripts/errcheck.sh'"
 
-vendor-status:
-	@govendor status
 
 test-compile:
 	@if [ "$(TEST)" = "./..." ]; then \
@@ -66,5 +64,5 @@ lint:
 imports:
 	goimports -w $(GOIMPORT_FILES)
 
-.PHONY: build test testacc vet fmt fmtcheck errcheck vendor-status test-compile website website-test lint imports
+.PHONY: build test testacc vet fmt fmtcheck errcheck test-compile website website-test lint imports
 
