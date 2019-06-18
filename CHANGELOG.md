@@ -2,7 +2,7 @@
 
 BREAKING CHANGES:
 
-* When defining a vm network interface a name is now required for each published service. This means all existing configuration describing published services will require the addition of this new `name` argument. The name is defined along side the `internal_port` argument. This name is used to uniquely identify the published service in the terraform configuration only and is not persisted by skytap. It is not related to the `id` of the published service.
+* When defining a vm network interface a name is now required for each published service. This means all existing configuration describing published services will require the addition of this new `name` argument. The name is defined alongside the `internal_port` argument. This name is used to uniquely identify the published service in the terraform configuration only and is not persisted by skytap. It is not related to the `id` of the published service.
 
 FEATURES:
 
