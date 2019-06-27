@@ -47,3 +47,8 @@ func vmRunStateToPtr(vmRunState VMRunstate) *VMRunstate {
 func nicTypeToPtr(nicType NICType) *NICType {
 	return &nicType
 }
+
+// environmentRunStateToPtr returns a pointer to the passed EnvironmentRunstate.
+func environmentRunStateToPtr(environmentRunstate EnvironmentRunstate) *EnvironmentRunstate {
+	return &environmentRunstate
+}

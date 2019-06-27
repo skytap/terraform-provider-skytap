@@ -3,10 +3,8 @@ package skytap
 import (
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
 	"github.com/skytap/skytap-sdk-go/skytap"
@@ -206,23 +204,12 @@ func resourceSkytapVM() *schema.Resource {
 func resourceSkytapVMCreate(d *schema.ResourceData, meta interface{}) error {
 	environmentID := d.Get("environment_id").(string)
 
-	// Give it some more breathing space. Might reject request if straight after a destroy.
-	if err := waitForEnvironmentReady(d, meta, environmentID); err != nil {
-		return err
-	}
-
 	id, err := vmCreate(d, meta, environmentID)
 	if err != nil {
 		return err
 	}
 	d.SetId(id)
 
-	if err = waitForVMStopped(d, meta); err != nil {
-		return err
-	}
-	if err = waitForEnvironmentReady(d, meta, environmentID); err != nil {
-		return err
-	}
 	// create network interfaces if necessary
 	var vmNetworks interface{}
 	if _, ok := d.GetOk("network_interface"); ok {
@@ -238,21 +225,6 @@ func resourceSkytapVMCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if err = forceRunning(meta, environmentID, id); err != nil {
 		return err
-	}
-
-	stateConfUpdate := &resource.StateChangeConf{
-		Pending:    getVMPendingUpdateRunstates(true),
-		Target:     getVMTargetUpdateRunstates(true),
-		Refresh:    vmRunstateRefreshFunc(d, meta),
-		Timeout:    d.Timeout(schema.TimeoutUpdate),
-		MinTimeout: minTimeout * time.Second,
-		Delay:      delay * time.Second,
-	}
-
-	log.Printf("[INFO] Waiting for VM (%s) to complete", d.Id())
-	_, err = stateConfUpdate.WaitForState()
-	if err != nil {
-		return fmt.Errorf("error waiting for VM (%s) to complete: %s", d.Id(), err)
 	}
 
 	return resourceSkytapVMReadAfterCreateUpdate(d, meta, vmNetworks, vmDisks)
@@ -399,21 +371,6 @@ func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
 	// Have to do this here in order to capture `name`
 	vmDisks := flattenDisks(vm.Hardware.Disks)
 
-	stateConf := &resource.StateChangeConf{
-		Pending:    getVMPendingUpdateRunstates(false),
-		Target:     getVMTargetUpdateRunstates(false),
-		Refresh:    vmRunstateRefreshFunc(d, meta),
-		Timeout:    d.Timeout(schema.TimeoutUpdate),
-		MinTimeout: minTimeout * time.Second,
-		Delay:      delay * time.Second,
-	}
-
-	log.Printf("[INFO] Waiting for VM (%s) to complete", d.Id())
-	_, err = stateConf.WaitForState()
-	if err != nil {
-		return fmt.Errorf("error waiting for VM (%s) to complete: %s", d.Id(), err)
-	}
-
 	return resourceSkytapVMReadAfterCreateUpdate(d, meta, nil, vmDisks)
 }
 
@@ -434,25 +391,6 @@ func resourceSkytapVMDelete(d *schema.ResourceData, meta interface{}) error {
 
 		return fmt.Errorf("error deleting VM (%s): %v", id, err)
 	}
-
-	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"false"},
-		Target:     []string{"true"},
-		Refresh:    vmDeleteRefreshFunc(d, meta),
-		Timeout:    d.Timeout(schema.TimeoutDelete),
-		MinTimeout: minTimeout * time.Second,
-		Delay:      delay * time.Second,
-	}
-
-	log.Printf("[INFO] Waiting for VM (%s) to complete", d.Id())
-	_, err = stateConf.WaitForState()
-	if err != nil {
-		return fmt.Errorf("error waiting for VM (%s) to complete: %s", d.Id(), err)
-	}
-	if err = waitForEnvironmentReady(d, meta, environmentID); err != nil {
-		return err
-	}
-	log.Printf("[INFO] destroyed VM ID: %s", id)
 
 	return err
 }
@@ -532,10 +470,10 @@ func addNetworkAdapters(d *schema.ResourceData, meta interface{}, vmID string) (
 				log.Printf("[INFO] updating interface: %s", id)
 				log.Printf("[DEBUG] updating interface options: %#v", spew.Sdump(opts))
 				vmInterface, err := client.Update(ctx, environmentID, vmID, id, &opts)
-				vmNetworkInterfaces[idx] = *vmInterface
 				if err != nil {
 					return nil, fmt.Errorf("error updating interface: %v", err)
 				}
+				vmNetworkInterfaces[idx] = *vmInterface
 				log.Printf("[INFO] updated interface: %s", id)
 				log.Printf("[DEBUG] updated interface: %#v", spew.Sdump(networkInterface))
 			}
@@ -747,115 +685,6 @@ func retrieveIDsFromOldState(d *schema.Set, name string) (string, int) {
 	return "", 0
 }
 
-var vmPendingCreateRunstates = []string{
-	string(skytap.VMRunstateBusy),
-}
-
-var vmTargetCreateRunstates = []string{
-	string(skytap.VMRunstateStopped),
-}
-
-var vmPendingUpdateRunstates = []string{
-	string(skytap.VMRunstateBusy),
-}
-
-var vmPendingUpdateRunstateAfterCreate = []string{
-	string(skytap.VMRunstateBusy),
-	string(skytap.VMRunstateStopped),
-}
-
-var vmTargetUpdateRunstateAfterCreate = []string{
-	string(skytap.VMRunstateRunning),
-}
-
-var vmTargetUpdateRunstates = []string{
-	string(skytap.VMRunstateRunning),
-	string(skytap.VMRunstateStopped),
-	string(skytap.VMRunstateReset),
-	string(skytap.VMRunstateSuspended),
-	string(skytap.VMRunstateHalted),
-}
-
-func getVMPendingUpdateRunstates(running bool) []string {
-	if running {
-		return vmPendingUpdateRunstateAfterCreate
-	}
-	return vmPendingUpdateRunstates
-}
-
-func getVMTargetUpdateRunstates(running bool) []string {
-	if running {
-		return vmTargetUpdateRunstateAfterCreate
-	}
-	return vmTargetUpdateRunstates
-}
-
-func vmRunstateRefreshFunc(
-	d *schema.ResourceData, meta interface{}) resource.StateRefreshFunc {
-	return func() (interface{}, string, error) {
-		client := meta.(*SkytapClient).vmsClient
-		ctx := meta.(*SkytapClient).StopContext
-
-		id := d.Id()
-		environmentID := d.Get("environment_id").(string)
-
-		log.Printf("[DEBUG] retrieving VM: %s", id)
-		vm, err := client.Get(ctx, environmentID, id)
-
-		if err != nil {
-			return nil, "", fmt.Errorf("error retrieving VM (%s) when waiting: (%s)", id, err)
-		}
-
-		log.Printf("[DEBUG] VM status (%s): %s", id, *vm.Runstate)
-
-		return vm, string(*vm.Runstate), nil
-	}
-}
-
-func waitForVMStopped(d *schema.ResourceData, meta interface{}) error {
-	stateConf := &resource.StateChangeConf{
-		Pending:    vmPendingCreateRunstates,
-		Target:     vmTargetCreateRunstates,
-		Refresh:    vmRunstateRefreshFunc(d, meta),
-		Timeout:    d.Timeout(schema.TimeoutCreate),
-		MinTimeout: minTimeout * time.Second,
-		Delay:      delay * time.Second,
-	}
-
-	log.Printf("[INFO] Waiting for VM (%s) to complete", d.Id())
-	_, err := stateConf.WaitForState()
-	if err != nil {
-		return fmt.Errorf("error waiting for VM (%s) to complete: %s", d.Id(), err)
-	}
-	return nil
-}
-
-func vmDeleteRefreshFunc(
-	d *schema.ResourceData, meta interface{}) resource.StateRefreshFunc {
-	return func() (interface{}, string, error) {
-		client := meta.(*SkytapClient).vmsClient
-		ctx := meta.(*SkytapClient).StopContext
-
-		id := d.Id()
-		environmentID := d.Get("environment_id").(string)
-
-		log.Printf("[DEBUG] retrieving VM: %s", id)
-		vm, err := client.Get(ctx, environmentID, id)
-
-		var removed = "false"
-		if err != nil {
-			if utils.ResponseErrorIsNotFound(err) {
-				log.Printf("[DEBUG] VM (%s) has been removed.", id)
-				removed = "true"
-			} else {
-				return nil, "", fmt.Errorf("error retrieving VM (%s) when waiting: (%s)", id, err)
-			}
-		}
-
-		return vm, removed, nil
-	}
-}
-
 func vmCreate(d *schema.ResourceData, meta interface{}, environmentID string) (string, error) {
 	client := meta.(*SkytapClient).vmsClient
 	ctx := meta.(*SkytapClient).StopContext
@@ -890,7 +719,7 @@ func forceRunning(meta interface{}, environmentID string, id string) error {
 	log.Printf("[DEBUG] VM starting: %#v", spew.Sdump(opts))
 	vm, err := client.Update(ctx, environmentID, id, &opts)
 	if err != nil {
-		return fmt.Errorf("error starting vm (%s): %v", id, err)
+		return fmt.Errorf("error starting VM (%s): %v", id, err)
 	}
 	log.Printf("[INFO] started VM: %s", id)
 	log.Printf("[DEBUG] started VM: %#v", spew.Sdump(vm))

@@ -3,10 +3,8 @@ package skytap
 import (
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
 	"github.com/skytap/skytap-sdk-go/skytap"
@@ -43,13 +41,13 @@ func resourceSkytapEnvironment() *schema.Resource {
 			"outbound_traffic": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  false,
+				Default:  nil,
 			},
 
 			"routable": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  false,
+				Default:  nil,
 			},
 
 			"suspend_on_idle": {
@@ -86,13 +84,16 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 	templateID := d.Get("template_id").(string)
 	name := d.Get("name").(string)
 	outboundTraffic := d.Get("outbound_traffic").(bool)
-	routable := d.Get("routable").(bool)
+	var routable *bool
+	if o, ok := d.GetOk("routable"); ok {
+		routable = utils.Bool(o.(bool))
+	}
 
 	opts := skytap.CreateEnvironmentRequest{
 		TemplateID:      &templateID,
 		Name:            &name,
 		OutboundTraffic: &outboundTraffic,
-		Routable:        &routable,
+		Routable:        routable,
 	}
 
 	if v, ok := d.GetOk("description"); ok {
@@ -130,21 +131,6 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 
 	log.Printf("[INFO] environment created: %s", *environment.ID)
 	log.Printf("[DEBUG] environment created: %#v", spew.Sdump(environment))
-
-	stateConf := &resource.StateChangeConf{
-		Pending:    environmentPendingCreateRunstates,
-		Target:     environmentTargetCreateRunstates,
-		Refresh:    environmentCreateRunstateRefreshFunc(d, meta),
-		Timeout:    d.Timeout(schema.TimeoutUpdate),
-		MinTimeout: minTimeout * time.Second,
-		Delay:      delay * time.Second,
-	}
-
-	log.Printf("[INFO] Waiting for environment (%s) to complete", d.Id())
-	_, err = stateConf.WaitForState()
-	if err != nil {
-		return fmt.Errorf("error waiting for environment (%s) to complete: %s", d.Id(), err)
-	}
 
 	return resourceSkytapEnvironmentRead(d, meta)
 }
@@ -230,29 +216,7 @@ func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) e
 	log.Printf("[INFO] environment updated: %s", id)
 	log.Printf("[DEBUG] environment updated: %#v", spew.Sdump(environment))
 
-	if err = waitForEnvironmentReady(d, meta, *environment.ID); err != nil {
-		return err
-	}
-
 	return resourceSkytapEnvironmentRead(d, meta)
-}
-
-func waitForEnvironmentReady(d *schema.ResourceData, meta interface{}, environmentID string) error {
-	stateConf := &resource.StateChangeConf{
-		Pending:    environmentPendingUpdateRunstates,
-		Target:     environmentTargetUpdateRunstates,
-		Refresh:    environmentUpdateRunstateRefreshFunc(meta, environmentID),
-		Timeout:    d.Timeout(schema.TimeoutUpdate),
-		MinTimeout: minTimeout * time.Second,
-		Delay:      delay * time.Second,
-	}
-
-	log.Printf("[INFO] Waiting for environment (%s) to complete", environmentID)
-	_, err := stateConf.WaitForState()
-	if err != nil {
-		return fmt.Errorf("error waiting for environment (%s) to complete: %s", environmentID, err)
-	}
-	return nil
 }
 
 func resourceSkytapEnvironmentDelete(d *schema.ResourceData, meta interface{}) error {
@@ -274,110 +238,5 @@ func resourceSkytapEnvironmentDelete(d *schema.ResourceData, meta interface{}) e
 
 	log.Printf("[INFO] environment destroyed: %s", id)
 
-	stateConf := &resource.StateChangeConf{
-		Pending:    []string{"false"},
-		Target:     []string{"true"},
-		Refresh:    environmentDeleteRefreshFunc(d, meta),
-		Timeout:    d.Timeout(schema.TimeoutUpdate),
-		MinTimeout: minTimeout * time.Second,
-		Delay:      delay * time.Second,
-	}
-
-	log.Printf("[INFO] Waiting for environment (%s) to complete", d.Id())
-	_, err = stateConf.WaitForState()
-	if err != nil {
-		return fmt.Errorf("error waiting for environment (%s) to complete: %s", d.Id(), err)
-	}
-
 	return err
-}
-
-var environmentPendingCreateRunstates = []string{
-	string(skytap.EnvironmentRunstateBusy),
-}
-
-var environmentTargetCreateRunstates = []string{
-	string(skytap.EnvironmentRunstateRunning),
-}
-
-var environmentPendingUpdateRunstates = []string{
-	string(skytap.EnvironmentRunstateBusy),
-}
-
-var environmentTargetUpdateRunstates = []string{
-	string(skytap.EnvironmentRunstateRunning),
-	string(skytap.EnvironmentRunstateStopped),
-	string(skytap.EnvironmentRunstateSuspended),
-}
-
-func environmentCreateRunstateRefreshFunc(
-	d *schema.ResourceData, meta interface{}) resource.StateRefreshFunc {
-	return func() (interface{}, string, error) {
-		client := meta.(*SkytapClient).environmentsClient
-		ctx := meta.(*SkytapClient).StopContext
-
-		id := d.Id()
-
-		log.Printf("[DEBUG] retrieving environment: %s", id)
-		environment, err := client.Get(ctx, id)
-
-		if err != nil {
-			return nil, "", fmt.Errorf("error retrieving environment (%s) when waiting: %v", id, err)
-		}
-
-		computedRunstate := skytap.EnvironmentRunstateRunning
-		for i := 0; i < *environment.VMCount; i++ {
-			if *environment.VMs[i].Runstate != skytap.VMRunstateRunning {
-				computedRunstate = skytap.EnvironmentRunstateBusy
-				break
-			}
-		}
-
-		log.Printf("[DEBUG] environment status (%s): %s", id, *environment.Runstate)
-
-		return environment, string(computedRunstate), nil
-	}
-}
-
-func environmentUpdateRunstateRefreshFunc(meta interface{}, environmentID string) resource.StateRefreshFunc {
-	return func() (interface{}, string, error) {
-		client := meta.(*SkytapClient).environmentsClient
-		ctx := meta.(*SkytapClient).StopContext
-
-		log.Printf("[DEBUG] retrieving environment: %s", environmentID)
-		environment, err := client.Get(ctx, environmentID)
-
-		if err != nil {
-			return nil, "", fmt.Errorf("error retrieving environment (%s) when waiting: %v", environmentID, err)
-		}
-
-		log.Printf("[DEBUG] environment (%s): %s", environmentID, *environment.Runstate)
-
-		return environment, string(*environment.Runstate), nil
-	}
-}
-
-func environmentDeleteRefreshFunc(
-	d *schema.ResourceData, meta interface{}) resource.StateRefreshFunc {
-	return func() (interface{}, string, error) {
-		client := meta.(*SkytapClient).environmentsClient
-		ctx := meta.(*SkytapClient).StopContext
-
-		id := d.Id()
-
-		log.Printf("[DEBUG] retrieving environment: %s", id)
-		environment, err := client.Get(ctx, id)
-
-		var removed = "false"
-		if err != nil {
-			if utils.ResponseErrorIsNotFound(err) {
-				log.Printf("[DEBUG] environment (%s) has been removed.", id)
-				removed = "true"
-			} else {
-				return nil, "", fmt.Errorf("error retrieving environment (%s) when waiting: %v", id, err)
-			}
-		}
-
-		return environment, removed, nil
-	}
 }

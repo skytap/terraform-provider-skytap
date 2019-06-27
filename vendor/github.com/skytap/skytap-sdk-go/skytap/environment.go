@@ -3,6 +3,8 @@ package skytap
 import (
 	"context"
 	"fmt"
+	"log"
+	"strings"
 )
 
 // Default URL paths
@@ -133,6 +135,7 @@ const (
 	EnvironmentRunstateStopped   EnvironmentRunstate = "stopped"
 	EnvironmentRunstateSuspended EnvironmentRunstate = "suspended"
 	EnvironmentRunstateRunning   EnvironmentRunstate = "running"
+	EnvironmentRunstateHalted    EnvironmentRunstate = "halted"
 	EnvironmentRunstateBusy      EnvironmentRunstate = "busy"
 )
 
@@ -183,7 +186,7 @@ func (s *EnvironmentsServiceClient) List(ctx context.Context) (*EnvironmentListR
 	}
 
 	var environmentsListResponse EnvironmentListResult
-	_, err = s.client.do(ctx, req, &environmentsListResponse.Value)
+	_, err = s.client.do(ctx, req, &environmentsListResponse.Value, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +204,7 @@ func (s *EnvironmentsServiceClient) Get(ctx context.Context, id string) (*Enviro
 	}
 
 	var environment Environment
-	_, err = s.client.do(ctx, req, &environment)
+	_, err = s.client.do(ctx, req, &environment, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -217,12 +220,20 @@ func (s *EnvironmentsServiceClient) Create(ctx context.Context, request *CreateE
 	}
 
 	var createdEnvironment Environment
-	_, err = s.client.do(ctx, req, &createdEnvironment)
+	_, err = s.client.do(ctx, req, &createdEnvironment, nil, request)
 	if err != nil {
 		return nil, err
 	}
 
-	runstate := EnvironmentRunstateRunning
+	env, err := s.Get(ctx, *createdEnvironment.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	var runstate *EnvironmentRunstate
+	if *env.VMCount > 0 {
+		runstate = environmentRunStateToPtr(EnvironmentRunstateRunning)
+	}
 
 	updateOpts := &UpdateEnvironmentRequest{
 		Name:            request.Name,
@@ -234,7 +245,7 @@ func (s *EnvironmentsServiceClient) Create(ctx context.Context, request *CreateE
 		SuspendAtTime:   request.SuspendAtTime,
 		ShutdownOnIdle:  request.ShutdownOnIdle,
 		ShutdownAtTime:  request.ShutdownAtTime,
-		Runstate:        &runstate,
+		Runstate:        runstate,
 	}
 
 	// update environment after creation to establish the resource information.
@@ -256,7 +267,7 @@ func (s *EnvironmentsServiceClient) Update(ctx context.Context, id string, updat
 	}
 
 	var environment Environment
-	_, err = s.client.do(ctx, req, &environment)
+	_, err = s.client.do(ctx, req, &environment, envRunStateNotBusy(id), updateEnvironment)
 	if err != nil {
 		return nil, err
 	}
@@ -272,10 +283,150 @@ func (s *EnvironmentsServiceClient) Delete(ctx context.Context, id string) error
 	if err != nil {
 		return err
 	}
-	_, err = s.client.do(ctx, req, nil)
+	_, err = s.client.do(ctx, req, nil, envRunStateNotBusy(id), nil)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (payload *CreateEnvironmentRequest) compare(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
+	if envOriginal, ok := v.(*Environment); ok {
+		env, err := c.Environments.Get(ctx, *envOriginal.ID)
+		if err != nil {
+			return requestNotAsExpected, false
+		}
+		logEnvironmentStatus(env)
+		log.Printf("[DEBUG] SDK environment runstate after create (%s)\n", *env.Runstate)
+		if *env.Runstate != EnvironmentRunstateBusy {
+			return "", true
+		}
+		return "environment not ready", false
+	}
+	log.Printf("[ERROR] SDK environment comparison not possible on (%v)\n", v)
+	return requestNotAsExpected, false
+}
+
+func (payload *UpdateEnvironmentRequest) compare(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
+	if envOriginal, ok := v.(*Environment); ok {
+		env, err := c.Environments.Get(ctx, *envOriginal.ID)
+		if err != nil {
+			return requestNotAsExpected, false
+		}
+		logEnvironmentStatus(env)
+		actual := payload.buildUpdateRequestFromVM(env)
+		if payload.string() == actual.string() {
+			return "", true
+		}
+		return "environment not ready", false
+	}
+	log.Printf("[ERROR] SDK environment comparison not possible on (%v)\n", v)
+	return requestNotAsExpected, false
+}
+
+func (payload *UpdateEnvironmentRequest) buildUpdateRequestFromVM(env *Environment) UpdateEnvironmentRequest {
+	actual := UpdateEnvironmentRequest{}
+	if payload.Name != nil {
+		actual.Name = env.Name
+	}
+	if payload.Description != nil {
+		actual.Description = env.Description
+	}
+	if payload.Owner != nil {
+		actual.Owner = env.OwnerName
+	}
+	if payload.OutboundTraffic != nil {
+		actual.OutboundTraffic = env.OutboundTraffic
+	}
+	if payload.Routable != nil {
+		actual.Routable = env.Routable
+	}
+	if payload.SuspendOnIdle != nil {
+		actual.SuspendOnIdle = env.SuspendOnIdle
+	}
+	if payload.SuspendAtTime != nil {
+		actual.SuspendAtTime = env.SuspendAtTime
+	}
+	if payload.ShutdownOnIdle != nil {
+		actual.ShutdownOnIdle = env.ShutdownOnIdle
+	}
+	if payload.ShutdownAtTime != nil {
+		actual.ShutdownAtTime = env.ShutdownAtTime
+	}
+	if payload.Runstate != nil {
+		actual.Runstate = env.Runstate
+	}
+	return actual
+}
+
+func (payload *UpdateEnvironmentRequest) string() string {
+	name := ""
+	description := ""
+	owner := ""
+	outboundTraffic := ""
+	routable := ""
+	suspendOnIdle := ""
+	suspendAtTime := ""
+	shutdownOnIdle := ""
+	shutdownAtTime := ""
+	runstate := ""
+
+	if payload.Name != nil {
+		name = *payload.Name
+	}
+	if payload.Description != nil {
+		description = *payload.Description
+	}
+	if payload.Owner != nil {
+		owner = *payload.Owner
+	}
+	if payload.OutboundTraffic != nil {
+		outboundTraffic = fmt.Sprintf("%t", *payload.OutboundTraffic)
+	}
+	if payload.Routable != nil {
+		routable = fmt.Sprintf("%t", *payload.Routable)
+	}
+	if payload.SuspendOnIdle != nil {
+		suspendOnIdle = fmt.Sprintf("%d", *payload.SuspendOnIdle)
+	}
+	if payload.SuspendAtTime != nil {
+		suspendAtTime = *payload.SuspendAtTime
+	}
+	if payload.ShutdownOnIdle != nil {
+		shutdownOnIdle = fmt.Sprintf("%d", *payload.ShutdownOnIdle)
+	}
+	if payload.ShutdownAtTime != nil {
+		shutdownAtTime = *payload.ShutdownAtTime
+	}
+	if payload.Runstate != nil {
+		runstate = string(*payload.Runstate)
+	}
+	s := fmt.Sprintf("%s%s%s%s%s%s%s%s%s%s",
+		name,
+		description,
+		owner,
+		outboundTraffic,
+		routable,
+		suspendOnIdle,
+		suspendAtTime,
+		shutdownOnIdle,
+		shutdownAtTime,
+		runstate)
+	log.Printf("[DEBUG] SDK environment payload (%s)\n", s)
+	return s
+}
+
+func logEnvironmentStatus(env *Environment) {
+	if env.RateLimited != nil && *env.RateLimited {
+		log.Printf("[INFO] SDK environment rate limiting detected\n")
+	}
+	if len(env.Errors) > 0 {
+		log.Printf("[INFO] SDK environment errors detected: (%s)\n",
+			strings.Join(env.Errors, ", "))
+	}
+	if len(env.ErrorDetails) > 0 {
+		log.Printf("[INFO] SDK environment errors detected: (%s)\n",
+			strings.Join(env.ErrorDetails, ", "))
+	}
 }

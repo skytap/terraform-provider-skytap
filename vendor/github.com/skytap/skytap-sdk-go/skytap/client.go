@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 const (
@@ -23,8 +26,17 @@ const (
 	headerRetryAfter = "Retry-After"
 
 	defRetryAfter = 10
-	defRetryCount = 30
+	defRetryCount = 60
+
+	noRunStateCheck  RunStateCheckStatus = 0
+	envRunStateCheck RunStateCheckStatus = 1
+	vmRunStateCheck  RunStateCheckStatus = 2
+
+	requestNotAsExpected = "request not as expected"
 )
+
+// RunStateCheckStatus value of the run check status used to determine checking of request and response.
+type RunStateCheckStatus int
 
 // Client is a client to manage and configure the skytap cloud
 type Client struct {
@@ -79,7 +91,6 @@ type ListFilter struct {
 
 // ErrorResponse is the general purpose struct to hold error data
 type ErrorResponse struct {
-
 	// HTTP response that caused this error
 	Response *http.Response
 
@@ -92,8 +103,21 @@ type ErrorResponse struct {
 	// RetryAfter is sometimes returned by the server
 	RetryAfter *int
 
-	// RequiresRetry indicates whether a retry is required
-	RequiresRetry bool
+	// RateLimited informs Skytap is rate limiting
+	RateLimited *int
+}
+
+type environmentVMRunState struct {
+	environmentID      *string
+	vmID               *string
+	adapterID          *string
+	environment        []EnvironmentRunstate
+	vm                 []VMRunstate
+	diskIdentification []DiskIdentification
+}
+
+type responseComparator interface {
+	compare(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool)
 }
 
 // Error returns a formatted error
@@ -188,40 +212,91 @@ func (c *Client) newRequest(ctx context.Context, method, path string, body inter
 	return req, nil
 }
 
-func (c *Client) do(ctx context.Context, req *http.Request, v interface{}) (*http.Response, error) {
-	var resp *http.Response
-	var err error
-	var makeRequest = true
-
-	for i := 0; i < c.retryCount+1 && makeRequest; i++ {
-		resp, err = c.hc.Do(req.WithContext(ctx))
-
-		if err != nil {
-			break
-		}
-
-		err = c.checkResponse(resp)
-
-		if err == nil {
-			errBody := readResponseBody(resp, v)
-			if errBody != nil {
-				break
+func (c *Client) do(ctx context.Context, req *http.Request, v interface{}, state *environmentVMRunState, payload responseComparator) (*http.Response, error) {
+	if req.Method == http.MethodPost || req.Method == http.MethodPut || req.Method == http.MethodDelete {
+		for i := 0; i < c.retryCount; i++ {
+			err := c.checkResourceStateUntilSatisfied(ctx, req, state)
+			if err != nil {
+				return nil, err
 			}
-			makeRequest = false
-		} else if err.(*ErrorResponse).RequiresRetry {
-			seconds := *err.(*ErrorResponse).RetryAfter
-			log.Printf("[INFO] retrying after %d second(s)\n", seconds)
-			time.Sleep(time.Duration(seconds) * time.Second)
-		} else {
-			makeRequest = false
-		}
-		errBody := resp.Body.Close()
-		if errBody != nil {
-			break
+			resp, retry, err := c.requestPutPostDelete(ctx, req, state, payload, v)
+			if !retry || err != nil {
+				return resp, err
+			}
+			waitForAwhile("POST PUT DELETE main loop", "", "", c.retryAfter, i)
 		}
 	}
+	return c.requestGet(ctx, req, v)
+}
 
-	return resp, err
+func (c *Client) requestGet(ctx context.Context, req *http.Request, v interface{}) (*http.Response, error) {
+	log.Printf("[DEBUG] SDK GET request (%#v)\n", spew.Sdump(req))
+	resp, err := c.hc.Do(req.WithContext(ctx))
+
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode == http.StatusOK {
+		err := readResponseBody(resp, v)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		return resp, c.buildErrorResponse(resp)
+	}
+
+	return resp, nil
+}
+
+func (c *Client) requestPutPostDelete(ctx context.Context, req *http.Request, state *environmentVMRunState, payload responseComparator, v interface{}) (*http.Response, bool, error) {
+	var resp *http.Response
+	var err error
+
+	log.Printf("[DEBUG] SDK POST PUT DELETE request (%#v)\n", spew.Sdump(req))
+	resp, err = c.hc.Do(req.WithContext(ctx))
+
+	if err != nil {
+		return nil, false, err
+	}
+
+	code := resp.StatusCode
+
+	if code == http.StatusOK {
+		err = readResponseBody(resp, v)
+		if err != nil {
+			return nil, false, err
+		}
+		if payload != nil {
+			for i := 0; i < c.retryCount; i++ {
+				if message, ok := payload.compare(ctx, c, v, state); !ok {
+					waitForAwhile("response check", fmt.Sprintf("%d", code), message, c.retryAfter, i)
+				} else {
+					return nil, false, nil
+				}
+			}
+		}
+		return nil, false, err
+	} else if code == http.StatusUnprocessableEntity {
+		waitForAwhile("response check", fmt.Sprintf("%d", code), "StatusUnprocessableEntity", c.retryAfter, 0)
+	} else if code == http.StatusLocked || code == http.StatusTooManyRequests {
+		codeAsString := "StatusLocked"
+		if code == http.StatusTooManyRequests {
+			codeAsString = "StatusTooManyRequests"
+		}
+		err = c.buildErrorResponse(resp)
+		seconds := *err.(*ErrorResponse).RetryAfter
+		waitForAwhile("response", fmt.Sprintf("%d", code), codeAsString, seconds, 0)
+	} else {
+		return resp, false, c.buildErrorResponse(resp)
+	}
+	return resp, true, nil
+}
+
+func waitForAwhile(message string, code string, codeAsString string, secondsToWait int, iteration int) {
+	snooze := secondsToWait //* (iteration + 1)
+	log.Printf("[INFO] SDK %s (%s:%s). Retrying after %d second(s)\n", message, code, codeAsString, snooze)
+	time.Sleep(time.Duration(snooze) * time.Second)
 }
 
 func readResponseBody(resp *http.Response, v interface{}) error {
@@ -232,6 +307,10 @@ func readResponseBody(resp *http.Response, v interface{}) error {
 		} else {
 			err = json.NewDecoder(resp.Body).Decode(v)
 		}
+		if err != nil {
+			log.Printf("[ERROR] SDK response payload decoding: (%s)", err.Error())
+		}
+		err = resp.Body.Close()
 	}
 	return err
 }
@@ -266,14 +345,7 @@ func (c *Client) setRequestListParameters(req *http.Request, params *ListParamet
 	return nil
 }
 
-// checkResponse checks the API response for errors, and returns them if present. A response is considered an
-// error if it has a status code outside the 200 range. API error responses are expected to have either no response
-// body, or a JSON response body that maps to ErrorResponse.
-func (c *Client) checkResponse(r *http.Response) error {
-	if code := r.StatusCode; code >= http.StatusOK && code <= 299 {
-		return nil
-	}
-
+func (c *Client) buildErrorResponse(r *http.Response) error {
 	errorResponse := &ErrorResponse{Response: r}
 	data, err := ioutil.ReadAll(r.Body)
 	if err == nil && len(data) > 0 {
@@ -287,22 +359,147 @@ func (c *Client) checkResponse(r *http.Response) error {
 		errorResponse.RequestID = strToPtr(requestID)
 	}
 
-	if code := r.StatusCode; code == http.StatusLocked ||
-		code == http.StatusTooManyRequests ||
-		code == http.StatusConflict ||
-		(code >= http.StatusInternalServerError && code <= 599) {
-		if retryAfter := r.Header.Get(headerRetryAfter); retryAfter != "" {
-			val, err := strconv.Atoi(retryAfter)
-			if err == nil {
-				errorResponse.RetryAfter = intToPtr(val)
-			} else {
-				errorResponse.RetryAfter = intToPtr(c.retryAfter)
-			}
+	if retryAfter := r.Header.Get(headerRetryAfter); retryAfter != "" {
+		val, err := strconv.Atoi(retryAfter)
+		if err == nil {
+			errorResponse.RetryAfter = intToPtr(val)
 		} else {
 			errorResponse.RetryAfter = intToPtr(c.retryAfter)
 		}
-		errorResponse.RequiresRetry = true
+	} else {
+		errorResponse.RetryAfter = intToPtr(c.retryAfter)
 	}
 
 	return errorResponse
+}
+
+func (c *Client) checkResourceStateUntilSatisfied(ctx context.Context, req *http.Request, state *environmentVMRunState) error {
+	runStateCheck := c.requiresChecking(state)
+	if runStateCheck > noRunStateCheck {
+		var ok bool
+		var err error
+		for i := 0; i < c.retryCount; i++ {
+			if runStateCheck == envRunStateCheck {
+				ok, err = c.getEnvironmentRunState(ctx, state.environmentID, state.environment)
+			} else {
+				ok, err = c.getVMRunState(ctx, state.environmentID, state.vmID, state.vm)
+			}
+			if err != nil {
+				return err
+			}
+			if ok {
+				return nil
+			}
+			waitForAwhile("POST PUT DELETE pre-check loop", "", "", c.retryAfter, i)
+		}
+	}
+	return nil
+}
+
+func (c *Client) requiresChecking(state *environmentVMRunState) RunStateCheckStatus {
+	check := noRunStateCheck
+	if state != nil {
+		if state.environmentID != nil && state.vmID == nil && state.environment != nil {
+			check = envRunStateCheck
+		} else if state.environmentID != nil && state.vmID != nil && state.vm != nil {
+			check = vmRunStateCheck
+		}
+	}
+	return check
+}
+
+func (c *Client) getEnvironmentRunState(ctx context.Context, id *string, states []EnvironmentRunstate) (bool, error) {
+	env, err := c.Environments.Get(ctx, *id)
+	if err != nil {
+		return false, err
+	}
+	if env.Runstate == nil {
+		return false, errors.New("environment run state not set")
+	}
+	ok := c.containsEnvironmentRunState(env.Runstate, states)
+	log.Printf("[DEBUG] SDK run state of environment (%s) and require: (%s).\n",
+		*env.Runstate,
+		c.environmentsRunStatesToString(states))
+	return ok, nil
+}
+
+func (c *Client) containsEnvironmentRunState(currentState *EnvironmentRunstate, possibleStates []EnvironmentRunstate) bool {
+	for _, v := range possibleStates {
+		if v == *currentState {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *Client) environmentsRunStatesToString(possibleStates []EnvironmentRunstate) string {
+	var items []string
+	for _, v := range possibleStates {
+		items = append(items, string(v))
+	}
+	return strings.Join(items, ", ")
+}
+
+func (c *Client) getVMRunState(ctx context.Context, environmentID *string, vmID *string, states []VMRunstate) (bool, error) {
+	vm, err := c.VMs.Get(ctx, *environmentID, *vmID)
+	if err != nil {
+		return false, err
+	}
+	if vm.Runstate == nil {
+		return false, errors.New("vm run state not set")
+	}
+	ok := c.containsVMRunState(vm.Runstate, states)
+	log.Printf("[INFO] SDK run state of vm (%s) and require: (%s).\n",
+		*vm.Runstate,
+		c.vMRunStatesToString(states))
+	return ok, nil
+}
+
+func (c *Client) containsVMRunState(currentState *VMRunstate, possibleStates []VMRunstate) bool {
+	for _, v := range possibleStates {
+		if v == *currentState {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *Client) vMRunStatesToString(possibleStates []VMRunstate) string {
+	var items []string
+	for _, v := range possibleStates {
+		items = append(items, string(v))
+	}
+	return strings.Join(items, ", ")
+}
+
+func envRunStateNotBusy(environmentID string) *environmentVMRunState {
+	return &environmentVMRunState{
+		environmentID: strToPtr(environmentID),
+		environment: []EnvironmentRunstate{
+			EnvironmentRunstateRunning,
+			EnvironmentRunstateStopped,
+			EnvironmentRunstateSuspended,
+			EnvironmentRunstateHalted},
+	}
+}
+
+func vmRequestRunStateStopped(environmentID string, vmID string) *environmentVMRunState {
+	return &environmentVMRunState{
+		environmentID: strToPtr(environmentID),
+		vmID:          strToPtr(vmID),
+		vm:            []VMRunstate{VMRunstateStopped},
+	}
+}
+
+func vmRunStateNotBusy(environmentID string, vmID string) *environmentVMRunState {
+	return &environmentVMRunState{
+		environmentID: strToPtr(environmentID),
+		vmID:          strToPtr(vmID),
+		vm: []VMRunstate{
+			VMRunstateStopped,
+			VMRunstateHalted,
+			VMRunstateReset,
+			VMRunstateRunning,
+			VMRunstateSuspended},
+	}
 }

@@ -2,6 +2,7 @@ package skytap
 
 import (
 	"context"
+	"errors"
 	"fmt"
 )
 
@@ -63,7 +64,7 @@ func (s *ProjectsServiceClient) List(ctx context.Context) (*ProjectListResult, e
 	}
 
 	var projectListResponse ProjectListResult
-	_, err = s.client.do(ctx, req, &projectListResponse.Value)
+	_, err = s.client.do(ctx, req, &projectListResponse.Value, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +82,7 @@ func (s *ProjectsServiceClient) Get(ctx context.Context, id int) (*Project, erro
 	}
 
 	var project Project
-	_, err = s.client.do(ctx, req, &project)
+	_, err = s.client.do(ctx, req, &project, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -97,13 +98,16 @@ func (s *ProjectsServiceClient) Create(ctx context.Context, project *Project) (*
 	}
 
 	var createdProject Project
-	_, err = s.client.do(ctx, req, &createdProject)
+	_, err = s.client.do(ctx, req, &createdProject, nil, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	createdProject.Summary = project.Summary
 
+	if createdProject.ID == nil {
+		return nil, errors.New("missing project ID")
+	}
 	// update project after creation to establish the resource information.
 	updatedProject, err := s.Update(ctx, *createdProject.ID, &createdProject)
 	if err != nil {
@@ -123,7 +127,7 @@ func (s *ProjectsServiceClient) Update(ctx context.Context, id int, project *Pro
 	}
 
 	var updatedProject Project
-	_, err = s.client.do(ctx, req, &updatedProject)
+	_, err = s.client.do(ctx, req, &updatedProject, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +144,7 @@ func (s *ProjectsServiceClient) Delete(ctx context.Context, id int) error {
 		return err
 	}
 
-	_, err = s.client.do(ctx, req, nil)
+	_, err = s.client.do(ctx, req, nil, nil, nil)
 	if err != nil {
 		return err
 	}

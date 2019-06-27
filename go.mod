@@ -34,3 +34,5 @@ require (
 	google.golang.org/genproto v0.0.0-20181004005441-af9cb2a35e7f // indirect
 	gopkg.in/ini.v1 v1.42.0 // indirect
 )
+
+replace github.com/skytap/skytap-sdk-go => ../../skytap/skytap-sdk-go

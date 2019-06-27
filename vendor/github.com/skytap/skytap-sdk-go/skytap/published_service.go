@@ -1,6 +1,10 @@
 package skytap
 
-import "context"
+import (
+	"context"
+	"fmt"
+	"log"
+)
 
 // Default URL paths
 const (
@@ -107,7 +111,7 @@ func (s *PublishedServicesServiceClient) List(ctx context.Context, environmentID
 	}
 
 	var serviceListResponse PublishedServiceListResult
-	_, err = s.client.do(ctx, req, &serviceListResponse.Value)
+	_, err = s.client.do(ctx, req, &serviceListResponse.Value, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +130,7 @@ func (s *PublishedServicesServiceClient) Get(ctx context.Context, environmentID 
 	}
 
 	var service PublishedService
-	_, err = s.client.do(ctx, req, &service)
+	_, err = s.client.do(ctx, req, &service, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -143,9 +147,10 @@ func (s *PublishedServicesServiceClient) Create(ctx context.Context, environment
 	if err != nil {
 		return nil, err
 	}
-
+	state := vmRunStateNotBusy(environmentID, vmID)
+	state.adapterID = strToPtr(nicID)
 	var createdService PublishedService
-	_, err = s.client.do(ctx, req, &createdService)
+	_, err = s.client.do(ctx, req, &createdService, state, internalPort)
 	if err != nil {
 		return nil, err
 	}
@@ -172,10 +177,48 @@ func (s *PublishedServicesServiceClient) Delete(ctx context.Context, environment
 		return err
 	}
 
-	_, err = s.client.do(ctx, req, nil)
+	_, err = s.client.do(ctx, req, nil, nil, nil)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (payload *CreatePublishedServiceRequest) compare(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
+	if serviceOriginal, ok := v.(*PublishedService); ok {
+		publishedService, err := c.PublishedServices.Get(ctx, *state.environmentID, *state.vmID, *state.adapterID, *serviceOriginal.ID)
+		if err != nil {
+			return requestNotAsExpected, false
+		}
+		actual := CreatePublishedServiceRequest{
+			publishedService.InternalPort,
+		}
+		if payload.string() == actual.string() {
+			return "", true
+		}
+		return "published service not ready", false
+	}
+	log.Printf("[ERROR] SDK published service comparison not possible on (%v)\n", v)
+	return requestNotAsExpected, false
+}
+
+func (payload *UpdatePublishedServiceRequest) compare(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
+	return payload.CreatePublishedServiceRequest.compare(ctx, c, v, state)
+}
+
+func (payload *CreatePublishedServiceRequest) string() string {
+	internalPort := ""
+
+	if payload.InternalPort != nil {
+		internalPort = fmt.Sprintf("%d", *payload.InternalPort)
+	}
+	s := fmt.Sprintf("%s",
+		internalPort)
+	log.Printf("[DEBUG] SDK create published service payload (%s)\n", s)
+	return s
+}
+
+func (payload *UpdatePublishedServiceRequest) string() string {
+	return payload.string()
 }

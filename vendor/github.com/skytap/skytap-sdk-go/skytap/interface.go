@@ -1,6 +1,10 @@
 package skytap
 
-import "context"
+import (
+	"context"
+	"fmt"
+	"log"
+)
 
 // Default URL paths
 const (
@@ -150,7 +154,7 @@ func (s *InterfacesServiceClient) List(ctx context.Context, environmentID string
 	}
 
 	var interfaceListResponse InterfaceListResult
-	_, err = s.client.do(ctx, req, &interfaceListResponse.Value)
+	_, err = s.client.do(ctx, req, &interfaceListResponse.Value, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +173,7 @@ func (s *InterfacesServiceClient) Get(ctx context.Context, environmentID string,
 	}
 
 	var networkInterface Interface
-	_, err = s.client.do(ctx, req, &networkInterface)
+	_, err = s.client.do(ctx, req, &networkInterface, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +192,7 @@ func (s *InterfacesServiceClient) Create(ctx context.Context, environmentID stri
 	}
 
 	var createdInterface Interface
-	_, err = s.client.do(ctx, req, &createdInterface)
+	_, err = s.client.do(ctx, req, &createdInterface, vmRequestRunStateStopped(environmentID, vmID), nicType)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +211,7 @@ func (s *InterfacesServiceClient) Attach(ctx context.Context, environmentID stri
 	}
 
 	var updatedInterface Interface
-	_, err = s.client.do(ctx, req, &updatedInterface)
+	_, err = s.client.do(ctx, req, &updatedInterface, vmRunStateNotBusy(environmentID, vmID), networkID)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +230,7 @@ func (s *InterfacesServiceClient) Update(ctx context.Context, environmentID stri
 	}
 
 	var updatedInterface Interface
-	_, err = s.client.do(ctx, req, &updatedInterface)
+	_, err = s.client.do(ctx, req, &updatedInterface, vmRequestRunStateStopped(environmentID, vmID), opts)
 	if err != nil {
 		return nil, err
 	}
@@ -244,10 +248,106 @@ func (s *InterfacesServiceClient) Delete(ctx context.Context, environmentID stri
 		return err
 	}
 
-	_, err = s.client.do(ctx, req, nil)
+	_, err = s.client.do(ctx, req, nil, nil, nil)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (payload *CreateInterfaceRequest) compare(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
+	if interfaceOriginal, ok := v.(*Interface); ok {
+		adapter, err := c.Interfaces.Get(ctx, *state.environmentID, *state.vmID, *interfaceOriginal.ID)
+		if err != nil {
+			return requestNotAsExpected, false
+		}
+		actual := CreateInterfaceRequest{
+			adapter.NICType,
+		}
+		if payload.string() == actual.string() {
+			return "", true
+		}
+		return "network adapter not ready", false
+	}
+	log.Printf("[ERROR] SDK interface comparison not possible on (%v)\n", v)
+	return requestNotAsExpected, false
+}
+
+func (payload *AttachInterfaceRequest) compare(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
+	if interfaceOriginal, ok := v.(*Interface); ok {
+		adapter, err := c.Interfaces.Get(ctx, *state.environmentID, *state.vmID, *interfaceOriginal.ID)
+		if err != nil {
+			return requestNotAsExpected, false
+		}
+		actual := AttachInterfaceRequest{
+			adapter.NetworkID,
+		}
+		if payload.string() == actual.string() {
+			return "", true
+		}
+		return "network adapter not ready", false
+	}
+	log.Printf("[ERROR] SDK interface comparison not possible on (%v)\n", v)
+	return requestNotAsExpected, false
+}
+
+func (payload *UpdateInterfaceRequest) compare(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
+	if interfaceOriginal, ok := v.(*Interface); ok {
+		adapter, err := c.Interfaces.Get(ctx, *state.environmentID, *state.vmID, *interfaceOriginal.ID)
+		if err != nil {
+			return requestNotAsExpected, false
+		}
+		actual := UpdateInterfaceRequest{
+			adapter.IP,
+			adapter.Hostname,
+		}
+		if payload.string() == actual.string() {
+			return "", true
+		}
+		return "network adapter not ready", false
+	}
+	log.Printf("[ERROR] SDK interface comparison not possible on (%v)\n", v)
+	return requestNotAsExpected, false
+}
+
+func (payload *CreateInterfaceRequest) string() string {
+	nicType := ""
+
+	if payload.NICType != nil {
+		nicType = string(*payload.NICType)
+	}
+	s := fmt.Sprintf("%s",
+		nicType)
+	log.Printf("[DEBUG] SDK create interface payload (%s)\n", s)
+	return s
+}
+
+func (payload *AttachInterfaceRequest) string() string {
+	networkID := ""
+
+	if payload.NetworkID != nil {
+		networkID = *payload.NetworkID
+	}
+	s := fmt.Sprintf("%s",
+		networkID)
+	log.Printf("[DEBUG] SDK attach interface payload (%s)\n", s)
+	return s
+}
+
+func (payload *UpdateInterfaceRequest) string() string {
+	ip := ""
+	hostname := ""
+
+	if payload.IP != nil {
+		ip = string(*payload.IP)
+	}
+	if payload.Hostname != nil {
+		hostname = string(*payload.Hostname)
+	}
+	s := fmt.Sprintf("%s%s",
+		ip,
+		hostname)
+	log.Printf("[DEBUG] SDK update interface payload (%s)\n", s)
+	return s
 }

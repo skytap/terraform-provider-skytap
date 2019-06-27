@@ -98,10 +98,6 @@ func resourceSkytapNetworkCreate(d *schema.ResourceData, meta interface{}) error
 	log.Printf("[INFO] network created: %s", *network.ID)
 	log.Printf("[DEBUG] network created: %#v", spew.Sdump(network))
 
-	if err = waitForEnvironmentReady(d, meta, environmentID); err != nil {
-		return err
-	}
-
 	return resourceSkytapNetworkRead(d, meta)
 }
 
@@ -170,10 +166,6 @@ func resourceSkytapNetworkUpdate(d *schema.ResourceData, meta interface{}) error
 	log.Printf("[INFO] network updated: %s", id)
 	log.Printf("[DEBUG] network updated: %#v", spew.Sdump(network))
 
-	if err = waitForEnvironmentReady(d, meta, environmentID); err != nil {
-		return err
-	}
-
 	return resourceSkytapNetworkRead(d, meta)
 }
 
@@ -194,11 +186,6 @@ func resourceSkytapNetworkDelete(d *schema.ResourceData, meta interface{}) error
 
 		return fmt.Errorf("error deleting network (%s): %v", id, err)
 	}
-	if err = waitForEnvironmentReady(d, meta, environmentID); err != nil {
-		return err
-	}
-
-	log.Printf("[INFO] network destroyed: %s", id)
 
 	return err
 }
