@@ -286,11 +286,6 @@ func (s *VMsServiceClient) Create(ctx context.Context, environmentID string, opt
 		return nil, err
 	}
 
-	//_, err = s.changeRunstate(ctx, environmentID, *createdVM.ID, &UpdateVMRequest{Runstate: vmRunStateToPtr(VMRunstateStopped)})
-	//if err != nil {
-	//	return nil, err
-	//}
-
 	return createdVM, nil
 }
 

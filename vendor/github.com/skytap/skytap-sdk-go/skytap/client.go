@@ -277,7 +277,7 @@ func (c *Client) requestPutPostDelete(ctx context.Context, req *http.Request, st
 			}
 		}
 		return nil, false, err
-	} else if code == http.StatusUnprocessableEntity {
+	} else if code == http.StatusUnprocessableEntity || code == http.StatusConflict {
 		waitForAwhile("response check", fmt.Sprintf("%d", code), "StatusUnprocessableEntity", c.retryAfter, 0)
 	} else if code == http.StatusLocked || code == http.StatusTooManyRequests {
 		codeAsString := "StatusLocked"
