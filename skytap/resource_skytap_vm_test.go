@@ -19,6 +19,7 @@ import (
 
 const (
 	vmEnvironmentPrefix = "tftest-vm"
+	MINUTES             = 2
 )
 
 func init() {
@@ -56,7 +57,7 @@ func testSweepSkytapVM(region string) error {
 }
 
 func TestAccSkytapVM_Basic(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
@@ -80,7 +81,7 @@ func TestAccSkytapVM_Basic(t *testing.T) {
 }
 
 func TestAccSkytapVM_Update(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
@@ -101,6 +102,7 @@ func TestAccSkytapVM_Update(t *testing.T) {
 				),
 			},
 			{
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID,
 					fmt.Sprintf("name = \"tftest-vm-%d\"", uniqueSuffixVM), "", ``),
 				Check: resource.ComposeTestCheckFunc(
@@ -113,7 +115,7 @@ func TestAccSkytapVM_Update(t *testing.T) {
 }
 
 func TestAccSkytapVM_Interface(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
@@ -196,7 +198,7 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 }
 
 func TestAccSkytapVM_PublishedService(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
@@ -310,7 +312,7 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 
 // the interface type is wrong and will be rejected by the API. This tests the SDK error handling.
 func TestAccSkytapVM_PublishedServiceBadNic(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
@@ -416,7 +418,7 @@ func TestAccSkytapVM_Typical(t *testing.T) {
 }
 
 func TestAccSkytapVMCPURam_Create(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
@@ -437,7 +439,8 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "name = \"test\"", "", ``),
+				PreConfig: pause(MINUTES),
+				Config:    testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "name = \"test\"", "", ``),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "test"),
@@ -445,6 +448,7 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 				),
 			},
 			{
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "name = \"test\"", "",
 					`"cpus" = 8`),
 				Check: resource.ComposeTestCheckFunc(
@@ -454,6 +458,7 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 				),
 			},
 			{
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "name = \"test\"", "",
 					`"ram" = 8192`),
 				Check: resource.ComposeTestCheckFunc(
@@ -464,6 +469,7 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 				),
 			},
 			{
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "name = \"test\"", "",
 					`"cpus" = 4
 									"ram" = 4096`),
@@ -481,7 +487,7 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 
 // To ensure the presence of a disk works unchanged
 func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
@@ -509,6 +515,7 @@ func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
 				),
 			},
 			{
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"cpus" = 4
 									"disk" = {
@@ -529,7 +536,7 @@ func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
 }
 
 func TestAccSkytapVMCPURAM_UpdateNPECheck(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
@@ -551,6 +558,7 @@ func TestAccSkytapVMCPURAM_UpdateNPECheck(t *testing.T) {
 				),
 			},
 			{
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"cpus" = 8
 									"ram" = 2048`),
@@ -563,7 +571,7 @@ func TestAccSkytapVMCPURAM_UpdateNPECheck(t *testing.T) {
 }
 
 func TestAccSkytapVMCPURAM_Invalid(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
@@ -584,7 +592,7 @@ func TestAccSkytapVMCPURAM_Invalid(t *testing.T) {
 }
 
 func TestAccSkytapVMCPU_OutOfRange(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	templateID, vmID, newEnvTemplateID := setupNonDefaultEnvironment("SKYTAP_TEMPLATE_OUTOFRANGE_ID", "136409", "SKYTAP_VM_OUTOFRANGE_ID", "849656")
 	uniqueSuffixEnv := acctest.RandInt()
@@ -605,7 +613,7 @@ func TestAccSkytapVMCPU_OutOfRange(t *testing.T) {
 }
 
 func TestAccSkytapVMCPU_OutOfRangeAfterUpdate(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	templateID, vmID, newEnvTemplateID := setupNonDefaultEnvironment("SKYTAP_TEMPLATE_OUTOFRANGE_ID", "136409", "SKYTAP_VM_OUTOFRANGE_ID", "849656")
 	uniqueSuffixEnv := acctest.RandInt()
@@ -630,7 +638,7 @@ func TestAccSkytapVMCPU_OutOfRangeAfterUpdate(t *testing.T) {
 }
 
 func TestAccSkytapVMDisks_Create(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
@@ -663,6 +671,7 @@ func TestAccSkytapVMDisks_Create(t *testing.T) {
 				),
 			},
 			{
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"disk" = {
 										"size" = 2048
@@ -685,7 +694,7 @@ func TestAccSkytapVMDisks_Create(t *testing.T) {
 
 // NPE checks
 func TestAccSkytapVMDisks_UpdateNPECheck(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
@@ -705,6 +714,7 @@ func TestAccSkytapVMDisks_UpdateNPECheck(t *testing.T) {
 				),
 			},
 			{
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"disk" = {
 										"size" = 8000
@@ -722,7 +732,7 @@ func TestAccSkytapVMDisks_UpdateNPECheck(t *testing.T) {
 }
 
 func TestAccSkytapVMDisks_Resize(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
@@ -747,6 +757,7 @@ func TestAccSkytapVMDisks_Resize(t *testing.T) {
 				),
 			},
 			{
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"disk" = {
 										"size" = 8192
@@ -772,7 +783,7 @@ func TestAccSkytapVMDisks_Resize(t *testing.T) {
 }
 
 func TestAccSkytapVMDisk_Invalid(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
@@ -803,7 +814,7 @@ func TestAccSkytapVMDisk_Invalid(t *testing.T) {
 }
 
 func TestAccSkytapVMDisk_OS(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
@@ -827,6 +838,7 @@ func TestAccSkytapVMDisk_OS(t *testing.T) {
 				),
 			},
 			{
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"os_disk_size" = 30722`),
 				Check: resource.ComposeTestCheckFunc(
@@ -846,7 +858,7 @@ func TestAccSkytapVMDisk_OS(t *testing.T) {
 }
 
 func TestAccSkytapVMDisk_OSChangeAfter(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
@@ -867,6 +879,7 @@ func TestAccSkytapVMDisk_OSChangeAfter(t *testing.T) {
 				),
 			},
 			{
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`"os_disk_size" = 30721`),
 				Check: resource.ComposeTestCheckFunc(
@@ -880,7 +893,7 @@ func TestAccSkytapVMDisk_OSChangeAfter(t *testing.T) {
 }
 
 func TestAccSkytapVM_Concurrent(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
@@ -1157,16 +1170,16 @@ func testAccSkytapVMConfig_concurrent(envTemplateID string, uniqueSuffixEnv int,
 	
 	variable "ip_addreses" {
 	  default = {
-		"0" = "192.168.1.1"
-		"1" = "192.168.1.2"
-		"2" = "192.168.1.3"
-		"3" = "192.168.1.4"
-		"4" = "192.168.1.5"
-		"5" = "192.168.1.6"
-		"6" = "192.168.1.7"
-		"7" = "192.168.1.8"
-		"8" = "192.168.1.9"
-		"9" = "192.168.1.10"
+		"0" = "192.168.1.100"
+		"1" = "192.168.1.101"
+		"2" = "192.168.1.102"
+		"3" = "192.168.1.103"
+		"4" = "192.168.1.104"
+		"5" = "192.168.1.105"
+		"6" = "192.168.1.106"
+		"7" = "192.168.1.107"
+		"8" = "192.168.1.108"
+		"9" = "192.168.1.109"
 	  }
 	}
 	

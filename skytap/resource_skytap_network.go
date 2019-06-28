@@ -83,7 +83,7 @@ func resourceSkytapNetworkCreate(d *schema.ResourceData, meta interface{}) error
 	}
 
 	log.Printf("[INFO] network create")
-	log.Printf("[DEBUG] network create options: %#v", spew.Sdump(opts))
+	log.Printf("[DEBUG] network create options: %v", spew.Sdump(opts))
 	network, err := client.Create(ctx, environmentID, &opts)
 	if err != nil {
 		return fmt.Errorf("error creating network: %v", err)
@@ -96,7 +96,11 @@ func resourceSkytapNetworkCreate(d *schema.ResourceData, meta interface{}) error
 	d.SetId(networkID)
 
 	log.Printf("[INFO] network created: %s", *network.ID)
-	log.Printf("[DEBUG] network created: %#v", spew.Sdump(network))
+	log.Printf("[TRACE] network created: %v", spew.Sdump(network))
+
+	if err = waitForEnvironmentReady(d, meta, environmentID); err != nil {
+		return err
+	}
 
 	return resourceSkytapNetworkRead(d, meta)
 }
@@ -128,7 +132,7 @@ func resourceSkytapNetworkRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("tunnelable", network.Tunnelable)
 
 	log.Printf("[INFO] network retrieved: %s", id)
-	log.Printf("[DEBUG] network retrieved: %#v", spew.Sdump(network))
+	log.Printf("[TRACE] network retrieved: %v", spew.Sdump(network))
 
 	return err
 }
@@ -157,14 +161,18 @@ func resourceSkytapNetworkUpdate(d *schema.ResourceData, meta interface{}) error
 	}
 
 	log.Printf("[INFO] network update: %s", id)
-	log.Printf("[DEBUG] network update options: %#v", spew.Sdump(opts))
+	log.Printf("[DEBUG] network update options: %v", spew.Sdump(opts))
 	network, err := client.Update(ctx, environmentID, id, &opts)
 	if err != nil {
 		return fmt.Errorf("error updating network (%s): %v", id, err)
 	}
 
 	log.Printf("[INFO] network updated: %s", id)
-	log.Printf("[DEBUG] network updated: %#v", spew.Sdump(network))
+	log.Printf("[TRACE] network updated: %v", spew.Sdump(network))
+
+	if err = waitForEnvironmentReady(d, meta, environmentID); err != nil {
+		return err
+	}
 
 	return resourceSkytapNetworkRead(d, meta)
 }
@@ -186,6 +194,11 @@ func resourceSkytapNetworkDelete(d *schema.ResourceData, meta interface{}) error
 
 		return fmt.Errorf("error deleting network (%s): %v", id, err)
 	}
+	if err = waitForEnvironmentReady(d, meta, environmentID); err != nil {
+		return err
+	}
+
+	log.Printf("[INFO] network destroyed: %s", id)
 
 	return err
 }

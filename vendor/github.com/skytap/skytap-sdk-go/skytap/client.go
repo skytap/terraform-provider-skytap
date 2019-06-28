@@ -14,8 +14,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 const (
@@ -223,14 +221,16 @@ func (c *Client) do(ctx context.Context, req *http.Request, v interface{}, state
 			if !retry || err != nil {
 				return resp, err
 			}
-			waitForAwhile("POST PUT DELETE main loop", "", "", c.retryAfter, i)
 		}
 	}
-	return c.requestGet(ctx, req, v)
+	return c.request(ctx, req, v)
 }
 
-func (c *Client) requestGet(ctx context.Context, req *http.Request, v interface{}) (*http.Response, error) {
-	log.Printf("[DEBUG] SDK GET request (%#v)\n", spew.Sdump(req))
+func (c *Client) request(ctx context.Context, req *http.Request, v interface{}) (*http.Response, error) {
+	err := logRequest(req)
+	if err != nil {
+		return nil, err
+	}
 	resp, err := c.hc.Do(req.WithContext(ctx))
 
 	if err != nil {
@@ -251,11 +251,11 @@ func (c *Client) requestGet(ctx context.Context, req *http.Request, v interface{
 
 func (c *Client) requestPutPostDelete(ctx context.Context, req *http.Request, state *environmentVMRunState, payload responseComparator, v interface{}) (*http.Response, bool, error) {
 	var resp *http.Response
-	var err error
-
-	log.Printf("[DEBUG] SDK POST PUT DELETE request (%#v)\n", spew.Sdump(req))
+	err := logRequest(req)
+	if err != nil {
+		return nil, false, err
+	}
 	resp, err = c.hc.Do(req.WithContext(ctx))
-
 	if err != nil {
 		return nil, false, err
 	}
@@ -270,31 +270,42 @@ func (c *Client) requestPutPostDelete(ctx context.Context, req *http.Request, st
 		if payload != nil {
 			for i := 0; i < c.retryCount; i++ {
 				if message, ok := payload.compare(ctx, c, v, state); !ok {
-					waitForAwhile("response check", fmt.Sprintf("%d", code), message, c.retryAfter, i)
+					c.backoff("response check", fmt.Sprintf("%d", code), message, c.retryAfter)
 				} else {
 					return nil, false, nil
 				}
 			}
 		}
 		return nil, false, err
-	} else if code == http.StatusUnprocessableEntity || code == http.StatusConflict {
-		waitForAwhile("response check", fmt.Sprintf("%d", code), "StatusUnprocessableEntity", c.retryAfter, 0)
-	} else if code == http.StatusLocked || code == http.StatusTooManyRequests {
-		codeAsString := "StatusLocked"
-		if code == http.StatusTooManyRequests {
-			codeAsString = "StatusTooManyRequests"
-		}
-		err = c.buildErrorResponse(resp)
-		seconds := *err.(*ErrorResponse).RetryAfter
-		waitForAwhile("response", fmt.Sprintf("%d", code), codeAsString, seconds, 0)
-	} else {
-		return resp, false, c.buildErrorResponse(resp)
 	}
-	return resp, true, nil
+	return c.handleError(resp, code)
 }
 
-func waitForAwhile(message string, code string, codeAsString string, secondsToWait int, iteration int) {
-	snooze := secondsToWait //* (iteration + 1)
+func (c *Client) handleError(resp *http.Response, code int) (*http.Response, bool, error) {
+	var errorSpecial *ErrorResponse
+	errorSpecial = c.buildErrorResponse(resp).(*ErrorResponse)
+	retryError := ""
+	if code == http.StatusUnprocessableEntity {
+		retryError = "StatusUnprocessableEntity"
+	} else if code == http.StatusConflict {
+		retryError = "StatusConflict"
+	} else if code == http.StatusLocked {
+		retryError = "StatusLocked"
+	} else if code == http.StatusTooManyRequests {
+		retryError = "StatusTooManyRequests"
+	}
+	if retryError != "" {
+		seconds := c.retryAfter
+		if errorSpecial.RetryAfter != nil {
+			seconds = *errorSpecial.RetryAfter
+		}
+		c.backoff("response check", fmt.Sprintf("%d", code), retryError, seconds)
+		return resp, true, nil
+	}
+	return resp, false, errorSpecial
+}
+
+func (c *Client) backoff(message string, code string, codeAsString string, snooze int) {
 	log.Printf("[INFO] SDK %s (%s:%s). Retrying after %d second(s)\n", message, code, codeAsString, snooze)
 	time.Sleep(time.Duration(snooze) * time.Second)
 }
@@ -313,6 +324,19 @@ func readResponseBody(resp *http.Response, v interface{}) error {
 		err = resp.Body.Close()
 	}
 	return err
+}
+
+func logRequest(req *http.Request) error {
+	log.Printf("[DEBUG] SDK request (%s), URL (%s), agent (%s)\n", req.Method, req.URL.String(), req.UserAgent())
+	if req.Body != nil {
+		body, err := ioutil.ReadAll(req.Body)
+		if err != nil {
+			return err
+		}
+		req.Body = ioutil.NopCloser(bytes.NewReader(body))
+		log.Printf("[DEBUG] SDK request body (%s)\n", strings.TrimSpace(string(body)))
+	}
+	return nil
 }
 
 func (c *Client) setRequestListParameters(req *http.Request, params *ListParameters) error {
@@ -349,10 +373,8 @@ func (c *Client) buildErrorResponse(r *http.Response) error {
 	errorResponse := &ErrorResponse{Response: r}
 	data, err := ioutil.ReadAll(r.Body)
 	if err == nil && len(data) > 0 {
-		err := json.Unmarshal(data, errorResponse)
-		if err != nil {
-			errorResponse.Message = strToPtr(string(data))
-		}
+		errorResponse.Message = strToPtr(string(data))
+		log.Printf("[INFO] SDK response error: (%s)", *errorResponse.Message)
 	}
 
 	if requestID := r.Header.Get(headerRequestID); requestID != "" {
@@ -376,22 +398,20 @@ func (c *Client) buildErrorResponse(r *http.Response) error {
 func (c *Client) checkResourceStateUntilSatisfied(ctx context.Context, req *http.Request, state *environmentVMRunState) error {
 	runStateCheck := c.requiresChecking(state)
 	if runStateCheck > noRunStateCheck {
-		var ok bool
-		var err error
 		for i := 0; i < c.retryCount; i++ {
+			var ok bool
+			var err error
 			if runStateCheck == envRunStateCheck {
 				ok, err = c.getEnvironmentRunState(ctx, state.environmentID, state.environment)
 			} else {
 				ok, err = c.getVMRunState(ctx, state.environmentID, state.vmID, state.vm)
 			}
-			if err != nil {
+			if err != nil || ok {
 				return err
 			}
-			if ok {
-				return nil
-			}
-			waitForAwhile("POST PUT DELETE pre-check loop", "", "", c.retryAfter, i)
+			c.backoff("pre-check loop", "", "", c.retryAfter)
 		}
+		return errors.New("timeout waiting for state")
 	}
 	return nil
 }
