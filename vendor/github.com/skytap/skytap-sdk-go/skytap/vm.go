@@ -404,7 +404,6 @@ func (s *VMsServiceClient) updateHardware(ctx context.Context, environmentID str
 		if err != nil {
 			return nil, err
 		}
-		// update new list of disks
 		updateFinalDiskList(vm, disks)
 	}
 
@@ -418,6 +417,7 @@ func (s *VMsServiceClient) updateHardware(ctx context.Context, environmentID str
 		if err != nil {
 			return nil, err
 		}
+		updateFinalDiskList(vm, disks)
 	}
 
 	return vm, nil

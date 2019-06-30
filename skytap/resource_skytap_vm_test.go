@@ -1184,7 +1184,7 @@ func testAccSkytapVMConfig_concurrent(envTemplateID string, uniqueSuffixEnv int,
 	}
 	
 	resource "skytap_vm" "webservers" {
-	  count = 5
+	  count = 10
 	  template_id = "%s"
 	  vm_id = "%s"
 	  environment_id = "${skytap_environment.foo.id}"
@@ -1241,9 +1241,9 @@ func testAccCheckSkytapVMRAM(t *testing.T, vm *skytap.VM, ram int) resource.Test
 	}
 }
 
-func testAccCheckSkytapVMDiskResource(t *testing.T, name string, disks string, names []string) resource.TestCheckFunc {
+func testAccCheckSkytapVMDiskResource(t *testing.T, vmName string, disks string, names []string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		rsVM, err := getResource(s, name)
+		rsVM, err := getResource(s, vmName)
 		assert.NotNil(t, rsVM)
 		if err != nil {
 			return err

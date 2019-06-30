@@ -287,6 +287,9 @@ func (c *Client) handleError(resp *http.Response, code int) (*http.Response, boo
 	retryError := ""
 	if code == http.StatusUnprocessableEntity {
 		retryError = "StatusUnprocessableEntity"
+		if !strings.Contains(*errorSpecial.Message, "busy") {
+			return resp, false, errorSpecial
+		}
 	} else if code == http.StatusConflict {
 		retryError = "StatusConflict"
 	} else if code == http.StatusLocked {

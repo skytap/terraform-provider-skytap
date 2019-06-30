@@ -51,7 +51,7 @@ func testSweepSkytapNetwork(region string) error {
 }
 
 func TestAccSkytapNetwork_Basic(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
 	uniqueSuffixEnv := acctest.RandInt()
@@ -80,7 +80,7 @@ func TestAccSkytapNetwork_Basic(t *testing.T) {
 }
 
 func TestAccSkytapNetwork_Update(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
 	uniqueSuffixEnv := acctest.RandInt()
