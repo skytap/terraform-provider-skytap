@@ -907,7 +907,16 @@ func TestAccSkytapVM_Concurrent(t *testing.T) {
 			{
 				Config: testAccSkytapVMConfig_concurrent(newEnvTemplateID, uniqueSuffixEnv, templateID, vmID),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.webservers", &vm),
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.webservers.0", &vm),
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.webservers.1", &vm),
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.webservers.2", &vm),
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.webservers.3", &vm),
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.webservers.4", &vm),
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.webservers.5", &vm),
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.webservers.6", &vm),
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.webservers.7", &vm),
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.webservers.8", &vm),
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.webservers.9", &vm),
 				),
 			},
 		},
