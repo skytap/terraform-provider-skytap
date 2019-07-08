@@ -3,6 +3,7 @@ package skytap
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/skytap/skytap-sdk-go/skytap"
 )
@@ -28,14 +29,7 @@ type SkytapClient struct {
 
 // Client creates a SkytapClient client
 func (c *Config) Client() (*SkytapClient, error) {
-	var credentialsProvider skytap.CredentialsProvider
-	if c.APIToken != "" {
-		credentialsProvider = skytap.NewAPITokenCredentials(c.Username, c.APIToken)
-	} else {
-		return nil, fmt.Errorf("an API token must be provided in order to successfully authenticate to Skytap")
-	}
-
-	client, err := skytap.NewClient(skytap.NewDefaultSettings(skytap.WithCredentialsProvider(credentialsProvider)))
+	client, err := c.createClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize the Skytap client: %v", err)
 	}
@@ -51,4 +45,27 @@ func (c *Config) Client() (*SkytapClient, error) {
 	}
 
 	return &skytapClient, nil
+}
+
+func (c *Config) createClient() (*skytap.Client, error) {
+	var credentialsProvider skytap.CredentialsProvider
+	if c.APIToken != "" {
+		credentialsProvider = skytap.NewAPITokenCredentials(c.Username, c.APIToken)
+	} else {
+		return nil, fmt.Errorf("an API token must be provided in order to successfully authenticate to Skytap")
+	}
+
+	userAgent, err := getUserAgent()
+	if err != nil {
+		return nil, err
+	}
+
+	return skytap.NewClient(skytap.NewDefaultSettings(
+		skytap.WithCredentialsProvider(credentialsProvider),
+		skytap.WithUserAgent(userAgent)))
+}
+
+func getUserAgent() (string, error) {
+	log.Printf("[DEBUG] user agent version (version.go): %s", userAgentVersion)
+	return fmt.Sprintf("terraform-provider-skytap/%s", userAgentVersion), nil
 }
