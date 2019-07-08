@@ -219,7 +219,7 @@ func (s *NetworksServiceClient) buildPath(environmentID string, networkID string
 	return path
 }
 
-func (payload *CreateNetworkRequest) compare(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
+func (payload *CreateNetworkRequest) compareResponse(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
 	if networkOriginal, ok := v.(*Network); ok {
 		network, err := c.Networks.Get(ctx, *state.environmentID, *networkOriginal.ID)
 		if err != nil {
@@ -235,7 +235,7 @@ func (payload *CreateNetworkRequest) compare(ctx context.Context, c *Client, v i
 	return requestNotAsExpected, false
 }
 
-func (payload *UpdateNetworkRequest) compare(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
+func (payload *UpdateNetworkRequest) compareResponse(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
 	if networkOriginal, ok := v.(*Network); ok {
 		network, err := c.Networks.Get(ctx, *state.environmentID, *networkOriginal.ID)
 		if err != nil {

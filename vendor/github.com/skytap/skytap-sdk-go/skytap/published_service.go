@@ -169,7 +169,7 @@ func (s *PublishedServicesServiceClient) Delete(ctx context.Context, environment
 	return nil
 }
 
-func (payload *CreatePublishedServiceRequest) compare(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
+func (payload *CreatePublishedServiceRequest) compareResponse(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
 	if serviceOriginal, ok := v.(*PublishedService); ok {
 		publishedService, err := c.PublishedServices.Get(ctx, *state.environmentID, *state.vmID, *state.adapterID, *serviceOriginal.ID)
 		if err != nil {

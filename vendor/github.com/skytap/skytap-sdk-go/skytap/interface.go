@@ -256,7 +256,7 @@ func (s *InterfacesServiceClient) Delete(ctx context.Context, environmentID stri
 	return nil
 }
 
-func (payload *CreateInterfaceRequest) compare(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
+func (payload *CreateInterfaceRequest) compareResponse(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
 	if interfaceOriginal, ok := v.(*Interface); ok {
 		adapter, err := c.Interfaces.Get(ctx, *state.environmentID, *state.vmID, *interfaceOriginal.ID)
 		if err != nil {
@@ -274,7 +274,7 @@ func (payload *CreateInterfaceRequest) compare(ctx context.Context, c *Client, v
 	return requestNotAsExpected, false
 }
 
-func (payload *AttachInterfaceRequest) compare(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
+func (payload *AttachInterfaceRequest) compareResponse(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
 	if interfaceOriginal, ok := v.(*Interface); ok {
 		adapter, err := c.Interfaces.Get(ctx, *state.environmentID, *state.vmID, *interfaceOriginal.ID)
 		if err != nil {
@@ -292,7 +292,7 @@ func (payload *AttachInterfaceRequest) compare(ctx context.Context, c *Client, v
 	return requestNotAsExpected, false
 }
 
-func (payload *UpdateInterfaceRequest) compare(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
+func (payload *UpdateInterfaceRequest) compareResponse(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
 	if interfaceOriginal, ok := v.(*Interface); ok {
 		adapter, err := c.Interfaces.Get(ctx, *state.environmentID, *state.vmID, *interfaceOriginal.ID)
 		if err != nil {

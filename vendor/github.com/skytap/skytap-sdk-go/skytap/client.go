@@ -116,7 +116,7 @@ type environmentVMRunState struct {
 }
 
 type responseComparator interface {
-	compare(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool)
+	compareResponse(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool)
 }
 
 // Error returns a formatted error
@@ -270,7 +270,7 @@ func (c *Client) requestPutPostDelete(ctx context.Context, req *http.Request, st
 		}
 		if payload != nil {
 			for i := 0; i < c.retryCount; i++ {
-				if message, ok := payload.compare(ctx, c, v, state); !ok {
+				if message, ok := payload.compareResponse(ctx, c, v, state); !ok {
 					c.backoff("response check", fmt.Sprintf("%d", code), message, c.retryAfter)
 				} else {
 					return nil, false, nil

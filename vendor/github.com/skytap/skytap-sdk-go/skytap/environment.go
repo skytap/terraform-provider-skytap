@@ -213,14 +213,14 @@ func (s *EnvironmentsServiceClient) Get(ctx context.Context, id string) (*Enviro
 }
 
 // Create an environment
-func (s *EnvironmentsServiceClient) Create(ctx context.Context, request *CreateEnvironmentRequest) (*Environment, error) {
-	req, err := s.client.newRequest(ctx, "POST", environmentLegacyBasePath, request)
+func (s *EnvironmentsServiceClient) Create(ctx context.Context, opts *CreateEnvironmentRequest) (*Environment, error) {
+	req, err := s.client.newRequest(ctx, "POST", environmentLegacyBasePath, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	var createdEnvironment Environment
-	_, err = s.client.do(ctx, req, &createdEnvironment, nil, request)
+	_, err = s.client.do(ctx, req, &createdEnvironment, nil, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -236,16 +236,16 @@ func (s *EnvironmentsServiceClient) Create(ctx context.Context, request *CreateE
 	}
 
 	updateOpts := &UpdateEnvironmentRequest{
-		Name:            request.Name,
-		Description:     request.Description,
-		Owner:           request.Owner,
-		OutboundTraffic: request.OutboundTraffic,
-		Routable:        request.Routable,
-		SuspendOnIdle:   request.SuspendOnIdle,
-		SuspendAtTime:   request.SuspendAtTime,
-		ShutdownOnIdle:  request.ShutdownOnIdle,
-		ShutdownAtTime:  request.ShutdownAtTime,
-		Runstate:        runstate,
+		Name:            opts.Name,
+		Description:     opts.Description,
+		Owner:           opts.Owner,
+		OutboundTraffic: opts.OutboundTraffic,
+		Routable:        opts.Routable,
+		SuspendOnIdle:   opts.SuspendOnIdle,
+		SuspendAtTime:   opts.SuspendAtTime,
+		ShutdownOnIdle:  opts.ShutdownOnIdle,
+		ShutdownAtTime:  opts.ShutdownAtTime,
+		Runstate:        runstate, // we are expecting the environment to start its VMs after creation
 	}
 
 	// update environment after creation to establish the resource information.
@@ -291,7 +291,7 @@ func (s *EnvironmentsServiceClient) Delete(ctx context.Context, id string) error
 	return nil
 }
 
-func (payload *CreateEnvironmentRequest) compare(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
+func (payload *CreateEnvironmentRequest) compareResponse(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
 	if envOriginal, ok := v.(*Environment); ok {
 		env, err := c.Environments.Get(ctx, *envOriginal.ID)
 		if err != nil {
@@ -308,14 +308,14 @@ func (payload *CreateEnvironmentRequest) compare(ctx context.Context, c *Client,
 	return requestNotAsExpected, false
 }
 
-func (payload *UpdateEnvironmentRequest) compare(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
+func (payload *UpdateEnvironmentRequest) compareResponse(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
 	if envOriginal, ok := v.(*Environment); ok {
 		env, err := c.Environments.Get(ctx, *envOriginal.ID)
 		if err != nil {
 			return requestNotAsExpected, false
 		}
 		logEnvironmentStatus(env)
-		actual := payload.buildUpdateRequestFromVM(env)
+		actual := payload.buildComparison(env)
 		if payload.string() == actual.string() {
 			return "", true
 		}
@@ -325,7 +325,7 @@ func (payload *UpdateEnvironmentRequest) compare(ctx context.Context, c *Client,
 	return requestNotAsExpected, false
 }
 
-func (payload *UpdateEnvironmentRequest) buildUpdateRequestFromVM(env *Environment) UpdateEnvironmentRequest {
+func (payload *UpdateEnvironmentRequest) buildComparison(env *Environment) UpdateEnvironmentRequest {
 	actual := UpdateEnvironmentRequest{}
 	if payload.Name != nil {
 		actual.Name = env.Name
@@ -402,19 +402,19 @@ func (payload *UpdateEnvironmentRequest) string() string {
 	if payload.Runstate != nil {
 		runstate = string(*payload.Runstate)
 	}
-	s := fmt.Sprintf("%s%s%s%s%s%s%s%s%s%s",
-		name,
-		description,
-		owner,
-		outboundTraffic,
-		routable,
-		suspendOnIdle,
-		suspendAtTime,
-		shutdownOnIdle,
-		shutdownAtTime,
-		runstate)
-	log.Printf("[DEBUG] SDK environment payload (%s)\n", s)
-	return s
+	var sb strings.Builder
+	sb.WriteString(name)
+	sb.WriteString(description)
+	sb.WriteString(owner)
+	sb.WriteString(outboundTraffic)
+	sb.WriteString(routable)
+	sb.WriteString(suspendOnIdle)
+	sb.WriteString(suspendAtTime)
+	sb.WriteString(shutdownOnIdle)
+	sb.WriteString(shutdownAtTime)
+	sb.WriteString(runstate)
+	log.Printf("[DEBUG] SDK environment payload (%s)\n", sb.String())
+	return sb.String()
 }
 
 func logEnvironmentStatus(env *Environment) {

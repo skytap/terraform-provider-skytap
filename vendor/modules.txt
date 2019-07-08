@@ -161,7 +161,7 @@ github.com/posener/complete
 github.com/posener/complete/cmd/install
 github.com/posener/complete/cmd
 github.com/posener/complete/match
-# github.com/skytap/skytap-sdk-go v0.0.0-20190104154114-bcdf62be110d => ../../skytap/skytap-sdk-go
+# github.com/skytap/skytap-sdk-go v0.0.0-20190708161737-268769330b73
 github.com/skytap/skytap-sdk-go/skytap
 # github.com/stretchr/testify v1.3.0
 github.com/stretchr/testify/assert

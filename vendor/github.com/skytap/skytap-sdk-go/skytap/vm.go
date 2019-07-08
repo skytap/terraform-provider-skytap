@@ -556,7 +556,7 @@ func addOSDiskResize(osDiskSize *int, vm *VM, updates map[string]ExistingDisk) {
 	}
 }
 
-func (payload *CreateVMRequest) compare(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
+func (payload *CreateVMRequest) compareResponse(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
 	env, err := c.Environments.Get(ctx, *state.environmentID)
 	if err != nil {
 		return requestNotAsExpected, false
@@ -568,7 +568,7 @@ func (payload *CreateVMRequest) compare(ctx context.Context, c *Client, v interf
 	return "VM environment not ready", false
 }
 
-func (payload *UpdateVMRequest) compare(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
+func (payload *UpdateVMRequest) compareResponse(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
 	vm, err := c.VMs.Get(ctx, *state.environmentID, *state.vmID)
 	if err != nil {
 		return requestNotAsExpected, false
