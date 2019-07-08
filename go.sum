@@ -262,6 +262,7 @@ github.com/satori/uuid v0.0.0-20160927100844-b061729afc07 h1:81vvGlnI/AZ1/TxGDir
 github.com/satori/uuid v0.0.0-20160927100844-b061729afc07/go.mod h1:B8HLsPLik/YNn6KKWVMDJ8nzCL8RP5WyfsnmvnAEwIU=
 github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529/go.mod h1:DxrIzT+xaE7yg65j358z/aeFdxmN0P9QXhEzd20vsDc=
 github.com/sergi/go-diff v1.0.0/go.mod h1:0CfEIISq7TuYL3j771MWULgwwjU+GofnZX9QAmXWZgo=
+github.com/skytap/skytap-sdk-go v0.0.0-20190708161737-268769330b73 h1:5WbXbaVks02gDtvvSxnXuBKuNOP0JCivWNE3l2CtizE=
 github.com/skytap/skytap-sdk-go v0.0.0-20190708161737-268769330b73/go.mod h1:0O321TJrJRhtzFmVXM8PcpKcQJzjs00aI1iy8zvlSn0=
 github.com/smartystreets/assertions v0.0.0-20190116191733-b6c0e53d7304/go.mod h1:OnSkiWE9lh6wB0YB77sQom3nweQdgAjqCqsofrRNTgc=
 github.com/smartystreets/assertions v0.0.0-20190215210624-980c5ac6f3ac h1:wbW+Bybf9pXxnCFAOWZTqkRjAc7rAIwo2e1ArUhiHxg=
