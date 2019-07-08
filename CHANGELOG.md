@@ -1,4 +1,4 @@
-## 0.11.0 (Unreleased)
+## 0.11.0 (July 08, 2019)
 
 FEATURES:
 
