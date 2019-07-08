@@ -49,7 +49,7 @@ func resourceSkytapEnvironment() *schema.Resource {
 			"routable": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  nil,
+				Default:  false,
 			},
 
 			"suspend_on_idle": {
@@ -86,16 +86,13 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 	templateID := d.Get("template_id").(string)
 	name := d.Get("name").(string)
 	outboundTraffic := d.Get("outbound_traffic").(bool)
-	var routable *bool
-	if o, ok := d.GetOk("routable"); ok {
-		routable = utils.Bool(o.(bool))
-	}
+	routable := d.Get("routable").(bool)
 
 	opts := skytap.CreateEnvironmentRequest{
 		TemplateID:      &templateID,
 		Name:            &name,
 		OutboundTraffic: &outboundTraffic,
-		Routable:        routable,
+		Routable:        &routable,
 	}
 
 	if v, ok := d.GetOk("description"); ok {
@@ -170,12 +167,17 @@ func resourceSkytapEnvironmentRead(d *schema.ResourceData, meta interface{}) err
 		return fmt.Errorf("error retrieving environment (%s): %v", id, err)
 	}
 
+	var routable bool
+	if environment.OutboundTraffic != nil {
+		routable = *environment.OutboundTraffic
+	}
+
 	// The templateID is not set as it is used to build the environment and is not returned by the environment response.
 	// If this attribute is changed, this environment will be rebuilt
 	d.Set("name", environment.Name)
 	d.Set("description", environment.Description)
 	d.Set("outbound_traffic", environment.OutboundTraffic)
-	d.Set("routable", environment.OutboundTraffic)
+	d.Set("routable", routable)
 	d.Set("suspend_on_idle", environment.SuspendOnIdle)
 	d.Set("suspend_at_time", environment.SuspendAtTime)
 	d.Set("shutdown_on_idle", environment.ShutdownOnIdle)
