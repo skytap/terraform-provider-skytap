@@ -119,7 +119,7 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	log.Printf("[INFO] environment create")
-	log.Printf("[DEBUG] environment create options: %v", spew.Sdump(opts))
+	log.Printf("[TRACE] environment create options: %v", spew.Sdump(opts))
 	environment, err := client.Create(ctx, &opts)
 	if err != nil {
 		return fmt.Errorf("error creating environment: %v", err)
@@ -224,7 +224,7 @@ func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	log.Printf("[INFO] environment update: %s", id)
-	log.Printf("[DEBUG] environment update options: %v", spew.Sdump(opts))
+	log.Printf("[TRACE] environment update options: %v", spew.Sdump(opts))
 	environment, err := client.Update(ctx, id, &opts)
 	if err != nil {
 		return fmt.Errorf("error updating environment (%s): %v", id, err)

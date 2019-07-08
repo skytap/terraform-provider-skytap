@@ -83,7 +83,7 @@ func resourceSkytapNetworkCreate(d *schema.ResourceData, meta interface{}) error
 	}
 
 	log.Printf("[INFO] network create")
-	log.Printf("[DEBUG] network create options: %v", spew.Sdump(opts))
+	log.Printf("[TRACE] network create options: %v", spew.Sdump(opts))
 	network, err := client.Create(ctx, environmentID, &opts)
 	if err != nil {
 		return fmt.Errorf("error creating network: %v", err)
@@ -161,7 +161,7 @@ func resourceSkytapNetworkUpdate(d *schema.ResourceData, meta interface{}) error
 	}
 
 	log.Printf("[INFO] network update: %s", id)
-	log.Printf("[DEBUG] network update options: %v", spew.Sdump(opts))
+	log.Printf("[TRACE] network update options: %v", spew.Sdump(opts))
 	network, err := client.Update(ctx, environmentID, id, &opts)
 	if err != nil {
 		return fmt.Errorf("error updating network (%s): %v", id, err)
