@@ -116,7 +116,7 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	log.Printf("[INFO] environment create")
-	log.Printf("[DEBUG] environment create options: %#v", spew.Sdump(opts))
+	log.Printf("[TRACE] environment create options: %v", spew.Sdump(opts))
 	environment, err := client.Create(ctx, &opts)
 	if err != nil {
 		return fmt.Errorf("error creating environment: %v", err)
@@ -129,7 +129,7 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 	d.SetId(environmentID)
 
 	log.Printf("[INFO] environment created: %s", *environment.ID)
-	log.Printf("[DEBUG] environment created: %#v", spew.Sdump(environment))
+	log.Printf("[TRACE] environment created: %v", spew.Sdump(environment))
 
 	stateConf := &resource.StateChangeConf{
 		Pending:    environmentPendingCreateRunstates,
@@ -167,19 +167,24 @@ func resourceSkytapEnvironmentRead(d *schema.ResourceData, meta interface{}) err
 		return fmt.Errorf("error retrieving environment (%s): %v", id, err)
 	}
 
+	var routable bool
+	if environment.OutboundTraffic != nil {
+		routable = *environment.OutboundTraffic
+	}
+
 	// The templateID is not set as it is used to build the environment and is not returned by the environment response.
 	// If this attribute is changed, this environment will be rebuilt
 	d.Set("name", environment.Name)
 	d.Set("description", environment.Description)
 	d.Set("outbound_traffic", environment.OutboundTraffic)
-	d.Set("routable", environment.OutboundTraffic)
+	d.Set("routable", routable)
 	d.Set("suspend_on_idle", environment.SuspendOnIdle)
 	d.Set("suspend_at_time", environment.SuspendAtTime)
 	d.Set("shutdown_on_idle", environment.ShutdownOnIdle)
 	d.Set("shutdown_at_time", environment.ShutdownAtTime)
 
 	log.Printf("[INFO] environment retrieved: %s", id)
-	log.Printf("[DEBUG] environment retrieved: %#v", spew.Sdump(environment))
+	log.Printf("[TRACE] environment retrieved: %v", spew.Sdump(environment))
 
 	return err
 }
@@ -221,14 +226,14 @@ func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	log.Printf("[INFO] environment update: %s", id)
-	log.Printf("[DEBUG] environment update options: %#v", spew.Sdump(opts))
+	log.Printf("[TRACE] environment update options: %v", spew.Sdump(opts))
 	environment, err := client.Update(ctx, id, &opts)
 	if err != nil {
 		return fmt.Errorf("error updating environment (%s): %v", id, err)
 	}
 
 	log.Printf("[INFO] environment updated: %s", id)
-	log.Printf("[DEBUG] environment updated: %#v", spew.Sdump(environment))
+	log.Printf("[TRACE] environment updated: %v", spew.Sdump(environment))
 
 	if err = waitForEnvironmentReady(d, meta, *environment.ID); err != nil {
 		return err

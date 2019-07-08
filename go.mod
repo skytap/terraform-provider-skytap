@@ -25,7 +25,7 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/mitchellh/hashstructure v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.1.2 // indirect
-	github.com/skytap/skytap-sdk-go v0.0.0-20190104154114-bcdf62be110d
+	github.com/skytap/skytap-sdk-go v0.0.0-20190708161737-268769330b73
 	github.com/smartystreets/assertions v0.0.0-20190215210624-980c5ac6f3ac // indirect
 	github.com/stretchr/testify v1.3.0
 	github.com/zclconf/go-cty v0.0.0-20181011210859-1f835aab79c2 // indirect

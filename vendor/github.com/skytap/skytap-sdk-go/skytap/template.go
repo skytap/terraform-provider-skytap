@@ -73,7 +73,7 @@ func (s *TemplatesServiceClient) List(ctx context.Context) (*TemplateListResult,
 	}
 
 	var templatesListResponse TemplateListResult
-	_, err = s.client.do(ctx, req, &templatesListResponse.Value)
+	_, err = s.client.do(ctx, req, &templatesListResponse.Value, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (s *TemplatesServiceClient) Get(ctx context.Context, id string) (*Template,
 	}
 
 	var template Template
-	_, err = s.client.do(ctx, req, &template)
+	_, err = s.client.do(ctx, req, &template, nil, nil)
 	if err != nil {
 		return nil, err
 	}

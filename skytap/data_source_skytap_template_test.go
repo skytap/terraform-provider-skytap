@@ -9,7 +9,7 @@ import (
 )
 
 func TestAccDataSourceSkytapTemplate_Basic(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	name := utils.GetEnv("SKYTAP_TEMPLATE_NAME", "Advanced Import Appliance on Ubuntu 18.04.1")
 
@@ -39,7 +39,7 @@ output "id" {
 }
 
 func TestAccDataSourceSkytapTemplate_RegexMostRecent(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	name := utils.GetEnv("SKYTAP_TEMPLATE_NAME", "Advanced Import Appliance on Ubuntu 18.04.1")
 	namePartial := utils.GetEnv("SKYTAP_TEMPLATE_NAME_PARTIAL", "Appliance on Ubuntu 18.04")

@@ -41,3 +41,8 @@ func GetEnv(key, fallback string) string {
 	log.Printf("[DEBUG] %s=%s", key, value)
 	return value
 }
+
+// Bool returns a pointer to an bool literal
+func Bool(v bool) *bool {
+	return &v
+}

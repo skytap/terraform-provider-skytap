@@ -9,7 +9,7 @@ import (
 )
 
 func TestAccDataSourceSkytapProject_Basic(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 	rInt := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{

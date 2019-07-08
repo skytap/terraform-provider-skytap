@@ -2,6 +2,8 @@ package skytap
 
 import (
 	"context"
+	"fmt"
+	"log"
 )
 
 // Default URL paths
@@ -31,7 +33,7 @@ type Network struct {
 	ID                  *string         `json:"id"`
 	URL                 *string         `json:"url"`
 	Name                *string         `json:"name"`
-	NetworkType         *string         `json:"network_type"`
+	NetworkType         *NetworkType    `json:"network_type"`
 	Subnet              *string         `json:"subnet"`
 	SubnetAddr          *string         `json:"subnet_addr"`
 	SubnetSize          *int            `json:"subnet_size"`
@@ -130,7 +132,7 @@ func (s *NetworksServiceClient) List(ctx context.Context, environmentID string) 
 	}
 
 	var networkListResponse NetworkListResult
-	_, err = s.client.do(ctx, req, &networkListResponse.Value)
+	_, err = s.client.do(ctx, req, &networkListResponse.Value, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +150,7 @@ func (s *NetworksServiceClient) Get(ctx context.Context, environmentID string, i
 	}
 
 	var network Network
-	_, err = s.client.do(ctx, req, &network)
+	_, err = s.client.do(ctx, req, &network, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +168,7 @@ func (s *NetworksServiceClient) Create(ctx context.Context, environmentID string
 	}
 
 	var createdNetwork Network
-	_, err = s.client.do(ctx, req, &createdNetwork)
+	_, err = s.client.do(ctx, req, &createdNetwork, envRunStateNotBusy(environmentID), opts)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +186,7 @@ func (s *NetworksServiceClient) Update(ctx context.Context, environmentID string
 	}
 
 	var updatedNetwork Network
-	_, err = s.client.do(ctx, req, &updatedNetwork)
+	_, err = s.client.do(ctx, req, &updatedNetwork, envRunStateNotBusy(environmentID), network)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +203,7 @@ func (s *NetworksServiceClient) Delete(ctx context.Context, environmentID string
 		return err
 	}
 
-	_, err = s.client.do(ctx, req, nil)
+	_, err = s.client.do(ctx, req, nil, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -215,4 +217,146 @@ func (s *NetworksServiceClient) buildPath(environmentID string, networkID string
 		path += "/" + networkID
 	}
 	return path
+}
+
+func (payload *CreateNetworkRequest) compareResponse(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
+	if networkOriginal, ok := v.(*Network); ok {
+		network, err := c.Networks.Get(ctx, *state.environmentID, *networkOriginal.ID)
+		if err != nil {
+			return requestNotAsExpected, false
+		}
+		actual := payload.buildUpdateRequestFromVM(network)
+		if payload.string() == actual.string() {
+			return "", true
+		}
+		return "network not ready", false
+	}
+	log.Printf("[ERROR] SDK network comparison not possible on (%v)\n", v)
+	return requestNotAsExpected, false
+}
+
+func (payload *UpdateNetworkRequest) compareResponse(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
+	if networkOriginal, ok := v.(*Network); ok {
+		network, err := c.Networks.Get(ctx, *state.environmentID, *networkOriginal.ID)
+		if err != nil {
+			return requestNotAsExpected, false
+		}
+		actual := payload.buildUpdateRequestFromVM(network)
+		if payload.string() == actual.string() {
+			return "", true
+		}
+		return "network not ready", false
+	}
+	log.Printf("[ERROR] SDK network comparison not possible on (%v)\n", v)
+	return requestNotAsExpected, false
+}
+
+func (payload *CreateNetworkRequest) buildUpdateRequestFromVM(network *Network) CreateNetworkRequest {
+	actual := CreateNetworkRequest{}
+	if payload.Name != nil {
+		actual.Name = network.Name
+	}
+	if payload.NetworkType != nil {
+		actual.NetworkType = network.NetworkType
+	}
+	if payload.Subnet != nil {
+		actual.Subnet = network.Subnet
+	}
+	if payload.Domain != nil {
+		actual.Domain = network.Domain
+	}
+	if payload.Gateway != nil {
+		actual.Gateway = network.Gateway
+	}
+	if payload.Tunnelable != nil {
+		actual.Tunnelable = network.Tunnelable
+	}
+	return actual
+}
+
+func (payload *UpdateNetworkRequest) buildUpdateRequestFromVM(network *Network) UpdateNetworkRequest {
+	actual := UpdateNetworkRequest{}
+	if payload.Name != nil {
+		actual.Name = network.Name
+	}
+	if payload.Subnet != nil {
+		actual.Subnet = network.Subnet
+	}
+	if payload.Domain != nil {
+		actual.Domain = network.Domain
+	}
+	if payload.Gateway != nil {
+		actual.Gateway = network.Gateway
+	}
+	if payload.Tunnelable != nil {
+		actual.Tunnelable = network.Tunnelable
+	}
+	return actual
+}
+
+func (payload *CreateNetworkRequest) string() string {
+	name := ""
+	networkType := ""
+	subnet := ""
+	domain := ""
+	gateway := ""
+	tunnelable := ""
+
+	if payload.Name != nil {
+		name = *payload.Name
+	}
+	if payload.NetworkType != nil {
+		networkType = string(*payload.NetworkType)
+	}
+	if payload.Subnet != nil {
+		subnet = *payload.Subnet
+	}
+	if payload.Domain != nil {
+		domain = *payload.Domain
+	}
+	if payload.Gateway != nil {
+		gateway = *payload.Gateway
+	}
+	if payload.Tunnelable != nil {
+		tunnelable = fmt.Sprintf("%t", *payload.Tunnelable)
+	}
+	return fmt.Sprintf("%s%s%s%s%s%s",
+		name,
+		networkType,
+		subnet,
+		domain,
+		gateway,
+		tunnelable)
+}
+
+func (payload *UpdateNetworkRequest) string() string {
+	name := ""
+	subnet := ""
+	domain := ""
+	gateway := ""
+	tunnelable := ""
+
+	if payload.Name != nil {
+		name = *payload.Name
+	}
+	if payload.Subnet != nil {
+		subnet = *payload.Subnet
+	}
+	if payload.Domain != nil {
+		domain = *payload.Domain
+	}
+	if payload.Gateway != nil {
+		gateway = *payload.Gateway
+	}
+	if payload.Tunnelable != nil {
+		tunnelable = fmt.Sprintf("%t", *payload.Tunnelable)
+	}
+	s := fmt.Sprintf("%s%s%s%s%s",
+		name,
+		subnet,
+		domain,
+		gateway,
+		tunnelable)
+	log.Printf("[DEBUG] SDK network payload (%s)\n", s)
+	return s
 }

@@ -26,3 +26,8 @@ func TestRunstate(t *testing.T) {
 	v := skytap.VMRunstateRunning
 	assert.Equal(t, skytap.VMRunstateRunning, *VMRunstate(v))
 }
+
+func TestBool(t *testing.T) {
+	v := false
+	assert.Equal(t, v, *Bool(false))
+}
