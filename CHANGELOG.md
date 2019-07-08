@@ -1,4 +1,9 @@
-## 0.12.0 (Unreleased)
+## 0.11.1 (Unreleased)
+
+BUG FIXES:
+
+* `resource/skytap_environment` : SDK fix to handle `routable` argument defaulting to false.
+
 ## 0.11.0 (July 08, 2019)
 
 FEATURES:
