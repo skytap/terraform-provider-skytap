@@ -1,4 +1,19 @@
-## 0.10.1 (Unreleased)
+## 0.11.0 (Unreleased)
+
+FEATURES:
+
+* Add user agent specific to this provider when working with the Skytap SDK. ([#26](https://github.com/terraform-providers/terraform-provider-skytap/issues/26))
+
+IMPROVEMENTS:
+
+* Reliability improvements via SDK. ([#33](https://github.com/terraform-providers/terraform-provider-skytap/issues/33), [#34](https://github.com/terraform-providers/terraform-provider-skytap/issues/34))
+* Improvements to the logging. ([#34](https://github.com/terraform-providers/terraform-provider-skytap/issues/34))
+
+BUG FIXES:
+
+* `resource/skytap_vm` : Fixed issue with network adapter error handling code in the incorrect place.
+* `resource/skytap_environment` : Fixed issue when environment returns an nil `routable` attribute.
+
 ## 0.10.0 (June 18, 2019)
 
 BREAKING CHANGES:
