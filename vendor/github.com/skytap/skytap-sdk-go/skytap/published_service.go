@@ -62,7 +62,6 @@ type PublishedServicesService interface {
 	List(ctx context.Context, environmentID string, vmID string, nicID string) (*PublishedServiceListResult, error)
 	Get(ctx context.Context, environmentID string, vmID string, nicID string, id string) (*PublishedService, error)
 	Create(ctx context.Context, environmentID string, vmID string, nicID string, internalPort *CreatePublishedServiceRequest) (*PublishedService, error)
-	Update(ctx context.Context, environmentID string, vmID string, nicID string, id string, internalPort *UpdatePublishedServiceRequest) (*PublishedService, error)
 	Delete(ctx context.Context, environmentID string, vmID string, nicID string, id string) error
 }
 
@@ -83,11 +82,6 @@ type PublishedService struct {
 // CreatePublishedServiceRequest describes the create the publishedService data
 type CreatePublishedServiceRequest struct {
 	InternalPort *int `json:"internal_port"`
-}
-
-// UpdatePublishedServiceRequest describes the update the publishedService data
-type UpdatePublishedServiceRequest struct {
-	CreatePublishedServiceRequest
 }
 
 // PublishedServiceListResult is the listing request specific struct
@@ -147,24 +141,14 @@ func (s *PublishedServicesServiceClient) Create(ctx context.Context, environment
 	if err != nil {
 		return nil, err
 	}
-	state := vmRunStateNotBusy(environmentID, vmID)
-	state.adapterID = strToPtr(nicID)
+
 	var createdService PublishedService
-	_, err = s.client.do(ctx, req, &createdService, state, internalPort)
+	_, err = s.client.do(ctx, req, &createdService, vmRunStateNotBusyWithAdapter(environmentID, vmID, nicID), internalPort)
 	if err != nil {
 		return nil, err
 	}
 
 	return &createdService, nil
-}
-
-// Update a publishedService
-func (s *PublishedServicesServiceClient) Update(ctx context.Context, environmentID string, vmID string, nicID string, id string, internalPort *UpdatePublishedServiceRequest) (*PublishedService, error) {
-	err := s.Delete(ctx, environmentID, vmID, nicID, id)
-	if err != nil {
-		return nil, err
-	}
-	return s.Create(ctx, environmentID, vmID, nicID, &internalPort.CreatePublishedServiceRequest)
 }
 
 // Delete a publishedService
@@ -203,10 +187,6 @@ func (payload *CreatePublishedServiceRequest) compare(ctx context.Context, c *Cl
 	return requestNotAsExpected, false
 }
 
-func (payload *UpdatePublishedServiceRequest) compare(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {
-	return payload.CreatePublishedServiceRequest.compare(ctx, c, v, state)
-}
-
 func (payload *CreatePublishedServiceRequest) string() string {
 	internalPort := ""
 
@@ -217,8 +197,4 @@ func (payload *CreatePublishedServiceRequest) string() string {
 		internalPort)
 	log.Printf("[DEBUG] SDK create published service payload (%s)\n", s)
 	return s
-}
-
-func (payload *UpdatePublishedServiceRequest) string() string {
-	return payload.string()
 }

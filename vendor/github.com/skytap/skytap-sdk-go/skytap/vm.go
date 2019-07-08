@@ -308,7 +308,7 @@ func (s *VMsServiceClient) Delete(ctx context.Context, environmentID string, id 
 		return err
 	}
 
-	_, err = s.client.do(ctx, req, nil, vmRunStateNotBusy(environmentID, id), nil)
+	_, err = s.client.do(ctx, req, nil, envRunStateNotBusyWithVM(environmentID, id), nil)
 	if err != nil {
 		return err
 	}
@@ -434,7 +434,7 @@ func (s *VMsServiceClient) changeRunstate(ctx context.Context, environmentID str
 	}
 
 	var updatedVM VM
-	_, err = s.client.do(ctx, requestCreate, &updatedVM, vmRunStateNotBusy(environmentID, id), opts)
+	_, err = s.client.do(ctx, requestCreate, &updatedVM, envRunStateNotBusyWithVM(environmentID, id), opts)
 	if err != nil {
 		return nil, err
 	}

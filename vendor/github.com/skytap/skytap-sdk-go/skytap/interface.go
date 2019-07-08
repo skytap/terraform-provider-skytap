@@ -248,7 +248,7 @@ func (s *InterfacesServiceClient) Delete(ctx context.Context, environmentID stri
 		return err
 	}
 
-	_, err = s.client.do(ctx, req, nil, nil, nil)
+	_, err = s.client.do(ctx, req, nil, vmRequestRunStateStopped(environmentID, vmID), nil)
 	if err != nil {
 		return err
 	}

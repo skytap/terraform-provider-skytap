@@ -106,12 +106,13 @@ type ErrorResponse struct {
 }
 
 type environmentVMRunState struct {
-	environmentID      *string
-	vmID               *string
-	adapterID          *string
-	environment        []EnvironmentRunstate
-	vm                 []VMRunstate
-	diskIdentification []DiskIdentification
+	environmentID       *string
+	vmID                *string
+	adapterID           *string
+	environment         []EnvironmentRunstate
+	vm                  []VMRunstate
+	diskIdentification  []DiskIdentification
+	runStateCheckStatus RunStateCheckStatus
 }
 
 type responseComparator interface {
@@ -420,15 +421,10 @@ func (c *Client) checkResourceStateUntilSatisfied(ctx context.Context, req *http
 }
 
 func (c *Client) requiresChecking(state *environmentVMRunState) RunStateCheckStatus {
-	check := noRunStateCheck
-	if state != nil {
-		if state.environmentID != nil && state.vmID == nil && state.environment != nil {
-			check = envRunStateCheck
-		} else if state.environmentID != nil && state.vmID != nil && state.vm != nil {
-			check = vmRunStateCheck
-		}
+	if state == nil {
+		return noRunStateCheck
 	}
-	return check
+	return state.runStateCheckStatus
 }
 
 func (c *Client) getEnvironmentRunState(ctx context.Context, id *string, states []EnvironmentRunstate) (bool, error) {
@@ -503,15 +499,14 @@ func envRunStateNotBusy(environmentID string) *environmentVMRunState {
 			EnvironmentRunstateStopped,
 			EnvironmentRunstateSuspended,
 			EnvironmentRunstateHalted},
+		runStateCheckStatus: envRunStateCheck,
 	}
 }
 
-func vmRequestRunStateStopped(environmentID string, vmID string) *environmentVMRunState {
-	return &environmentVMRunState{
-		environmentID: strToPtr(environmentID),
-		vmID:          strToPtr(vmID),
-		vm:            []VMRunstate{VMRunstateStopped},
-	}
+func envRunStateNotBusyWithVM(environmentID string, vmID string) *environmentVMRunState {
+	state := envRunStateNotBusy(environmentID)
+	state.vmID = strToPtr(vmID)
+	return state
 }
 
 func vmRunStateNotBusy(environmentID string, vmID string) *environmentVMRunState {
@@ -524,5 +519,18 @@ func vmRunStateNotBusy(environmentID string, vmID string) *environmentVMRunState
 			VMRunstateReset,
 			VMRunstateRunning,
 			VMRunstateSuspended},
+		runStateCheckStatus: vmRunStateCheck,
 	}
+}
+
+func vmRequestRunStateStopped(environmentID string, vmID string) *environmentVMRunState {
+	state := vmRunStateNotBusy(environmentID, vmID)
+	state.vm = []VMRunstate{VMRunstateStopped}
+	return state
+}
+
+func vmRunStateNotBusyWithAdapter(environmentID string, vmID string, adapterID string) *environmentVMRunState {
+	state := vmRunStateNotBusy(environmentID, vmID)
+	state.adapterID = strToPtr(adapterID)
+	return state
 }
