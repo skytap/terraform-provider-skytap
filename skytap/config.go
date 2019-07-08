@@ -2,7 +2,6 @@ package skytap
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 
@@ -67,12 +66,6 @@ func (c *Config) createClient() (*skytap.Client, error) {
 }
 
 func getUserAgent() (string, error) {
-	var userAgent userAgent
-	err := json.Unmarshal([]byte(userAgentVersion), &userAgent)
-	if err != nil {
-		return "", err
-	}
-
-	log.Printf("[DEBUG] user agent version.go: %s", userAgent.Version)
-	return fmt.Sprintf("tf-%s", userAgent.Version), nil
+	log.Printf("[DEBUG] user agent version (version.go): %s", userAgentVersion)
+	return fmt.Sprintf("terraform-provider-skytap/%s", userAgentVersion), nil
 }

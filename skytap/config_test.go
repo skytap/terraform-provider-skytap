@@ -1,6 +1,7 @@
 package skytap
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,7 +13,10 @@ func TestUserAgent(t *testing.T) {
 	}
 
 	userAgent, err := getUserAgent()
-	assert.True(t, len(userAgent) > 3)
+
+	matched, err := regexp.Match(`terraform-provider-skytap/\d+\.\d+\.\d+`, []byte(userAgent))
+
+	assert.True(t, matched, "Not matched")
 
 	client, err := config.createClient()
 
