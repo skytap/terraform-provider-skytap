@@ -1,4 +1,4 @@
-## 0.11.1 (Unreleased)
+## 0.11.1 (July 09, 2019)
 
 BUG FIXES:
 
