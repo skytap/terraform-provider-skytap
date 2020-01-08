@@ -22,31 +22,32 @@ Provides a Skytap Virtual Machine (VM) resource. The environment VM resource rep
 ```hcl
 # Create a new vm
 resource "skytap_vm" "vm" {
-  template_id = 123
-  vm_id = 456
-  environment_id = 789
+  template_id = 1473407
+  vm_id = 37865463
+  environment_id = "${skytap_environment.environment.id}"
   name = "my vm"
-  cpu = 4
+  cpus = 2
   ram = 4096
-  
+
   os_disk_size = 40000
-  	  
-  disk = {
+
+  disk  {
     name = "my disk"
     size = 4096
   }
-  disk = {
+
+  disk  {
       name = "my other disk"
       size = 4096
   }
-  
-  network_interface = {
+
+  network_interface  {
      interface_type = "vmxnet3"
-     network_id = "${skytap_network.my_network.id}"
-     ip = "10.0.0.1"
+     network_id = "${skytap_network.network.id}"
+     ip = "172.128.0.1"
      hostname = "myhost"
-      
-    published_service = {
+
+    published_service {
       name = "ssh"
       internal_port = 22
     }
