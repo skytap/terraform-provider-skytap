@@ -67,8 +67,7 @@ func TestAccSkytapVM_Basic(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				PreventDiskCleanup: true,
-				Config:             testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "name = \"test\"", "", ``),
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "name = \"test\"", "", ``),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "test"),
@@ -122,7 +121,6 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				PreventDiskCleanup: true,
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
@@ -152,7 +150,6 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 					testAccCheckSkytapInterfaceAttributes(t, "skytap_environment.foo", "skytap_network.baz", &vm, skytap.NICTypeVMXNet3, []string{"192.168.0.10", "192.168.0.11"}, []string{"bloggs-web", "bloggs-web2"}),
 				),
 			}, {
-				PreventDiskCleanup: true,
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
@@ -183,7 +180,6 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 					testAccCheckSkytapInterfaceAttributes(t, "skytap_environment.foo", "skytap_network.baz", &vm, skytap.NICTypeVMXNet3, []string{"192.168.0.20", "192.168.0.21"}, []string{"bloggs-web3", "bloggs-web4"}),
 				),
 			}, {
-				PreventDiskCleanup: true,
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
@@ -219,7 +215,6 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				PreventDiskCleanup: true,
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
@@ -250,7 +245,6 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 					testAccCheckSkytapPublishedServiceAttributes(&vm, []int{8080, 8081}),
 				),
 			}, {
-				PreventDiskCleanup: true,
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
@@ -280,7 +274,6 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 					testAccCheckSkytapPublishedServiceAttributes(&vm, []int{8082, 8083}),
 				),
 			}, {
-				PreventDiskCleanup: true,
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
@@ -306,7 +299,6 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 					testAccCheckSkytapPublishedServiceAttributes(&vm, []int{8084}),
 				),
 			}, {
-				PreventDiskCleanup: true,
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
@@ -347,7 +339,6 @@ func TestAccSkytapVM_PublishedServiceBadNic(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				PreventDiskCleanup: true,
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
@@ -380,7 +371,6 @@ func TestAccExternalPorts(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				PreventDiskCleanup: true,
 				Config: testAccSkytapVMConfig_typical(newEnvTemplateID, templateID, vmID, uniqueSuffixEnv, 23,
 					`published_service {
 						name = "web-internal" 
@@ -423,7 +413,6 @@ func TestAccSkytapVM_Typical(t *testing.T) {
 				Config:             testAccSkytapVMConfig_typical(newEnvTemplateID, templateID, vmID, uniqueSuffixEnv, 22, "", ""),
 				ExpectNonEmptyPlan: false,
 			}, {
-				PreventDiskCleanup: true,
 				Config: testAccSkytapVMConfig_typical(newEnvTemplateID, templateID, vmID, uniqueSuffixEnv, 23,
 					`published_service  {
 						name = "web-internal"
@@ -453,8 +442,6 @@ func TestAccSkytapVM_Typical(t *testing.T) {
 }
 
 func TestAccSkytapVMCPURam_Create(t *testing.T) {
-	//t.Skip("This test needs to be validated, currently fail as CPUS > 2 is not allowed at the VM")
-
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
@@ -466,8 +453,7 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:             testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "", ``),
-				PreventDiskCleanup: true,
+				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "", ``),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					resource.TestCheckResourceAttrSet("skytap_vm.bar", "name"),
@@ -475,9 +461,8 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 				),
 			},
 			{
-				PreConfig:          pause(MINUTES),
-				Config:             testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "name = \"test\"", "", ``),
-				PreventDiskCleanup: true,
+				PreConfig: pause(MINUTES),
+				Config:    testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "name = \"test\"", "", ``),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "test"),
@@ -485,8 +470,7 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 				),
 			},
 			{
-				PreConfig:          pause(MINUTES),
-				PreventDiskCleanup: true,
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "name = \"test\"", "",
 					`cpus = 1`),
 				Check: resource.ComposeTestCheckFunc(
@@ -496,8 +480,7 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 				),
 			},
 			{
-				PreConfig:          pause(MINUTES),
-				PreventDiskCleanup: true,
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "name = \"test\"", "",
 					`ram = 8192`),
 				Check: resource.ComposeTestCheckFunc(
@@ -508,8 +491,7 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 				),
 			},
 			{
-				PreConfig:          pause(MINUTES),
-				PreventDiskCleanup: true,
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "name = \"test\"", "",
 					` cpus = 2
                                ram = 4096`),
@@ -538,7 +520,6 @@ func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				PreventDiskCleanup: true,
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`	cpus = 2
 								disk  {
@@ -588,7 +569,6 @@ func TestAccSkytapVMCPURAM_UpdateNPECheck(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				PreventDiskCleanup: true,
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					``),
 				Check: resource.ComposeTestCheckFunc(
@@ -639,7 +619,6 @@ func TestAccSkytapVMCPU_OutOfRange(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				PreventDiskCleanup: true,
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`cpus = 12
                               ram = 131072`),
@@ -684,7 +663,6 @@ func TestAccSkytapVMDisks_Create(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				PreventDiskCleanup: true,
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`disk  {
 								size = 2048
@@ -709,8 +687,7 @@ func TestAccSkytapVMDisks_Create(t *testing.T) {
 				),
 			},
 			{
-				PreventDiskCleanup: true,
-				PreConfig:          pause(MINUTES),
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`disk {
 								size = 2048
@@ -746,7 +723,6 @@ func TestAccSkytapVMDisks_UpdateNPECheck(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				PreventDiskCleanup: true,
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					``),
 				Check: resource.ComposeTestCheckFunc(
@@ -754,8 +730,7 @@ func TestAccSkytapVMDisks_UpdateNPECheck(t *testing.T) {
 				),
 			},
 			{
-				PreConfig:          pause(MINUTES),
-				PreventDiskCleanup: true,
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`disk  {
 								size = 8000
@@ -786,7 +761,6 @@ func TestAccSkytapVMDisks_Resize(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				PreventDiskCleanup: true,
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`disk  {
 										size = 8000
@@ -800,8 +774,7 @@ func TestAccSkytapVMDisks_Resize(t *testing.T) {
 				),
 			},
 			{
-				PreConfig:          pause(MINUTES),
-				PreventDiskCleanup: true,
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`disk {
 										size = 8192
@@ -837,7 +810,6 @@ func TestAccSkytapVMDisk_Invalid(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				PreventDiskCleanup: true,
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`disk  {
 										size = 2047
@@ -847,7 +819,6 @@ func TestAccSkytapVMDisk_Invalid(t *testing.T) {
 				ExpectError: regexp.MustCompile(`config is invalid: expected disk.0.size to be in the range \(2048 - 2096128\), got 2047`),
 			},
 			{
-				PreventDiskCleanup: true,
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`disk  {
 								size = 2096129
@@ -871,7 +842,6 @@ func TestAccSkytapVMDisk_OS(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				PreventDiskCleanup: true,
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`os_disk_size = 30721`),
 				Check: resource.ComposeTestCheckFunc(
@@ -883,8 +853,7 @@ func TestAccSkytapVMDisk_OS(t *testing.T) {
 				),
 			},
 			{
-				PreventDiskCleanup: true,
-				PreConfig:          pause(MINUTES),
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`os_disk_size = 30722`),
 				Check: resource.ComposeTestCheckFunc(
@@ -915,7 +884,6 @@ func TestAccSkytapVMDisk_OSChangeAfter(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				PreventDiskCleanup: true,
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					``),
 				Check: resource.ComposeTestCheckFunc(
@@ -924,8 +892,7 @@ func TestAccSkytapVMDisk_OSChangeAfter(t *testing.T) {
 				),
 			},
 			{
-				PreventDiskCleanup: true,
-				PreConfig:          pause(MINUTES),
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`os_disk_size = 30721`),
 				Check: resource.ComposeTestCheckFunc(
