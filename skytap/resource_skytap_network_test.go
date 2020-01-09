@@ -5,9 +5,9 @@ import (
 	"log"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/skytap/skytap-sdk-go/skytap"
 	"github.com/terraform-providers/terraform-provider-skytap/skytap/utils"
 )
@@ -155,12 +155,12 @@ func testAccSkytapNetworkConfig_basic(templateID string, uniqueSuffixEnv int, un
 	}
 
 	resource "skytap_network" "bar" {
-  		"name"        		= "tftest-network-%d"
-		"domain"      		= %q
-  		"environment_id" 	= "${skytap_environment.foo.id}"
-  		"subnet"      		= %q
+  		name        		= "tftest-network-%d"
+		domain      		= %q
+  		environment_id 	= "${skytap_environment.foo.id}"
+  		subnet      		= %q
 		%s
-  		"tunnelable"  		= %t
+  		tunnelable  		= %t
 	}
 `, templateID, networkEnvironmentPrefix, uniqueSuffixEnv, uniqueSuffixNet, domain, subnet, gateway, tunnelable)
 }

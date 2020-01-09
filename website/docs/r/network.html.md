@@ -21,7 +21,7 @@ resource "skytap_network" "network" {
   environment_id = "123456"
   name = "my network"
   domain = "domain.com"
-  subnet = "1.2.3.4/16"
+  subnet = "1.2.0.0/16"
   gateway = "1.2.3.254"
   tunnelable = true
 }

@@ -405,7 +405,7 @@ func (payload *UpdateEnvironmentRequest) string() string {
 	var sb strings.Builder
 	sb.WriteString(name)
 	sb.WriteString(description)
-	sb.WriteString(owner)	
+	sb.WriteString(owner)
 	sb.WriteString(outboundTraffic)
 	sb.WriteString(routable)
 	sb.WriteString(suspendOnIdle)
