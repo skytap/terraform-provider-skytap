@@ -20,6 +20,8 @@ type EnvironmentsService interface {
 	Create(ctx context.Context, createEnvironmentRequest *CreateEnvironmentRequest) (*Environment, error)
 	Update(ctx context.Context, id string, updateEnvironmentRequest *UpdateEnvironmentRequest) (*Environment, error)
 	Delete(ctx context.Context, id string) error
+	CreateTags(ctx context.Context, id string, createTagRequest []*CreateTagRequest) error
+	DeleteTag(ctx context.Context, id string, tag string) error
 }
 
 // EnvironmentsServiceClient is the EnvironmentsService implementation
@@ -144,19 +146,25 @@ type EnvironmentListResult struct {
 	Value []Environment
 }
 
+// CreateTagRequest describe the creation of a tag
+type CreateTagRequest struct {
+	Tag string `json:"value,omitempty"`
+}
+
 // CreateEnvironmentRequest describes the create the environment data
 type CreateEnvironmentRequest struct {
-	TemplateID      *string `json:"template_id,omitempty"`
-	ProjectID       *int    `json:"project_id,omitempty"`
-	Name            *string `json:"name,omitempty"`
-	Description     *string `json:"description,omitempty"`
-	Owner           *string `json:"owner,omitempty"`
-	OutboundTraffic *bool   `json:"outbound_traffic,omitempty"`
-	Routable        *bool   `json:"routable,omitempty"`
-	SuspendOnIdle   *int    `json:"suspend_on_idle,omitempty"`
-	SuspendAtTime   *string `json:"suspend_at_time,omitempty"`
-	ShutdownOnIdle  *int    `json:"shutdown_on_idle,omitempty"`
-	ShutdownAtTime  *string `json:"shutdown_at_time,omitempty"`
+	TemplateID      *string             `json:"template_id,omitempty"`
+	ProjectID       *int                `json:"project_id,omitempty"`
+	Name            *string             `json:"name,omitempty"`
+	Description     *string             `json:"description,omitempty"`
+	Owner           *string             `json:"owner,omitempty"`
+	OutboundTraffic *bool               `json:"outbound_traffic,omitempty"`
+	Routable        *bool               `json:"routable,omitempty"`
+	SuspendOnIdle   *int                `json:"suspend_on_idle,omitempty"`
+	SuspendAtTime   *string             `json:"suspend_at_time,omitempty"`
+	ShutdownOnIdle  *int                `json:"shutdown_on_idle,omitempty"`
+	ShutdownAtTime  *string             `json:"shutdown_at_time,omitempty"`
+	Tags            []*CreateTagRequest `json:"-"`
 }
 
 // UpdateEnvironmentRequest describes the update the environment data
@@ -254,6 +262,11 @@ func (s *EnvironmentsServiceClient) Create(ctx context.Context, opts *CreateEnvi
 		return nil, err
 	}
 
+	// update tags
+	if err := s.CreateTags(ctx, ptrToStr(createdEnvironment.ID), opts.Tags); err != nil {
+		return nil, err
+	}
+
 	return environment, nil
 }
 
@@ -288,6 +301,42 @@ func (s *EnvironmentsServiceClient) Delete(ctx context.Context, id string) error
 		return err
 	}
 
+	return nil
+}
+
+// CreateTags add tags to the specific environment
+func (s *EnvironmentsServiceClient) CreateTags(ctx context.Context, id string, createTagRequest []*CreateTagRequest) error {
+	if createTagRequest == nil || len(createTagRequest) == 0 {
+		return nil
+	}
+
+	tagPath := fmt.Sprintf("%s/%s/tags.json", environmentBasePath, id)
+	req, err := s.client.newRequest(ctx, "PUT", tagPath, createTagRequest)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.client.do(ctx, req, nil, nil, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DeleteTag remove tags given the tag and the environment
+func (s *EnvironmentsServiceClient) DeleteTag(ctx context.Context, id string, tagID string) error {
+	path := fmt.Sprintf("%s/%s/tags/%s.json", environmentBasePath, id, tagID)
+
+	req, err := s.client.newRequest(ctx, "DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+	var tags []*Tag
+	_, err = s.client.do(ctx, req, tags, nil, nil)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

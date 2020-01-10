@@ -3,6 +3,7 @@ package skytap
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -81,6 +82,14 @@ func flattenDisk(v skytap.Disk) map[string]interface{} {
 	return result
 }
 
+func flattenTags(tags []skytap.Tag) []interface{} {
+	flatted := make([]interface{}, len(tags))
+	for i, v := range tags {
+		flatted[i] = v.Value
+	}
+	return flatted
+}
+
 func getVMNetworkInterface(id string, vm *skytap.VM) (*skytap.Interface, error) {
 	for _, networkInterface := range vm.Interfaces {
 		if *networkInterface.ID == id {
@@ -149,4 +158,14 @@ func diskHash(v interface{}) int {
 		buf.WriteString(fmt.Sprintf("%s-", d.(string)))
 	}
 	return hashcode.String(buf.String())
+}
+
+// caseInsensitiveSuppress is a helper function to suppress property changes
+func caseInsensitiveSuppress(k, old, new string, d *schema.ResourceData) bool {
+	return strings.ToLower(old) == strings.ToLower(new)
+}
+
+// stringCaseSensitiveHash
+func stringCaseSensitiveHash(v interface{}) int {
+	return hashcode.String(strings.ToLower(v.(string)))
 }

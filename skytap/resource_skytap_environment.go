@@ -46,6 +46,16 @@ func resourceSkytapEnvironment() *schema.Resource {
 				Default:  false,
 			},
 
+			"tags": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+					DiffSuppressFunc: caseInsensitiveSuppress,
+				},
+				Set: stringCaseSensitiveHash,
+			},
+
 			"routable": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -113,6 +123,10 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 
 	if v, ok := d.GetOk("shutdown_at_time"); ok {
 		opts.ShutdownAtTime = utils.String(v.(string))
+	}
+
+	if _, ok := d.GetOk("tags"); ok {
+		opts.Tags = environmentCreateTags(d)
 	}
 
 	log.Printf("[INFO] environment create")
@@ -183,6 +197,12 @@ func resourceSkytapEnvironmentRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("shutdown_on_idle", environment.ShutdownOnIdle)
 	d.Set("shutdown_at_time", environment.ShutdownAtTime)
 
+	if environment.Tags != nil {
+		if err = d.Set("tags", flattenTags(environment.Tags)); err != nil {
+			return err
+		}
+	}
+
 	log.Printf("[INFO] environment retrieved: %s", id)
 	log.Printf("[TRACE] environment retrieved: %v", spew.Sdump(environment))
 
@@ -227,6 +247,8 @@ func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) e
 
 	log.Printf("[INFO] environment update: %s", id)
 	log.Printf("[TRACE] environment update options: %v", spew.Sdump(opts))
+
+	d.Partial(true)
 	environment, err := client.Update(ctx, id, &opts)
 	if err != nil {
 		return fmt.Errorf("error updating environment (%s): %v", id, err)
@@ -234,11 +256,43 @@ func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) e
 
 	log.Printf("[INFO] environment updated: %s", id)
 	log.Printf("[TRACE] environment updated: %v", spew.Sdump(environment))
-
 	if err = waitForEnvironmentReady(d, meta, *environment.ID); err != nil {
 		return err
 	}
 
+	if d.HasChange("tags") {
+		old, new := d.GetChange("tags")
+		newTagsSet := new.(*schema.Set)
+		oldTagSet := old.(*schema.Set)
+
+		tagsToRemove := oldTagSet.Difference(newTagsSet)
+		if tagsToRemove.Len() > 0 {
+			// Create a dictionary to transform tags in ids
+			tagDictionary := make(map[string]string)
+			for _, t := range environment.Tags {
+				tagDictionary[*t.Value] = *t.ID
+			}
+			// No batch removal supported by the api, remove one by one
+			for _, t := range tagsToRemove.List() {
+				if err := client.DeleteTag(ctx, *environment.ID, tagDictionary[t.(string)]); err != nil {
+					return err
+				}
+			}
+		}
+
+		tagsToAdd := newTagsSet.Difference(oldTagSet)
+		newTags := make([]*skytap.CreateTagRequest, tagsToAdd.Len())
+		for i, tag := range tagsToAdd.List() {
+			newTags[i] = &skytap.CreateTagRequest{Tag: tag.(string)}
+		}
+		if err := client.CreateTags(ctx, *environment.ID, newTags); err != nil {
+			return err
+		}
+
+		d.SetPartial("tags")
+	}
+
+	d.Partial(false)
 	return resourceSkytapEnvironmentRead(d, meta)
 }
 
@@ -385,4 +439,16 @@ func environmentDeleteRefreshFunc(
 
 		return environment, removed, nil
 	}
+}
+
+func environmentCreateTags(d *schema.ResourceData) []*skytap.CreateTagRequest {
+	vs := d.Get("tags").(*schema.Set)
+
+	createTagRequests := make([]*skytap.CreateTagRequest, vs.Len())
+	for i, v := range vs.List() {
+		createTagRequests[i] = &skytap.CreateTagRequest{
+			Tag: v.(string),
+		}
+	}
+	return createTagRequests
 }
