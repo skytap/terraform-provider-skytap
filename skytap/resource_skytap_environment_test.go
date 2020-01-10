@@ -3,6 +3,7 @@ package skytap
 import (
 	"fmt"
 	"log"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
@@ -42,13 +43,10 @@ func testSweepSkytapEnvironment(region string) error {
 			}
 		}
 	}
-
 	return nil
 }
 
 func TestAccSkytapEnvironment_Basic(t *testing.T) {
-	t.Parallel()
-
 	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
 	uniqueSuffix := acctest.RandInt()
 	var environment skytap.Environment
@@ -59,7 +57,8 @@ func TestAccSkytapEnvironment_Basic(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapEnvironmentConfig_basic(uniqueSuffix, templateID),
+				PreventDiskCleanup: true,
+				Config:             testAccSkytapEnvironmentConfig_basic(uniqueSuffix, templateID, `["integration_test"]`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapEnvironmentExists("skytap_environment.foo", &environment),
 					resource.TestCheckResourceAttr("skytap_environment.foo", "name", fmt.Sprintf("tftest-environment-%d", uniqueSuffix)),
@@ -71,6 +70,7 @@ func TestAccSkytapEnvironment_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr("skytap_environment.foo", "suspend_at_time", ""),
 					resource.TestCheckResourceAttr("skytap_environment.foo", "shutdown_on_idle", "0"),
 					resource.TestCheckResourceAttr("skytap_environment.foo", "shutdown_at_time", ""),
+					resource.TestCheckResourceAttr("skytap_environment.foo", "tags.#", "1"),
 				),
 			},
 		},
@@ -78,8 +78,6 @@ func TestAccSkytapEnvironment_Basic(t *testing.T) {
 }
 
 func TestAccSkytapEnvironment_UpdateTemplate(t *testing.T) {
-	t.Parallel()
-
 	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
 	template2ID := utils.GetEnv("SKYTAP_TEMPLATE_ID2", "1473347")
 	rInt := acctest.RandInt()
@@ -91,15 +89,49 @@ func TestAccSkytapEnvironment_UpdateTemplate(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapEnvironmentConfig_basic(rInt, templateID),
+				Config: testAccSkytapEnvironmentConfig_basic(rInt, templateID, `[]`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapEnvironmentExists("skytap_environment.foo", &environment),
 				),
 			},
 			{
-				Config: testAccSkytapEnvironmentConfig_basic(rInt, template2ID),
+				Config: testAccSkytapEnvironmentConfig_basic(rInt, template2ID, `[]`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapEnvironmentAfterTemplateChanged("skytap_environment.foo", &environment),
+				),
+			},
+		},
+	})
+}
+
+func TestAccSkytapEnvironment_UpdateTags(t *testing.T) {
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
+	uniqueSuffix := acctest.RandInt()
+
+	var environment skytap.Environment
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSkytapEnvironmentConfig_basic(uniqueSuffix, templateID, `["foo", "bar"]`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("skytap_environment.foo", "tags.#", "2"),
+					testAccCheckSkytapEnvironmentExists("skytap_environment.foo", &environment),
+					testAccCheckSkytapEnvironmentContainsTag(&environment, "foo"),
+					testAccCheckSkytapEnvironmentContainsTag(&environment, "bar"),
+				),
+			},
+			{
+				Config: testAccSkytapEnvironmentConfig_basic(uniqueSuffix, templateID, `["foozzz", "Bar", "foobar"]`),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("skytap_environment.foo", "tags.#", "3"),
+					testAccCheckSkytapEnvironmentExists("skytap_environment.foo", &environment),
+					testAccCheckSkytapEnvironmentContainsTag(&environment, "foozzz"),
+					testAccCheckSkytapEnvironmentContainsTag(&environment, "Bar"),
+					testAccCheckSkytapEnvironmentContainsTag(&environment, "foobar"),
 				),
 			},
 		},
@@ -149,6 +181,19 @@ func testAccCheckSkytapEnvironmentAfterTemplateChanged(name string, environmentO
 	}
 }
 
+// Verifies the Environment have a specific tag
+func testAccCheckSkytapEnvironmentContainsTag(enviroment *skytap.Environment, tag string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		for _, t := range enviroment.Tags {
+			// tags are stored in lowercase
+			if strings.ToLower(tag) == *t.Value {
+				return nil
+			}
+		}
+		return fmt.Errorf("tag not found: %s", tag)
+	}
+}
+
 // Verifies the Environment has been destroyed
 func testAccCheckSkytapEnvironmentDestroy(s *terraform.State) error {
 	// retrieve the connection established in Provider configuration
@@ -178,13 +223,14 @@ func testAccCheckSkytapEnvironmentDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testAccSkytapEnvironmentConfig_basic(uniqueSuffix int, templateID string) string {
+func testAccSkytapEnvironmentConfig_basic(uniqueSuffix int, templateID string, tags string) string {
 	return fmt.Sprintf(`
       resource "skytap_environment" "foo" {
 	    template_id = "%s"
+		tags = %s
 	    name = "tftest-environment-%d"
 	    description = "This is an environment created by the skytap terraform provider acceptance test"
-      }`, templateID, uniqueSuffix)
+      }`, templateID, tags, uniqueSuffix)
 }
 
 func getEnvironment(rs *terraform.ResourceState) (*skytap.Environment, error) {
