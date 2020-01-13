@@ -25,6 +25,7 @@ type SkytapClient struct {
 	vmsClient               skytap.VMsService
 	interfacesClient        skytap.InterfacesService
 	publishedServicesClient skytap.PublishedServicesService
+	labelCategoryClient     skytap.LabelCategoryService
 }
 
 // Client creates a SkytapClient client
@@ -42,6 +43,7 @@ func (c *Config) Client() (*SkytapClient, error) {
 		vmsClient:               client.VMs,
 		interfacesClient:        client.Interfaces,
 		publishedServicesClient: client.PublishedServices,
+		labelCategoryClient:	 client.LabelCategory,
 	}
 
 	return &skytapClient, nil

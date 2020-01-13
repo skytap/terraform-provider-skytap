@@ -48,6 +48,37 @@ func TestValidateRoleType(t *testing.T) {
 	}
 }
 
+func TestValidateNoSubString(t *testing.T) {
+	x := []StringValidationTestCase{
+		// No errors
+		{TestName: "no substring",  Value: "labelcategorywithout", ExpectError: false},
+		{TestName: "substring at the end", Value: "labelcategorywith123", ExpectError: true},
+		{TestName: "starting substring", Value: "123labelcategory", ExpectError: true},
+		{TestName: "substring in between", Value: "label123category", ExpectError: true},
+	}
+
+	es := testStringValidationCases(x, validateNoSubString("123"))
+	if len(es) > 0 {
+		t.Errorf("Failed to validate project role types: %v", es)
+	}
+}
+
+
+func TestValidateNoStartWith(t *testing.T) {
+	x := []StringValidationTestCase{
+		// No errors
+		{TestName: "no starting with but contains",  Value: "No_Skytap", ExpectError: false},
+		{TestName: "starting with", Value: "Skytap", ExpectError: true},
+		{TestName: "no present at all", Value: "category", ExpectError: false},
+	}
+
+	es := testStringValidationCases(x, validateNoStartWith("Skytap"))
+	if len(es) > 0 {
+		t.Errorf("Failed to validate project role types: %v", es)
+	}
+}
+
+
 type StringValidationTestCase struct {
 	TestName    string
 	Value       string

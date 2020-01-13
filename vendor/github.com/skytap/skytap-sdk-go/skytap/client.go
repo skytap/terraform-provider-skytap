@@ -58,6 +58,7 @@ type Client struct {
 	VMs               VMsService
 	Interfaces        InterfacesService
 	PublishedServices PublishedServicesService
+	LabelCategory     LabelCategoryService
 
 	retryAfter int
 	retryCount int
@@ -164,6 +165,7 @@ func NewClient(settings Settings) (*Client, error) {
 	client.VMs = &VMsServiceClient{&client}
 	client.Interfaces = &InterfacesServiceClient{&client}
 	client.PublishedServices = &PublishedServicesServiceClient{&client}
+	client.LabelCategory = &LabelCategoryClient{&client}
 
 	client.retryAfter = defRetryAfter
 	client.retryCount = defRetryCount

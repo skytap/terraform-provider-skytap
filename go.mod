@@ -1,5 +1,7 @@
 module github.com/terraform-providers/terraform-provider-skytap
 
+replace github.com/skytap/skytap-sdk-go => /Users/pegerto/work/src/github.com/skytap/skytap-sdk-go
+
 require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/hashicorp/terraform v0.12.18 // indirect
