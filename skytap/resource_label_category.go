@@ -19,20 +19,20 @@ func resourceSkytapLabelCategory() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"name": {
-				Type:         schema.TypeString,
-				Required:     true,
+				Type:     schema.TypeString,
+				Required: true,
 				ValidateFunc: validation.All(
-						validation.NoZeroValues,
-						validation.StringLenBetween(1,128),
-						validateNoSubString(";"),
-						validateNoSubString(","),
-						validateNoStartWith("Skytap"),
-					),
+					validation.NoZeroValues,
+					validation.StringLenBetween(1, 128),
+					validateNoSubString(";"),
+					validateNoSubString(","),
+					validateNoStartWith("Skytap"),
+				),
 				ForceNew: true,
 			},
 
 			"single_value": {
-				Type: schema.TypeBool,
+				Type:     schema.TypeBool,
 				Required: true,
 				ForceNew: true,
 			},
@@ -48,11 +48,11 @@ func resourceSkytapLabelCategoryCreate(d *schema.ResourceData, meta interface{})
 	singleValue := d.Get("single_value").(bool)
 
 	newLabelCategory := skytap.LabelCategory{
-		Name: &name,
+		Name:        &name,
 		SingleValue: &singleValue,
 	}
 
-	createdLabelCategory , err := client.Create(ctx, &newLabelCategory)
+	createdLabelCategory, err := client.Create(ctx, &newLabelCategory)
 	if err != nil {
 		return err
 	}

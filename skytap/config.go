@@ -43,7 +43,7 @@ func (c *Config) Client() (*SkytapClient, error) {
 		vmsClient:               client.VMs,
 		interfacesClient:        client.Interfaces,
 		publishedServicesClient: client.PublishedServices,
-		labelCategoryClient:	 client.LabelCategory,
+		labelCategoryClient:     client.LabelCategory,
 	}
 
 	return &skytapClient, nil

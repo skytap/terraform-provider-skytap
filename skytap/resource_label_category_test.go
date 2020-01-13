@@ -54,18 +54,17 @@ func TestAccSkytapLabelCategory_Update(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSkytapLabelCategory_basic("tftest-label", true),
-				Check: testAccCheckSkytapLabelCategoryExists("skytap_label_category.env_category"),
+				Check:  testAccCheckSkytapLabelCategoryExists("skytap_label_category.env_category"),
 			},
 			{
 				ExpectNonEmptyPlan: true,
-				Config: testAccSkytapLabelCategory_basic("tftest-label", false),
-				Check: testAccCheckSkytapLabelCategoryExists("skytap_label_category.env_category"),
-				ExpectError: regexp.MustCompile(`can not be created with this single value property as it is recreated from a existing label category`),
+				Config:             testAccSkytapLabelCategory_basic("tftest-label", false),
+				Check:              testAccCheckSkytapLabelCategoryExists("skytap_label_category.env_category"),
+				ExpectError:        regexp.MustCompile(`can not be created with this single value property as it is recreated from a existing label category`),
 			},
 		},
 	})
 }
-
 
 func TestAccSkytapLabelCategory_MultiValueBasic(t *testing.T) {
 	/** This test does not randomize as there are a total of 200 label category per account
@@ -99,7 +98,6 @@ func testAccSkytapLabelCategory_basic(labelCategoryName string, singleValue bool
       }`, labelCategoryName, singleValue)
 }
 
-
 func testAccCheckSkytapLabelCategoryExists(name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[name]
@@ -120,7 +118,7 @@ func testAccCheckSkytapLabelCategoryExists(name string) resource.TestCheckFunc {
 			return fmt.Errorf("label category (%s) is not an integer: %v", rs.Primary.ID, err)
 		}
 
-		labelCategory , err := client.Get(ctx, id)
+		labelCategory, err := client.Get(ctx, id)
 		if err != nil {
 			if utils.ResponseErrorIsNotFound(err) {
 				return fmt.Errorf("label category (%d) was not found - does not exist", id)
@@ -179,7 +177,7 @@ func testSweepSkytapLabelCategory(region string) error {
 		return fmt.Errorf("error retrieving list label categories: %v", err)
 	}
 
-	for _, l := range labelCategories{
+	for _, l := range labelCategories {
 		if shouldSweepAcceptanceTestResource(*l.Name) {
 			log.Printf("destroying label category %s", *l.Name)
 			if err := client.Delete(ctx, *l.ID); err != nil {

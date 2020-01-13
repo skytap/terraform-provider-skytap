@@ -28,7 +28,7 @@ func validateRoleType() schema.SchemaValidateFunc {
 	}, false)
 }
 
-func validateNoSubString(subString string) schema.SchemaValidateFunc{
+func validateNoSubString(subString string) schema.SchemaValidateFunc {
 	return func(i interface{}, k string) (s []string, es []error) {
 		v, ok := i.(string)
 		if !ok {
@@ -36,13 +36,13 @@ func validateNoSubString(subString string) schema.SchemaValidateFunc{
 			return
 		}
 		if strings.Contains(v, subString) {
-			es = append(es, fmt.Errorf("property value %s contains invalid substring '%s'",v, subString))
+			es = append(es, fmt.Errorf("property value %s contains invalid substring '%s'", v, subString))
 		}
 		return
 	}
 }
 
-func validateNoStartWith(subString string) schema.SchemaValidateFunc{
+func validateNoStartWith(subString string) schema.SchemaValidateFunc {
 	return func(i interface{}, k string) (s []string, es []error) {
 		v, ok := i.(string)
 		if !ok {
@@ -50,7 +50,7 @@ func validateNoStartWith(subString string) schema.SchemaValidateFunc{
 			return
 		}
 		if strings.HasPrefix(v, subString) {
-			es = append(es, fmt.Errorf("property value %s can start with '%s'",v, subString))
+			es = append(es, fmt.Errorf("property value %s can start with '%s'", v, subString))
 		}
 		return
 	}
