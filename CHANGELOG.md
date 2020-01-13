@@ -1,4 +1,4 @@
-## 0.12.0 (Unreleased)
+## 0.12.0 (January 13, 2020)
 
 NOTES
 * provider: This release includes only a Terraform SDK upgrade with compatibility for Terraform v0.12. The provider behaviour remains backwards compatible with 0.11 version ([#37](https://github.com/terraform-providers/terraform-provider-skytap/issues/37)).
