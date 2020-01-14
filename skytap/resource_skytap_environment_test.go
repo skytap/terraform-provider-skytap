@@ -3,6 +3,7 @@ package skytap
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -57,8 +58,7 @@ func TestAccSkytapEnvironment_Basic(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				PreventDiskCleanup: true,
-				Config:             testAccSkytapEnvironmentConfig_basic(uniqueSuffix, templateID, `["integration_test"]`),
+				Config: testAccSkytapEnvironmentConfig_basic(uniqueSuffix, templateID, `["integration_test"]`),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapEnvironmentExists("skytap_environment.foo", &environment),
 					resource.TestCheckResourceAttr("skytap_environment.foo", "name", fmt.Sprintf("tftest-environment-%d", uniqueSuffix)),
@@ -132,6 +132,75 @@ func TestAccSkytapEnvironment_UpdateTags(t *testing.T) {
 					testAccCheckSkytapEnvironmentContainsTag(&environment, "foozzz"),
 					testAccCheckSkytapEnvironmentContainsTag(&environment, "Bar"),
 					testAccCheckSkytapEnvironmentContainsTag(&environment, "foobar"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccSkytapEnvironment_UserData(t *testing.T) {
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
+	uniqueSuffix := acctest.RandInt()
+	var environment skytap.Environment
+
+	userData := `<<EOF
+				cat /proc/cpu_info
+				EOF
+				`
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				PreventDiskCleanup: true,
+				Config:             testAccSkytapEnvironmentConfig_UserData(uniqueSuffix, templateID, userData),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapEnvironmentExists("skytap_environment.foo", &environment),
+					resource.TestCheckResourceAttrSet("skytap_environment.foo", "user_data"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccSkytapEnvironment_UserDataUpdate(t *testing.T) {
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
+	uniqueSuffix := acctest.RandInt()
+	var environment skytap.Environment
+
+	userData := `<<EOF
+				cat /proc/cpu_info
+				EOF
+				`
+	userDataRe, _ := regexp.Compile("\\s*cat \\/proc\\/cpu_info\\n")
+	userDataUpdate := `<<EOF
+				cat /proc/cpu_info  > /temp/acc
+				EOF
+				`
+	userDataUpdateRe, _ := regexp.Compile("\\s*cat \\/proc\\/cpu_info\\s*\\>\\s*\\/temp\\/acc\\n")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSkytapEnvironmentConfig_UserData(uniqueSuffix, templateID, userData),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapEnvironmentExists("skytap_environment.foo", &environment),
+					resource.TestCheckResourceAttrSet("skytap_environment.foo", "user_data"),
+					resource.TestMatchResourceAttr("skytap_environment.foo", "user_data", userDataRe),
+				),
+			},
+			{
+				PreventDiskCleanup: true,
+				Config:             testAccSkytapEnvironmentConfig_UserData(uniqueSuffix, templateID, userDataUpdate),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapEnvironmentExists("skytap_environment.foo", &environment),
+					resource.TestCheckResourceAttrSet("skytap_environment.foo", "user_data"),
+					resource.TestMatchResourceAttr("skytap_environment.foo", "user_data", userDataUpdateRe),
 				),
 			},
 		},
@@ -231,6 +300,16 @@ func testAccSkytapEnvironmentConfig_basic(uniqueSuffix int, templateID string, t
 	    name = "tftest-environment-%d"
 	    description = "This is an environment created by the skytap terraform provider acceptance test"
       }`, templateID, tags, uniqueSuffix)
+}
+
+func testAccSkytapEnvironmentConfig_UserData(uniqueSuffix int, templateID string, userData string) string {
+	return fmt.Sprintf(`
+      resource "skytap_environment" "foo" {
+	    template_id = "%s"
+		user_data = %s
+	    name = "tftest-environment-%d"
+	    description = "This is an environment created by the skytap terraform provider acceptance test"
+      }`, templateID, userData, uniqueSuffix)
 }
 
 func getEnvironment(rs *terraform.ResourceState) (*skytap.Environment, error) {

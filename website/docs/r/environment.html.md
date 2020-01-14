@@ -39,6 +39,7 @@ The following arguments are supported:
 * `shutdown_on_idle` - (Optional) The number of seconds an environment can be idle before it is automatically shut down. Valid range: 300 to 86400 seconds (5 minutes to 1 day).
 * `shutdown_at_time` - (Optional) The date and time that the environment will be automatically shut down. Format: yyyy/mm/dd hh:mm:ss. By default, the suspend time uses the UTC offset for the time zone defined in your user account settings. Optionally, a different UTC offset can be supplied (for example: 2018/07/20 14:20:00 -0000). The value in the API response is converted to your time zone.
 * `tags` - (Optional) List of environment tags.  
+* `user_data` - (Optional) Enviroment user data, availble from the metadaserver and the skytap api
 
 ~> **NOTE:**
 * If `suspend_on_idle` and `suspend_at_time` are both null, automatic suspend is disabled.

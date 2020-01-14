@@ -56,6 +56,11 @@ func resourceSkytapEnvironment() *schema.Resource {
 				Set: stringCaseSensitiveHash,
 			},
 
+			"user_data": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+
 			"routable": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -129,6 +134,10 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 		opts.Tags = environmentCreateTags(d)
 	}
 
+	if v, ok := d.GetOk("user_data"); ok {
+		opts.UserData = utils.String(v.(string))
+	}
+
 	log.Printf("[INFO] environment create")
 	log.Printf("[TRACE] environment create options: %v", spew.Sdump(opts))
 	environment, err := client.Create(ctx, &opts)
@@ -196,6 +205,7 @@ func resourceSkytapEnvironmentRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("suspend_at_time", environment.SuspendAtTime)
 	d.Set("shutdown_on_idle", environment.ShutdownOnIdle)
 	d.Set("shutdown_at_time", environment.ShutdownAtTime)
+	d.Set("user_data", environment.UserData)
 
 	if environment.Tags != nil {
 		if err = d.Set("tags", flattenTags(environment.Tags)); err != nil {
@@ -290,6 +300,13 @@ func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) e
 		}
 
 		d.SetPartial("tags")
+	}
+
+	if d.HasChange("user_data") {
+		if err := client.UpdateUserData(ctx, *environment.ID, utils.String(d.Get("user_data").(string))); err != nil {
+			return err
+		}
+		d.SetPartial("user_data")
 	}
 
 	d.Partial(false)
