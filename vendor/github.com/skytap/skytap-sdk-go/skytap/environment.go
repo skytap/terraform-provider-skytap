@@ -22,6 +22,7 @@ type EnvironmentsService interface {
 	Delete(ctx context.Context, id string) error
 	CreateTags(ctx context.Context, id string, createTagRequest []*CreateTagRequest) error
 	DeleteTag(ctx context.Context, id string, tag string) error
+	UpdateUserData(ctx context.Context, id string, userData *string) error
 }
 
 // EnvironmentsServiceClient is the EnvironmentsService implementation
@@ -88,6 +89,7 @@ type Environment struct {
 	ShutdownOnIdle          *int                 `json:"shutdown_on_idle"`
 	ShutdownAtTime          *string              `json:"shutdown_at_time"`
 	AutoShutdownDescription *string              `json:"auto_shutdown_description"`
+	UserData                *string              `json:"-"`
 }
 
 // Tag describes environment tag data
@@ -151,6 +153,10 @@ type CreateTagRequest struct {
 	Tag string `json:"value,omitempty"`
 }
 
+type userData struct {
+	Contents *string `json:"contents,omitempty"`
+}
+
 // CreateEnvironmentRequest describes the create the environment data
 type CreateEnvironmentRequest struct {
 	TemplateID      *string             `json:"template_id,omitempty"`
@@ -165,6 +171,7 @@ type CreateEnvironmentRequest struct {
 	ShutdownOnIdle  *int                `json:"shutdown_on_idle,omitempty"`
 	ShutdownAtTime  *string             `json:"shutdown_at_time,omitempty"`
 	Tags            []*CreateTagRequest `json:"-"`
+	UserData        *string             `json:"-"`
 }
 
 // UpdateEnvironmentRequest describes the update the environment data
@@ -217,6 +224,20 @@ func (s *EnvironmentsServiceClient) Get(ctx context.Context, id string) (*Enviro
 		return nil, err
 	}
 
+	// Read user data for the environment with the full configuration, this is done here instead in an different
+	// exported method to maintain similarity with other sub resources as
+	// tags and labels.
+	userDataPath := fmt.Sprintf("%s/%s/user_data.json", environmentBasePath, id)
+	req, err = s.client.newRequest(ctx, "GET", userDataPath, nil)
+	if err != nil {
+		return nil, err
+	}
+	var userDataResp userData
+	_, err = s.client.do(ctx, req, &userDataResp, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	environment.UserData = userDataResp.Contents
 	return &environment, nil
 }
 
@@ -259,6 +280,11 @@ func (s *EnvironmentsServiceClient) Create(ctx context.Context, opts *CreateEnvi
 	// update environment after creation to establish the resource information.
 	environment, err := s.Update(ctx, ptrToStr(createdEnvironment.ID), updateOpts)
 	if err != nil {
+		return nil, err
+	}
+
+	// update user data, before the update on the runtime, to avoid vms to start without the metadata update
+	if err := s.UpdateUserData(ctx, ptrToStr(createdEnvironment.ID), opts.UserData); err != nil {
 		return nil, err
 	}
 
@@ -337,6 +363,28 @@ func (s *EnvironmentsServiceClient) DeleteTag(ctx context.Context, id string, ta
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+//UpdateUserData changes enviroment user data
+func (s *EnvironmentsServiceClient) UpdateUserData(ctx context.Context, id string, userDataUpdate *string) error {
+	if userDataUpdate == nil {
+		return nil
+	}
+	tagPath := fmt.Sprintf("%s/%s/user_data.json", environmentBasePath, id)
+	userDataRequest := userData{
+		Contents: userDataUpdate,
+	}
+	req, err := s.client.newRequest(ctx, "PUT", tagPath, userDataRequest)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.client.do(ctx, req, nil, nil, nil)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
