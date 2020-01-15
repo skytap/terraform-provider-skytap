@@ -39,14 +39,25 @@ The following arguments are supported:
 * `shutdown_on_idle` - (Optional) The number of seconds an environment can be idle before it is automatically shut down. Valid range: 300 to 86400 seconds (5 minutes to 1 day).
 * `shutdown_at_time` - (Optional) The date and time that the environment will be automatically shut down. Format: yyyy/mm/dd hh:mm:ss. By default, the suspend time uses the UTC offset for the time zone defined in your user account settings. Optionally, a different UTC offset can be supplied (for example: 2018/07/20 14:20:00 -0000). The value in the API response is converted to your time zone.
 * `tags` - (Optional) List of environment tags.  
-* `user_data` - (Optional) Enviroment user data, availble from the metadaserver and the skytap api
+* `label` - (Optional) Set of labels for the instance. Structure is documented below.
+* `user_data` - (Optional) Environment user data, available from the metadata server and the skytap api
 
-~> **NOTE:**
-* If `suspend_on_idle` and `suspend_at_time` are both null, automatic suspend is disabled.
-* If `shutdown_on_idle` and `shutdown_at_time` are both null, automatic shut down is disabled.
-* An environment cannot be set to automatically suspend and shut down. Only one of the following settings can take effect: `suspend_on_idle`, `suspend_at_time`, `shutdown_on_idle`, or `shutdown_at_time`.
-* When you send a request that updates one of the four suspend or shutdown options, the other three options are automatically set to null by the REST API.
-* If multiple suspend or shut down options are sent in the same request, the `suspend_type` field determines which setting Skytap Cloud will honor.
+
+The `label` block supports:
+
+* `category` - (Required) Label category that  provide contextual meaning.
+* `value` - (Required) Label value to be use for reporting
+
+~> **NOTE:** If `suspend_on_idle` and `suspend_at_time` are both null, automatic suspend is disabled.
+
+~> **NOTE:** If `suspend_on_idle` and `suspend_at_time` are both null, automatic suspend is disabled. If `shutdown_on_idle` and `shutdown_at_time` are both null, automatic shut down is disabled.
+
+~> **NOTE:** If `suspend_on_idle` and `suspend_at_time` are both null, automatic suspend is disabled.* An environment cannot be set to automatically suspend and shut down. Only one of the following settings can take effect: `suspend_on_idle`, `suspend_at_time`, `shutdown_on_idle`, or `shutdown_at_time`.
+
+~> **NOTE:** If `suspend_on_idle` and `suspend_at_time` are both null, automatic suspend is disabled. When you send a request that updates one of the four suspend or shutdown options, the other three options are automatically set to null by the REST API.
+
+~> **NOTE:** If `suspend_on_idle` and `suspend_at_time` are both null, automatic suspend is disabled. If multiple suspend or shut down options are sent in the same request, the `suspend_type` field determines which setting Skytap Cloud will honor.
+
 ## Attributes Reference
 
 The following attributes are exported:

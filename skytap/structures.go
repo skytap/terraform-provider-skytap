@@ -90,6 +90,19 @@ func flattenTags(tags []skytap.Tag) []interface{} {
 	return flatted
 }
 
+func flattenLabels(labels []*skytap.Label) []interface{} {
+	flatted := make([]interface{}, len(labels))
+	for i, v := range labels {
+		var label = map[string]interface{}{
+			"id":       v.ID,
+			"category": v.LabelCategory,
+			"value":    v.Value,
+		}
+		flatted[i] = label
+	}
+	return flatted
+}
+
 func getVMNetworkInterface(id string, vm *skytap.VM) (*skytap.Interface, error) {
 	for _, networkInterface := range vm.Interfaces {
 		if *networkInterface.ID == id {
