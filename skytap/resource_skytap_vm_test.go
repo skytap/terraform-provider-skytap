@@ -934,6 +934,53 @@ func TestAccSkytapVM_Concurrent(t *testing.T) {
 	})
 }
 
+
+func TestAccSkytapVM_UserData(t *testing.T) {
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
+	uniqueSuffixEnv := acctest.RandInt()
+	var vm skytap.VM
+
+	userData := `user_data = <<EOF
+		cat /proc/cpu_info
+	EOF
+	`
+	userDataRe, _ := regexp.Compile("\\s*cat \\/proc\\/cpu_info\\n")
+
+	userDataUpdated := `user_data = <<EOF
+		less /proc/cpu_info
+	EOF
+	`
+	userDataUpdatedRe, _ := regexp.Compile("\\s*less \\/proc\\/cpu_info\\n")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSkytapVMConfigBlock(newEnvTemplateID, uniqueSuffixEnv, templateID, vmID, "test",
+					"", userData),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
+					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "test"),
+					resource.TestMatchResourceAttr("skytap_vm.bar", "user_data", userDataRe),
+					testAccCheckSkytapVMRunning(&vm),
+				),
+			},
+			{
+				Config: testAccSkytapVMConfigBlock(newEnvTemplateID, uniqueSuffixEnv, templateID, vmID, "test",
+					"", userDataUpdated),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
+					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "test"),
+					resource.TestMatchResourceAttr("skytap_vm.bar", "user_data", userDataUpdatedRe),
+					testAccCheckSkytapVMRunning(&vm),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckSkytapExternalPorts(t *testing.T, vmName string, count string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rsVM, err := getResource(s, vmName)
@@ -1170,6 +1217,31 @@ func testAccSkytapVMConfig_basic(envTemplateID string, uniqueSuffixEnv int, netw
  `, envTemplateID, vmEnvironmentPrefix, uniqueSuffixEnv, network, VMTemplateID, VMID, name, networkInterface, hardware)
 	return config
 }
+
+func testAccSkytapVMConfigBlock(envTemplateID string, uniqueSuffixEnv int, VMTemplateID string,
+		VMID string, name string, requirements string, block string) string {
+
+	config := fmt.Sprintf(`
+ 	resource "skytap_environment" "foo" {
+ 		template_id = "%s"
+ 		name 		= "%s-environment-%d"
+ 		description = "This is an environment to support a vm skytap terraform provider acceptance test"
+ 	}
+
+	%s
+
+ 	resource "skytap_vm" "bar" {
+		environment_id    = "${skytap_environment.foo.id}"
+   		template_id       = "%s"
+ 		vm_id      		  = "%s"
+		name 			  = "%s"
+		%s
+ 	}
+ 	`,
+ 	envTemplateID, vmEnvironmentPrefix, uniqueSuffixEnv, requirements, VMTemplateID, VMID, name, block)
+	return config
+}
+
 
 func testAccSkytapVMConfig_concurrent(envTemplateID string, uniqueSuffixEnv int, VMTemplateID string, VMID string) string {
 	config := fmt.Sprintf(`

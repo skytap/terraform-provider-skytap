@@ -199,12 +199,18 @@ func resourceSkytapVM() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeInt},
 			},
+			"user_data": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
 
 func resourceSkytapVMCreate(d *schema.ResourceData, meta interface{}) error {
 	environmentID := d.Get("environment_id").(string)
+	client := meta.(*SkytapClient).vmsClient
+	ctx := meta.(*SkytapClient).StopContext
 
 	// Give it some more breathing space. Might reject request if straight after a destroy.
 	if err := waitForEnvironmentReady(d, meta, environmentID); err != nil {
@@ -234,6 +240,12 @@ func resourceSkytapVMCreate(d *schema.ResourceData, meta interface{}) error {
 	vmDisks, err := addVMHardware(d, meta, environmentID, id)
 	if err != nil {
 		return err
+	}
+
+	if userData, ok := d.GetOk("user_data"); ok {
+		if err := client.UpdateUserData(ctx, environmentID, id, utils.String(userData.(string))); err != nil {
+			return err
+		}
 	}
 
 	if err = forceRunning(meta, environmentID, id); err != nil {
@@ -377,6 +389,7 @@ func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	opts := skytap.UpdateVMRequest{}
 
+	d.Partial(true)
 	if v, ok := d.GetOk("name"); ok && d.HasChange("name") {
 		opts.Name = utils.String(v.(string))
 	}
@@ -393,6 +406,17 @@ func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return fmt.Errorf("error updating vm (%s): %v", id, err)
 	}
+
+	if d.HasChange("user_data") {
+		if userData, ok := d.GetOk("user_data"); ok {
+			if err := client.UpdateUserData(ctx, environmentID, id, utils.String(userData.(string))); err != nil {
+				return err
+			}
+		}
+		d.SetPartial("user_data")
+	}
+
+	d.Partial(false)
 	log.Printf("[INFO] updated VM: %s", id)
 	log.Printf("[TRACE] updated VM: %v", spew.Sdump(vm))
 
