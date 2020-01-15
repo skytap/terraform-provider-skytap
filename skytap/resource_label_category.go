@@ -103,7 +103,7 @@ func resourceSkytapLabelCategoryDelete(d *schema.ResourceData, meta interface{})
 		return fmt.Errorf("label category (%s) is not an integer: %v", d.Id(), err)
 	}
 
-	log.Printf("[INFO] destroying label categpru: %d", id)
+	log.Printf("[INFO] destroying label category: %d", id)
 	err = client.Delete(ctx, id)
 	if err != nil {
 		if utils.ResponseErrorIsNotFound(err) {

@@ -56,9 +56,31 @@ func resourceSkytapEnvironment() *schema.Resource {
 				Set: stringCaseSensitiveHash,
 			},
 
+			"label": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"category": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+
 			"user_data": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Default:  nil,
 			},
 
 			"routable": {
@@ -130,8 +152,12 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 		opts.ShutdownAtTime = utils.String(v.(string))
 	}
 
-	if _, ok := d.GetOk("tags"); ok {
-		opts.Tags = environmentCreateTags(d)
+	if tag, ok := d.GetOk("tags"); ok {
+		opts.Tags = environmentCreateTags(tag.(*schema.Set))
+	}
+
+	if label, ok := d.GetOk("label"); ok {
+		opts.Labels = environmentCreateLabels(label.(*schema.Set))
 	}
 
 	if v, ok := d.GetOk("user_data"); ok {
@@ -213,6 +239,15 @@ func resourceSkytapEnvironmentRead(d *schema.ResourceData, meta interface{}) err
 		}
 	}
 
+	if environment.LabelCount != nil && *environment.LabelCount > 0 {
+		if err = d.Set("label", flattenLabels(environment.Labels)); err != nil {
+			return err
+		}
+	} else {
+		emptyLabels := make([]interface{}, 0)
+		d.Set("label", emptyLabels)
+	}
+
 	log.Printf("[INFO] environment retrieved: %s", id)
 	log.Printf("[TRACE] environment retrieved: %v", spew.Sdump(environment))
 
@@ -291,15 +326,28 @@ func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) e
 		}
 
 		tagsToAdd := newTagsSet.Difference(oldTagSet)
-		newTags := make([]*skytap.CreateTagRequest, tagsToAdd.Len())
-		for i, tag := range tagsToAdd.List() {
-			newTags[i] = &skytap.CreateTagRequest{Tag: tag.(string)}
-		}
-		if err := client.CreateTags(ctx, *environment.ID, newTags); err != nil {
+		if err := client.CreateTags(ctx, *environment.ID, environmentCreateTags(tagsToAdd)); err != nil {
 			return err
 		}
 
 		d.SetPartial("tags")
+	}
+
+	if d.HasChange("label") {
+		old, new := d.GetChange("label")
+		remove := old.(*schema.Set).Difference(new.(*schema.Set))
+		add := new.(*schema.Set).Difference(old.(*schema.Set))
+
+		for _, l := range remove.List() {
+			label := l.(map[string]interface{})
+			if err = client.DeleteLabel(ctx, *environment.ID, label["id"].(string)); err != nil {
+				return err
+			}
+		}
+		if err = client.CreateLabels(ctx, *environment.ID, environmentCreateLabels(add)); err != nil {
+			return err
+		}
+		d.SetPartial("label")
 	}
 
 	if d.HasChange("user_data") {
@@ -458,9 +506,7 @@ func environmentDeleteRefreshFunc(
 	}
 }
 
-func environmentCreateTags(d *schema.ResourceData) []*skytap.CreateTagRequest {
-	vs := d.Get("tags").(*schema.Set)
-
+func environmentCreateTags(vs *schema.Set) []*skytap.CreateTagRequest {
 	createTagRequests := make([]*skytap.CreateTagRequest, vs.Len())
 	for i, v := range vs.List() {
 		createTagRequests[i] = &skytap.CreateTagRequest{
@@ -468,4 +514,16 @@ func environmentCreateTags(d *schema.ResourceData) []*skytap.CreateTagRequest {
 		}
 	}
 	return createTagRequests
+}
+
+func environmentCreateLabels(vs *schema.Set) []*skytap.CreateLabelRequest {
+	createLabelsRequest := make([]*skytap.CreateLabelRequest, vs.Len())
+	for i, v := range vs.List() {
+		elem := v.(map[string]interface{})
+		createLabelsRequest[i] = &skytap.CreateLabelRequest{
+			Category: utils.String(elem["category"].(string)),
+			Value:    utils.String(elem["value"].(string)),
+		}
+	}
+	return createLabelsRequest
 }

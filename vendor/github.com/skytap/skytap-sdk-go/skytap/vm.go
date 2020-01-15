@@ -113,15 +113,6 @@ type User struct {
 	Deleted   *bool   `json:"deleted"`
 }
 
-// Label describes a label attached to the VM
-type Label struct {
-	ID                       *string `json:"id"`
-	Value                    *string `json:"value"`
-	LabelCategory            *string `json:"label_category"`
-	LabelCategoryID          *string `json:"label_category_id"`
-	LabelCategorySingleValue *bool   `json:"label_category_single_value"`
-}
-
 // Credential describes credentials stored on the VM and available from the Credentials page in the UI
 type Credential struct {
 	ID   *string `json:"id"`
