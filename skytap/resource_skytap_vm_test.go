@@ -934,7 +934,6 @@ func TestAccSkytapVM_Concurrent(t *testing.T) {
 	})
 }
 
-
 func TestAccSkytapVM_UserData(t *testing.T) {
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
@@ -1219,7 +1218,7 @@ func testAccSkytapVMConfig_basic(envTemplateID string, uniqueSuffixEnv int, netw
 }
 
 func testAccSkytapVMConfigBlock(envTemplateID string, uniqueSuffixEnv int, VMTemplateID string,
-		VMID string, name string, requirements string, block string) string {
+	VMID string, name string, requirements string, block string) string {
 
 	config := fmt.Sprintf(`
  	resource "skytap_environment" "foo" {
@@ -1238,10 +1237,9 @@ func testAccSkytapVMConfigBlock(envTemplateID string, uniqueSuffixEnv int, VMTem
 		%s
  	}
  	`,
- 	envTemplateID, vmEnvironmentPrefix, uniqueSuffixEnv, requirements, VMTemplateID, VMID, name, block)
+		envTemplateID, vmEnvironmentPrefix, uniqueSuffixEnv, requirements, VMTemplateID, VMID, name, block)
 	return config
 }
-
 
 func testAccSkytapVMConfig_concurrent(envTemplateID string, uniqueSuffixEnv int, VMTemplateID string, VMID string) string {
 	config := fmt.Sprintf(`
