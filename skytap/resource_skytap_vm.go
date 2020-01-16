@@ -302,6 +302,12 @@ func resourceSkytapVMReadAfterCreateUpdate(d *schema.ResourceData, meta interfac
 	d.Set("max_cpus", vm.Hardware.MaxCPUs)
 	d.Set("max_ram", vm.Hardware.MaxRAM)
 
+	userData, err := client.GetUserData(ctx, environmentID, id)
+	if err != nil {
+		return err
+	}
+	d.Set("user_data", userData)
+
 	if len(vm.Interfaces) > 0 {
 		var networkSetFlattened *schema.Set
 		if vmNetworks == nil {

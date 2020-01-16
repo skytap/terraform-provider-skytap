@@ -22,6 +22,8 @@ type EnvironmentsService interface {
 	Delete(ctx context.Context, id string) error
 	CreateTags(ctx context.Context, id string, createTagRequest []*CreateTagRequest) error
 	DeleteTag(ctx context.Context, id string, tag string) error
+	CreateLabels(ctx context.Context, id string, createLabelRequest []*CreateLabelRequest) error
+	DeleteLabel(ctx context.Context, id string, labelId string) error
 	UpdateUserData(ctx context.Context, id string, userData *string) error
 }
 
@@ -90,6 +92,7 @@ type Environment struct {
 	ShutdownAtTime          *string              `json:"shutdown_at_time"`
 	AutoShutdownDescription *string              `json:"auto_shutdown_description"`
 	UserData                *string              `json:"-"`
+	Labels                  []*Label             `json:"-"`
 }
 
 // Tag describes environment tag data
@@ -148,9 +151,24 @@ type EnvironmentListResult struct {
 	Value []Environment
 }
 
+// Label describe the entity label associated to environments, VMs, etc.
+type Label struct {
+	ID                       *string `json:"id"`
+	Value                    *string `json:"value"`
+	LabelCategory            *string `json:"label_category"`
+	LabelCategoryID          *string `json:"label_category_id"`
+	LabelCategorySingleValue *bool   `json:"label_category_single_value"`
+}
+
 // CreateTagRequest describe the creation of a tag
 type CreateTagRequest struct {
 	Tag string `json:"value,omitempty"`
+}
+
+// CreateLabelRequest request describe the creation of a new label
+type CreateLabelRequest struct {
+	Category *string `json:"label_category,omitempty"`
+	Value    *string `json:"value,omitempty"`
 }
 
 type userData struct {
@@ -159,19 +177,20 @@ type userData struct {
 
 // CreateEnvironmentRequest describes the create the environment data
 type CreateEnvironmentRequest struct {
-	TemplateID      *string             `json:"template_id,omitempty"`
-	ProjectID       *int                `json:"project_id,omitempty"`
-	Name            *string             `json:"name,omitempty"`
-	Description     *string             `json:"description,omitempty"`
-	Owner           *string             `json:"owner,omitempty"`
-	OutboundTraffic *bool               `json:"outbound_traffic,omitempty"`
-	Routable        *bool               `json:"routable,omitempty"`
-	SuspendOnIdle   *int                `json:"suspend_on_idle,omitempty"`
-	SuspendAtTime   *string             `json:"suspend_at_time,omitempty"`
-	ShutdownOnIdle  *int                `json:"shutdown_on_idle,omitempty"`
-	ShutdownAtTime  *string             `json:"shutdown_at_time,omitempty"`
-	Tags            []*CreateTagRequest `json:"-"`
-	UserData        *string             `json:"-"`
+	TemplateID      *string               `json:"template_id,omitempty"`
+	ProjectID       *int                  `json:"project_id,omitempty"`
+	Name            *string               `json:"name,omitempty"`
+	Description     *string               `json:"description,omitempty"`
+	Owner           *string               `json:"owner,omitempty"`
+	OutboundTraffic *bool                 `json:"outbound_traffic,omitempty"`
+	Routable        *bool                 `json:"routable,omitempty"`
+	SuspendOnIdle   *int                  `json:"suspend_on_idle,omitempty"`
+	SuspendAtTime   *string               `json:"suspend_at_time,omitempty"`
+	ShutdownOnIdle  *int                  `json:"shutdown_on_idle,omitempty"`
+	ShutdownAtTime  *string               `json:"shutdown_at_time,omitempty"`
+	Tags            []*CreateTagRequest   `json:"-"`
+	UserData        *string               `json:"-"`
+	Labels          []*CreateLabelRequest `json:"-"`
 }
 
 // UpdateEnvironmentRequest describes the update the environment data
@@ -238,6 +257,22 @@ func (s *EnvironmentsServiceClient) Get(ctx context.Context, id string) (*Enviro
 		return nil, err
 	}
 	environment.UserData = userDataResp.Contents
+
+	// Read labels if any
+	if environment.LabelCount != nil && *environment.LabelCount > 0 {
+		enviromentLabelPath := fmt.Sprintf("%s/%s/labels.json", environmentBasePath, id)
+		req, err = s.client.newRequest(ctx, "GET", enviromentLabelPath, nil)
+		if err != nil {
+			return nil, err
+		}
+		var labels []*Label
+		_, err = s.client.do(ctx, req, &labels, nil, nil)
+		if err != nil {
+			return nil, err
+		}
+		environment.Labels = labels
+	}
+
 	return &environment, nil
 }
 
@@ -290,6 +325,11 @@ func (s *EnvironmentsServiceClient) Create(ctx context.Context, opts *CreateEnvi
 
 	// update tags
 	if err := s.CreateTags(ctx, ptrToStr(createdEnvironment.ID), opts.Tags); err != nil {
+		return nil, err
+	}
+
+	// update labels
+	if err := s.CreateLabels(ctx, ptrToStr(createdEnvironment.ID), opts.Labels); err != nil {
 		return nil, err
 	}
 
@@ -364,6 +404,37 @@ func (s *EnvironmentsServiceClient) DeleteTag(ctx context.Context, id string, ta
 		return err
 	}
 	return nil
+}
+
+// CreateLabels add a list of labels to the environment
+func (s *EnvironmentsServiceClient) CreateLabels(ctx context.Context, id string, createLabelRequest []*CreateLabelRequest) error {
+	if createLabelRequest == nil || len(createLabelRequest) == 0 {
+		return nil
+	}
+
+	tagPath := fmt.Sprintf("%s/%s/labels.json", environmentBasePath, id)
+	req, err := s.client.newRequest(ctx, "PUT", tagPath, createLabelRequest)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.client.do(ctx, req, nil, nil, nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteLabel remove a label but remains available for reporting
+func (s *EnvironmentsServiceClient) DeleteLabel(ctx context.Context, id string, labelID string) (err error) {
+	path := fmt.Sprintf("%s/%s/labels/%s.json", environmentBasePath, id, labelID)
+
+	req, err := s.client.newRequest(ctx, "DELETE", path, nil)
+	if err != nil {
+		return
+	}
+	_, err = s.client.do(ctx, req, nil, nil, nil)
+	return
 }
 
 //UpdateUserData changes enviroment user data
