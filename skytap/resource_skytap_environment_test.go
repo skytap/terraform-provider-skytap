@@ -207,6 +207,113 @@ func TestAccSkytapEnvironment_UserDataUpdate(t *testing.T) {
 	})
 }
 
+const labelRequirements = `
+		resource skytap_label_category "environment_label" {
+			name = "tftest-Environment"
+			single_value = true
+		}
+
+		resource skytap_label_category "owners_label" {
+			name = "tftest-Owners"
+			single_value = false
+		}
+	`
+
+func TestAccSkytapEnvironment_Labels(t *testing.T) {
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
+	uniqueSuffix := acctest.RandInt()
+	var environment skytap.Environment
+
+	labels := `
+		label {
+			category = "${skytap_label_category.environment_label.name}"
+			value = "Prod"
+		}
+		label {
+			category = "${skytap_label_category.owners_label.name}"
+			value = "Finance"
+		}
+		label {
+			category = "${skytap_label_category.owners_label.name}"
+			value = "Accounting"
+		}
+	`
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				PreventDiskCleanup: true,
+				Config:             testAccSkytapEnvironmentConfigBlock(uniqueSuffix, templateID, labelRequirements, labels),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapEnvironmentExists("skytap_environment.foo", &environment),
+				),
+			},
+		},
+	})
+}
+
+func TestAccSkytapEnvironment_LabelsUpdate(t *testing.T) {
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
+	uniqueSuffix := acctest.RandInt()
+	var environment skytap.Environment
+
+	labels := `
+		label {
+			category = "${skytap_label_category.environment_label.name}"
+			value = "Prod"
+		}
+		label {
+			category = "${skytap_label_category.owners_label.name}"
+			value = "Finance"
+		}
+		label {
+			category = "${skytap_label_category.owners_label.name}"
+			value = "Accounting"
+		}
+	`
+
+	labelsUpdated := `
+		label {
+			category = "${skytap_label_category.environment_label.name}"
+			value = "UAT"
+		}
+		label {
+			category = "${skytap_label_category.owners_label.name}"
+			value = "Accounting"
+		}
+	`
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				PreventDiskCleanup: true,
+				Config:             testAccSkytapEnvironmentConfigBlock(uniqueSuffix, templateID, labelRequirements, labels),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapEnvironmentExists("skytap_environment.foo", &environment),
+					testAccCheckSkytapEnvironmentContainsLabel(&environment, "tftest-Environment", "Prod"),
+					testAccCheckSkytapEnvironmentContainsLabel(&environment, "tftest-Owners", "Finance"),
+					testAccCheckSkytapEnvironmentContainsLabel(&environment, "tftest-Owners", "Accounting"),
+				),
+			},
+			{
+				PreventDiskCleanup: true,
+				Config:             testAccSkytapEnvironmentConfigBlock(uniqueSuffix, templateID, labelRequirements, labelsUpdated),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapEnvironmentExists("skytap_environment.foo", &environment),
+					testAccCheckSkytapEnvironmentContainsLabel(&environment, "tftest-Environment", "UAT"),
+					testAccCheckSkytapEnvironmentContainsLabel(&environment, "tftest-Owners", "Accounting"),
+				),
+			},
+		},
+	})
+}
+
 // Verifies the Environment exists
 func testAccCheckSkytapEnvironmentExists(name string, environment *skytap.Environment) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
@@ -263,6 +370,19 @@ func testAccCheckSkytapEnvironmentContainsTag(enviroment *skytap.Environment, ta
 	}
 }
 
+// Verifies the Environment have a specific label
+func testAccCheckSkytapEnvironmentContainsLabel(enviroment *skytap.Environment, category string, label string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		for _, t := range enviroment.Labels {
+			if strings.ToLower(category) == strings.ToLower(*t.LabelCategory) &&
+				strings.ToLower(label) == strings.ToLower(*t.Value) {
+				return nil
+			}
+		}
+		return fmt.Errorf("label  (%s : %s) not found", category, label)
+	}
+}
+
 // Verifies the Environment has been destroyed
 func testAccCheckSkytapEnvironmentDestroy(s *terraform.State) error {
 	// retrieve the connection established in Provider configuration
@@ -310,6 +430,18 @@ func testAccSkytapEnvironmentConfig_UserData(uniqueSuffix int, templateID string
 	    name = "tftest-environment-%d"
 	    description = "This is an environment created by the skytap terraform provider acceptance test"
       }`, templateID, userData, uniqueSuffix)
+}
+
+func testAccSkytapEnvironmentConfigBlock(uniqueSuffix int, templateID string, requirements string, block string) string {
+	return fmt.Sprintf(`
+		%s
+
+      resource "skytap_environment" "foo" {
+	    template_id = "%s"
+		%s
+	    name = "tftest-environment-%d"
+	    description = "This is an environment created by the skytap terraform provider acceptance test"
+      }`, requirements, templateID, block, uniqueSuffix)
 }
 
 func getEnvironment(rs *terraform.ResourceState) (*skytap.Environment, error) {
