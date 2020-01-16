@@ -25,6 +25,8 @@ type VMsService interface {
 	Create(ctx context.Context, environmentID string, opts *CreateVMRequest) (*VM, error)
 	Update(ctx context.Context, environmentID string, id string, vm *UpdateVMRequest) (*VM, error)
 	Delete(ctx context.Context, environmentID string, id string) error
+	GetUserData(ctx context.Context, environment string, id string) (*string, error)
+	UpdateUserData(ctx context.Context, environmentID string, id string, userData *string) error
 }
 
 // VMsServiceClient is the VMsService implementation
@@ -305,6 +307,43 @@ func (s *VMsServiceClient) Delete(ctx context.Context, environmentID string, id 
 	}
 
 	return nil
+}
+
+// UpdateUserData updates the metadata associated to the VM
+func (s *VMsServiceClient) UpdateUserData(ctx context.Context, environmentID string, id string, userDataUpdate *string) error {
+	if userDataUpdate == nil {
+		return nil
+	}
+	userDataPath := fmt.Sprintf("%s/user_data.json", s.buildPath(false, environmentID, id))
+	userDataRequest := userData{
+		Contents: userDataUpdate,
+	}
+	req, err := s.client.newRequest(ctx, "PUT", userDataPath, userDataRequest)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.client.do(ctx, req, nil, nil, nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// GetUserData provides metadata associated with the VM
+func (s *VMsServiceClient) GetUserData(ctx context.Context, environmentID string, id string) (userDataContent *string, err error) {
+	userDataPath := fmt.Sprintf("%s/user_data.json", s.buildPath(false, environmentID, id))
+	req, err := s.client.newRequest(ctx, "GET", userDataPath, nil)
+	if err != nil {
+		return
+	}
+	var userDataVM userData
+	_, err = s.client.do(ctx, req, &userDataVM, nil, nil)
+	if err != nil {
+		return
+	}
+	userDataContent = userDataVM.Contents
+	return
 }
 
 // mostRecentVM returns the mose recent VM given a list of VMs

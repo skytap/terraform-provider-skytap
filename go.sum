@@ -370,6 +370,8 @@ github.com/skytap/skytap-sdk-go v0.0.0-20200114121658-7a4d0239f643 h1:FeuJLtOFAG
 github.com/skytap/skytap-sdk-go v0.0.0-20200114121658-7a4d0239f643/go.mod h1:V1HX7VGGylkRYjgyftn7vnOUZ7yOnTfwKsoZUHLkk1w=
 github.com/skytap/skytap-sdk-go v0.0.0-20200115114848-7d1fb6c63200 h1:kR98nQLJKnLJoNLZXqbDbDYFkyaO1Ie9DXczXMFxh7o=
 github.com/skytap/skytap-sdk-go v0.0.0-20200115114848-7d1fb6c63200/go.mod h1:V1HX7VGGylkRYjgyftn7vnOUZ7yOnTfwKsoZUHLkk1w=
+github.com/skytap/skytap-sdk-go v0.0.0-20200116115251-aabcf4287354 h1:yE2Nj+CTlAfKRUYPEIeE1CmoobOXspjmEuTB673nFsE=
+github.com/skytap/skytap-sdk-go v0.0.0-20200116115251-aabcf4287354/go.mod h1:V1HX7VGGylkRYjgyftn7vnOUZ7yOnTfwKsoZUHLkk1w=
 github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d/go.mod h1:OnSkiWE9lh6wB0YB77sQom3nweQdgAjqCqsofrRNTgc=
 github.com/smartystreets/goconvey v0.0.0-20180222194500-ef6db91d284a/go.mod h1:XDJAKZRPZ1CvBcN2aX5YOUTYGHki24fSF0Iv48Ibg0s=
 github.com/soheilhy/cmux v0.1.4/go.mod h1:IM3LyeVVIOuxMH7sFAkER9+bJ4dT7Ms6E4xg4kGIyLM=
