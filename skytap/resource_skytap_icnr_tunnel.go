@@ -50,7 +50,7 @@ func resourceSkytapICNRTunnelRead(d *schema.ResourceData, meta interface{}) erro
 	ctx := meta.(*SkytapClient).StopContext
 
 	id := d.Id()
-	tunnel, err := client.Get(ctx, id)
+	_ , err := client.Get(ctx, id)
 	if err != nil {
 		if utils.ResponseErrorIsNotFound(err) {
 			log.Printf("[DEBUG] ICNR tunnel (%s) was not found - removing from state", id)
