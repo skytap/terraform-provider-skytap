@@ -10,6 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
+
 func TestAccSkytapLabelICNR_Basic(t *testing.T) {
 	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
 	uniqueSuffix := acctest.RandInt()
@@ -29,7 +30,6 @@ func TestAccSkytapLabelICNR_Basic(t *testing.T) {
 		},
 	})
 }
-
 
 func testAccSkytapICNRTunnel_basic(prefix string, suffix int, templateId string) string {
 	return fmt.Sprintf(`
@@ -77,7 +77,7 @@ func testAccCheckSkytapICNRTunnelExists(name string, icnrTunnel *skytap.ICNRTunn
 		if err != nil {
 			return err
 		}
-		
+
 		// retrieve the connection established in Provider configuration
 		client := testAccProvider.Meta().(*SkytapClient).icnrTunnelClient
 		ctx := testAccProvider.Meta().(*SkytapClient).StopContext

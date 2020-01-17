@@ -14,13 +14,13 @@ func resourceSkytapICNRTunnel() *schema.Resource {
 		Delete: resourceSkytapICNRTunnelDelete,
 
 		Schema: map[string]*schema.Schema{
-			"source":  {
+			"source": {
 				Type:     schema.TypeInt,
 				Required: true,
 				ForceNew: true,
 			},
 			"target": {
-				Type: schema.TypeInt,
+				Type:     schema.TypeInt,
 				Required: true,
 				ForceNew: true,
 			},
@@ -50,7 +50,7 @@ func resourceSkytapICNRTunnelRead(d *schema.ResourceData, meta interface{}) erro
 	ctx := meta.(*SkytapClient).StopContext
 
 	id := d.Id()
-	_ , err := client.Get(ctx, id)
+	_, err := client.Get(ctx, id)
 	if err != nil {
 		if utils.ResponseErrorIsNotFound(err) {
 			log.Printf("[DEBUG] ICNR tunnel (%s) was not found - removing from state", id)

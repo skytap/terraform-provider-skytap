@@ -26,7 +26,7 @@ type SkytapClient struct {
 	interfacesClient        skytap.InterfacesService
 	publishedServicesClient skytap.PublishedServicesService
 	labelCategoryClient     skytap.LabelCategoryService
-	icnrTunnelClient		skytap.ICNRTunnelService
+	icnrTunnelClient        skytap.ICNRTunnelService
 }
 
 // Client creates a SkytapClient client
@@ -45,7 +45,7 @@ func (c *Config) Client() (*SkytapClient, error) {
 		interfacesClient:        client.Interfaces,
 		publishedServicesClient: client.PublishedServices,
 		labelCategoryClient:     client.LabelCategory,
-		icnrTunnelClient: 		 client.ICNRTunnel,
+		icnrTunnelClient:        client.ICNRTunnel,
 	}
 
 	return &skytapClient, nil

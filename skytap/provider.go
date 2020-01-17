@@ -39,7 +39,7 @@ func Provider() terraform.ResourceProvider {
 			"skytap_network":        resourceSkytapNetwork(),
 			"skytap_vm":             resourceSkytapVM(),
 			"skytap_label_category": resourceSkytapLabelCategory(),
-			"skytap_icnr_tunnel": resourceSkytapICNRTunnel(),
+			"skytap_icnr_tunnel":    resourceSkytapICNRTunnel(),
 		},
 	}
 
