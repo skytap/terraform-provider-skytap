@@ -90,6 +90,32 @@ func TestAccSkytapLabelCategory_MultiValueBasic(t *testing.T) {
 	})
 }
 
+func TestAccSkytapLabelCategory_Duplicated(t *testing.T) {
+	labelCategoryDuplicated := `
+		resource skytap_label_category "duplabel1" {
+		  name = "tftest-dup"
+		  single_value = true
+		}
+		
+		resource skytap_label_category "duplabel2" {
+		  name = "tftest-dup"
+		  single_value = true
+		}
+	`
+	error, _ := regexp.Compile(".* Validation failed: Name has already been taken")
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSkytapLabelCategoryDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config:      labelCategoryDuplicated,
+				ExpectError: error,
+			},
+		},
+	})
+}
+
 func testAccSkytapLabelCategory_basic(labelCategoryName string, singleValue bool) string {
 	return fmt.Sprintf(`
       resource "skytap_label_category" "env_category" {
