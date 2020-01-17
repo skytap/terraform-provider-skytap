@@ -25,6 +25,8 @@ type VMsService interface {
 	Create(ctx context.Context, environmentID string, opts *CreateVMRequest) (*VM, error)
 	Update(ctx context.Context, environmentID string, id string, vm *UpdateVMRequest) (*VM, error)
 	Delete(ctx context.Context, environmentID string, id string) error
+	CreateLabel(ctx context.Context, environmentID string, id string, createLabelRequest *CreateVMLabelRequest) error
+	DeleteLabel(ctx context.Context, environmentID string, id string, labelID string) error
 	GetUserData(ctx context.Context, environment string, id string) (*string, error)
 	UpdateUserData(ctx context.Context, environmentID string, id string, userData *string) error
 }
@@ -46,7 +48,7 @@ type VM struct {
 	MaxHardwareVersion     *int         `json:"max_hardware_version"`
 	Interfaces             []Interface  `json:"interfaces"`
 	Notes                  []Note       `json:"notes"`
-	Labels                 []Label      `json:"labels"`
+	Labels                 []*Label     `json:"labels"`
 	Credentials            []Credential `json:"credentials"`
 	DesktopResizable       *bool        `json:"desktop_resizable"`
 	LocalMouseCursor       *bool        `json:"local_mouse_cursor"`
@@ -328,6 +330,42 @@ func (s *VMsServiceClient) UpdateUserData(ctx context.Context, environmentID str
 		return err
 	}
 	return nil
+}
+
+type CreateVMLabelRequest struct {
+	Category *string `json:"tag_type,omitempty"`
+	Value    *string `json:"text,omitempty"`
+}
+
+// CreateLabel add a list of label to the vm
+func (s *VMsServiceClient) CreateLabel(ctx context.Context, environmentID string, id string, createLabelRequest *CreateVMLabelRequest) error {
+	if createLabelRequest == nil {
+		return nil
+	}
+
+	labelPath := fmt.Sprintf("%s/labels.json", s.buildPath(false, environmentID, id))
+	req, err := s.client.newRequest(ctx, "POST", labelPath, createLabelRequest)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.client.do(ctx, req, nil, nil, nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteLabel remove a label but remains available for reporting
+func (s *VMsServiceClient) DeleteLabel(ctx context.Context, environmentID string, id string, labelID string) (err error) {
+	path := fmt.Sprintf("%s/labels/%s.json", s.buildPath(false, environmentID, id), labelID)
+
+	req, err := s.client.newRequest(ctx, "DELETE", path, nil)
+	if err != nil {
+		return
+	}
+	_, err = s.client.do(ctx, req, nil, nil, nil)
+	return
 }
 
 // GetUserData provides metadata associated with the VM

@@ -59,6 +59,7 @@ type Client struct {
 	Interfaces        InterfacesService
 	PublishedServices PublishedServicesService
 	LabelCategory     LabelCategoryService
+	ICNRTunnel        ICNRTunnelService
 
 	retryAfter int
 	retryCount int
@@ -166,6 +167,7 @@ func NewClient(settings Settings) (*Client, error) {
 	client.Interfaces = &InterfacesServiceClient{&client}
 	client.PublishedServices = &PublishedServicesServiceClient{&client}
 	client.LabelCategory = &LabelCategoryClient{&client}
+	client.ICNRTunnel = &ICNRTunnelClient{&client}
 
 	client.retryAfter = defRetryAfter
 	client.retryCount = defRetryCount
