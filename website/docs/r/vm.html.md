@@ -93,6 +93,12 @@ The following arguments are supported:
     * `name` - (Required, Force New) A unique name for the published service.
     * `internal_port` - (Required, Force New) The port that is exposed on the interface. Typically this will be dictated by standard usage (e.g., port 80 for http traffic, port 22 for SSH).
 * `user_data` - (Optional) VM user data, available from the metadata server and the skytap api
+* `label` - (Optional) Set of labels for the instance. Structure is documented below.
+
+The `label` block supports:
+
+* `category` - (Required) Label category that  provide contextual meaning.
+* `value` - (Required) Label value to be use for reporting
 
 ## Attributes Reference
 
