@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -980,6 +981,74 @@ func TestAccSkytapVM_UserData(t *testing.T) {
 	})
 }
 
+func TestAccSkytapVM_Labels(t *testing.T) {
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
+	uniqueSuffixEnv := acctest.RandInt()
+	var vm skytap.VM
+
+	labels := `
+		label {
+			category = "${skytap_label_category.environment_label.name}"
+			value = "Prod"
+		}
+		label {
+			category = "${skytap_label_category.owners_label.name}"
+			value = "Finance"
+		}
+		label {
+			category = "${skytap_label_category.owners_label.name}"
+			value = "Accounting"
+		}
+	`
+
+	labelsUpdated := `
+		label {
+			category = "${skytap_label_category.environment_label.name}"
+			value = "UAT"
+		}
+		label {
+			category = "${skytap_label_category.owners_label.name}"
+			value = "Marketing"
+		}
+		label {
+			category = "${skytap_label_category.owners_label.name}"
+			value = "Accounting"
+		}
+	`
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSkytapVMConfigBlock(newEnvTemplateID, uniqueSuffixEnv, templateID, vmID, "test",
+					labelRequirements, labels),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
+					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "test"),
+					testAccCheckSkytapVMRunning(&vm),
+					testAccCheckSkytapLabelExists(&vm, "tftest-Environment", "Prod"),
+					testAccCheckSkytapLabelExists(&vm, "tftest-Owners", "Finance"),
+					testAccCheckSkytapLabelExists(&vm, "tftest-Owners", "Accounting"),
+				),
+			},
+			{
+				Config: testAccSkytapVMConfigBlock(newEnvTemplateID, uniqueSuffixEnv, templateID, vmID, "test",
+					labelRequirements, labelsUpdated),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
+					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "test"),
+					testAccCheckSkytapVMRunning(&vm),
+					testAccCheckSkytapLabelExists(&vm, "tftest-Environment", "UAT"),
+					testAccCheckSkytapLabelExists(&vm, "tftest-Owners", "Marketing"),
+					testAccCheckSkytapLabelExists(&vm, "tftest-Owners", "Accounting"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckSkytapExternalPorts(t *testing.T, vmName string, count string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rsVM, err := getResource(s, vmName)
@@ -1192,6 +1261,18 @@ func testAccCheckSkytapInterfacesExists(environmentName string, vmName string, n
 		}
 
 		return nil
+	}
+}
+
+func testAccCheckSkytapLabelExists(vm *skytap.VM, category string, label string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		for _, l := range vm.Labels {
+			if strings.ToLower(*l.LabelCategory) == strings.ToLower(category) &&
+				strings.ToLower(*l.Value) == strings.ToLower(label) {
+				return nil
+			}
+		}
+		return fmt.Errorf("VM with id %d, do not contain label (%s: %s)", vm.ID, category, label)
 	}
 }
 

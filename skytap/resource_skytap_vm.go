@@ -203,6 +203,27 @@ func resourceSkytapVM() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+
+			"label": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"category": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -245,6 +266,15 @@ func resourceSkytapVMCreate(d *schema.ResourceData, meta interface{}) error {
 	if userData, ok := d.GetOk("user_data"); ok {
 		if err := client.UpdateUserData(ctx, environmentID, id, utils.String(userData.(string))); err != nil {
 			return err
+		}
+	}
+
+	if label, ok := d.GetOk("label"); ok {
+		labels := vmCreateLabels(label.(*schema.Set))
+		for _, l := range labels {
+			if err = client.CreateLabel(ctx, environmentID, id, l); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -307,6 +337,10 @@ func resourceSkytapVMReadAfterCreateUpdate(d *schema.ResourceData, meta interfac
 		return err
 	}
 	d.Set("user_data", userData)
+
+	if err = d.Set("label", flattenLabels(vm.Labels)); err != nil {
+		return err
+	}
 
 	if len(vm.Interfaces) > 0 {
 		var networkSetFlattened *schema.Set
@@ -420,6 +454,26 @@ func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
 			}
 		}
 		d.SetPartial("user_data")
+	}
+
+	if d.HasChange("label") {
+		old, new := d.GetChange("label")
+		remove := old.(*schema.Set).Difference(new.(*schema.Set))
+		add := new.(*schema.Set).Difference(old.(*schema.Set))
+
+		for _, l := range remove.List() {
+			label := l.(map[string]interface{})
+			if err = client.DeleteLabel(ctx, environmentID, id, label["id"].(string)); err != nil {
+				return err
+			}
+		}
+		labelsToAdd := vmCreateLabels(add)
+		for _, l := range labelsToAdd {
+			if err = client.CreateLabel(ctx, environmentID, id, l); err != nil {
+				return err
+			}
+		}
+		d.SetPartial("label")
 	}
 
 	d.Partial(false)
@@ -925,4 +979,16 @@ func forceRunning(meta interface{}, environmentID string, id string) error {
 	log.Printf("[INFO] started VM: %s", id)
 	log.Printf("[TRACE] started VM: %v", spew.Sdump(vm))
 	return nil
+}
+
+func vmCreateLabels(vs *schema.Set) []*skytap.CreateVMLabelRequest {
+	createLabelsRequest := make([]*skytap.CreateVMLabelRequest, vs.Len())
+	for i, v := range vs.List() {
+		elem := v.(map[string]interface{})
+		createLabelsRequest[i] = &skytap.CreateVMLabelRequest{
+			Category: utils.String(elem["category"].(string)),
+			Value:    utils.String(elem["value"].(string)),
+		}
+	}
+	return createLabelsRequest
 }
