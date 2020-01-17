@@ -81,8 +81,13 @@ func resourceSkytapLabelCategoryRead(d *schema.ResourceData, meta interface{}) e
 			d.SetId("")
 			return nil
 		}
-
 		return fmt.Errorf("error retrieving label category (%d): %v", id, err)
+	} else {
+		if ! *labelCategory.Enabled {
+			log.Printf("[DEBUG] label category (%d) was not found - removing from state", id)
+			d.SetId("")
+			return nil
+		}
 	}
 
 	d.Set("name", labelCategory.Name)

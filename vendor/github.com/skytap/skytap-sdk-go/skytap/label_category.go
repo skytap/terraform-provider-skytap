@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 // Default URL paths
@@ -105,8 +106,12 @@ func (s *LabelCategoryClient) Create(ctx context.Context, category *LabelCategor
 		// In this case the category is disabled, we enable the exiting category
 		log.Println("[DEBUG] SDK restoring a delete label category.")
 		readResponseBody(resp, &labelCategoryError)
-		labelCategoryID, err := labelCategoryResourceIdFromURL(labelCategoryError.URL)
 
+		if strings.HasPrefix(strings.ToLower(labelCategoryError.Error), "validation failed:") {
+			return nil, fmt.Errorf(`Error creating label category with name (%s): %s`, *category.Name, labelCategoryError.Error)
+		}
+
+		labelCategoryID, err := labelCategoryResourceIdFromURL(labelCategoryError.URL)
 		path := fmt.Sprintf("%s/%d.json", labelCategoryBasePath, labelCategoryID)
 		enabled := enableUpdate{true}
 		updateReq, err := s.client.newRequest(ctx, "PUT", path, enabled)

@@ -205,7 +205,7 @@ github.com/posener/complete
 github.com/posener/complete/cmd
 github.com/posener/complete/cmd/install
 github.com/posener/complete/match
-# github.com/skytap/skytap-sdk-go v0.0.0-20200116115251-aabcf4287354 => /Users/pegerto/work/src/github.com/skytap/skytap-sdk-go
+# github.com/skytap/skytap-sdk-go v0.0.0-20200117145252-6ec8b61417e2
 github.com/skytap/skytap-sdk-go/skytap
 # github.com/spf13/afero v1.2.2
 github.com/spf13/afero
