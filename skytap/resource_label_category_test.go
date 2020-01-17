@@ -109,7 +109,7 @@ func TestAccSkytapLabelCategory_Duplicated(t *testing.T) {
 		CheckDestroy: testAccCheckSkytapLabelCategoryDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: labelCategoryDuplicated,
+				Config:      labelCategoryDuplicated,
 				ExpectError: error,
 			},
 		},
