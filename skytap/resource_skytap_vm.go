@@ -440,11 +440,25 @@ func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 	opts.Hardware = hardware
 
-	log.Printf("[INFO] VM update: %s", id)
-	log.Printf("[TRACE] VM update options: %v", spew.Sdump(opts))
-	vm, err := client.Update(ctx, environmentID, id, &opts)
-	if err != nil {
-		return fmt.Errorf("error updating vm (%s): %v", id, err)
+	var vmDisks *schema.Set
+	if d.HasChange("name") || d.HasChange("ram") || d.HasChange("cpus") || d.HasChange("os_disk_size") {
+		log.Printf("[INFO] VM update: %s", id)
+		log.Printf("[TRACE] VM update options: %v", spew.Sdump(opts))
+		vm, err := client.Update(ctx, environmentID, id, &opts)
+		if err != nil {
+			return fmt.Errorf("error updating vm (%s): %v", id, err)
+		}
+
+		log.Printf("[INFO] updated VM: %s", id)
+		log.Printf("[TRACE] updated VM: %v", spew.Sdump(vm))
+
+		// Have to do this here in order to capture `name`
+		vmDisks = flattenDisks(vm.Hardware.Disks)
+
+		d.SetPartial("name")
+		d.SetPartial("ram")
+		d.SetPartial("cpus")
+		d.SetPartial("os_disk_size")
 	}
 
 	if d.HasChange("user_data") {
@@ -477,11 +491,6 @@ func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	d.Partial(false)
-	log.Printf("[INFO] updated VM: %s", id)
-	log.Printf("[TRACE] updated VM: %v", spew.Sdump(vm))
-
-	// Have to do this here in order to capture `name`
-	vmDisks := flattenDisks(vm.Hardware.Disks)
 
 	stateConf := &resource.StateChangeConf{
 		Pending:    getVMPendingUpdateRunstates(false),
