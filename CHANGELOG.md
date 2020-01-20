@@ -8,8 +8,6 @@ FEATURES:
 * `skytap_vm` VMs supports for labels, enabling usage reporting ([#31](https://github.com/terraform-providers/terraform-provider-skytap/issues/31))
 * `skytap_vm` VM supports to configure user data ([#46](https://github.com/terraform-providers/terraform-provider-skytap/issues/46))
  
-
-
 ## 0.12.0 (January 13, 2020)
 
 NOTES
