@@ -1,3 +1,3 @@
 package skytap
 
-const userAgentVersion = "0.12.0"
+const userAgentVersion = "0.12.1"

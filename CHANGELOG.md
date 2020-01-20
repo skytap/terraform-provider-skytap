@@ -1,4 +1,13 @@
-## 0.13.0 (Unreleased)
+## 0.12.1 (Unreleased)
+
+FEATURES:
+* New Resource: `skytap_label_category` that supports the creation of label categories used for reporting ([#31](https://github.com/terraform-providers/terraform-provider-skytap/issues/31))
+* New Resource `skytap_icnr_tunnel` enable the configuration of inter-configuration network routing between environments ([#49](https://github.com/terraform-providers/terraform-provider-skytap/issues/49))
+* `skytap_environment` environment supports tags and labels, enabling usage reporting ([#31](https://github.com/terraform-providers/terraform-provider-skytap/issues/31))
+* `skytap_environment` environment supports to configure user data ([#46](https://github.com/terraform-providers/terraform-provider-skytap/issues/46))
+* `skytap_vm` VMs supports for labels, enabling usage reporting ([#31](https://github.com/terraform-providers/terraform-provider-skytap/issues/31))
+* `skytap_vm` VM supports to configure user data ([#46](https://github.com/terraform-providers/terraform-provider-skytap/issues/46))
+ 
 ## 0.12.0 (January 13, 2020)
 
 NOTES
