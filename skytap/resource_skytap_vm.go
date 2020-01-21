@@ -441,7 +441,9 @@ func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
 	opts.Hardware = hardware
 
 	var vmDisks *schema.Set
-	if d.HasChange("name") || d.HasChange("ram") || d.HasChange("cpus") || d.HasChange("os_disk_size") {
+	if d.HasChange("disk") || d.HasChange("name") || d.HasChange("ram") ||
+		d.HasChange("cpus") || d.HasChange("os_disk_size") {
+
 		log.Printf("[INFO] VM update: %s", id)
 		log.Printf("[TRACE] VM update options: %v", spew.Sdump(opts))
 		vm, err := client.Update(ctx, environmentID, id, &opts)
@@ -455,6 +457,7 @@ func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
 		// Have to do this here in order to capture `name`
 		vmDisks = flattenDisks(vm.Hardware.Disks)
 
+		d.SetPartial("disk")
 		d.SetPartial("name")
 		d.SetPartial("ram")
 		d.SetPartial("cpus")
