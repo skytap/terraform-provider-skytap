@@ -1,4 +1,4 @@
-## 0.13.0 (Unreleased)
+## 0.13.0 (January 22, 2020)
 
 FEATURES:
 * New Resource: `skytap_label_category` that supports the creation of label categories used for reporting ([#31](https://github.com/terraform-providers/terraform-provider-skytap/issues/31))
