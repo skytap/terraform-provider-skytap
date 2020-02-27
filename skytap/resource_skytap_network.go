@@ -3,6 +3,7 @@ package skytap
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -17,6 +18,12 @@ func resourceSkytapNetwork() *schema.Resource {
 		Read:   resourceSkytapNetworkRead,
 		Update: resourceSkytapNetworkUpdate,
 		Delete: resourceSkytapNetworkDelete,
+
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
+		},
 
 		Schema: map[string]*schema.Schema{
 			"environment_id": {
@@ -62,7 +69,8 @@ func resourceSkytapNetwork() *schema.Resource {
 
 func resourceSkytapNetworkCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*SkytapClient).networksClient
-	ctx := meta.(*SkytapClient).StopContext
+	ctx, cancel := stopContextForCreate(d, meta.(*SkytapClient))
+	defer cancel()
 
 	environmentID := d.Get("environment_id").(string)
 	name := d.Get("name").(string)
@@ -98,7 +106,7 @@ func resourceSkytapNetworkCreate(d *schema.ResourceData, meta interface{}) error
 	log.Printf("[INFO] network created: %s", *network.ID)
 	log.Printf("[TRACE] network created: %v", spew.Sdump(network))
 
-	if err = waitForEnvironmentReady(d, meta, environmentID); err != nil {
+	if err = waitForEnvironmentReady(ctx, d, meta, environmentID, schema.TimeoutCreate); err != nil {
 		return err
 	}
 
@@ -107,7 +115,8 @@ func resourceSkytapNetworkCreate(d *schema.ResourceData, meta interface{}) error
 
 func resourceSkytapNetworkRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*SkytapClient).networksClient
-	ctx := meta.(*SkytapClient).StopContext
+	ctx, cancel := stopContextForRead(d, meta.(*SkytapClient))
+	defer cancel()
 
 	environmentID := d.Get("environment_id").(string)
 	id := d.Id()
@@ -139,7 +148,8 @@ func resourceSkytapNetworkRead(d *schema.ResourceData, meta interface{}) error {
 
 func resourceSkytapNetworkUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*SkytapClient).networksClient
-	ctx := meta.(*SkytapClient).StopContext
+	ctx, cancel := stopContextForUpdate(d, meta.(*SkytapClient))
+	defer cancel()
 
 	id := d.Id()
 
@@ -170,7 +180,7 @@ func resourceSkytapNetworkUpdate(d *schema.ResourceData, meta interface{}) error
 	log.Printf("[INFO] network updated: %s", id)
 	log.Printf("[TRACE] network updated: %v", spew.Sdump(network))
 
-	if err = waitForEnvironmentReady(d, meta, environmentID); err != nil {
+	if err = waitForEnvironmentReady(ctx, d, meta, environmentID, schema.TimeoutUpdate); err != nil {
 		return err
 	}
 
@@ -179,7 +189,8 @@ func resourceSkytapNetworkUpdate(d *schema.ResourceData, meta interface{}) error
 
 func resourceSkytapNetworkDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*SkytapClient).networksClient
-	ctx := meta.(*SkytapClient).StopContext
+	ctx, cancel := stopContextForDelete(d, meta.(*SkytapClient))
+	defer cancel()
 
 	environmentID := d.Get("environment_id").(string)
 	id := d.Id()
@@ -194,7 +205,7 @@ func resourceSkytapNetworkDelete(d *schema.ResourceData, meta interface{}) error
 
 		return fmt.Errorf("error deleting network (%s): %v", id, err)
 	}
-	if err = waitForEnvironmentReady(d, meta, environmentID); err != nil {
+	if err = waitForEnvironmentReady(ctx, d, meta, environmentID, schema.TimeoutDelete); err != nil {
 		return err
 	}
 

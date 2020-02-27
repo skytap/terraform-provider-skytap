@@ -16,7 +16,8 @@ type Settings struct {
 	baseURL   string
 	userAgent string
 
-	credentials CredentialsProvider
+	credentials   CredentialsProvider
+	maxRetryCount int
 }
 
 // Validate the settings
@@ -57,6 +58,7 @@ type ClientSetting interface {
 
 type withBaseURL string
 type withUserAgent string
+type withMaxRetryCount int
 type withCredentialsProvider struct{ cp CredentialsProvider }
 
 func (w withBaseURL) Apply(s *Settings) {
@@ -65,6 +67,10 @@ func (w withBaseURL) Apply(s *Settings) {
 
 func (w withUserAgent) Apply(s *Settings) {
 	s.userAgent = string(w)
+}
+
+func (w withMaxRetryCount) Apply(s *Settings) {
+	s.maxRetryCount = int(w)
 }
 
 func (w withCredentialsProvider) Apply(s *Settings) {
@@ -79,6 +85,10 @@ func WithBaseURL(BaseURL string) ClientSetting {
 // WithUserAgent accepts a user agent
 func WithUserAgent(UserAgent string) ClientSetting {
 	return withUserAgent(UserAgent)
+}
+
+func WithMaxRetryCount(retryCount int) ClientSetting {
+	return withMaxRetryCount(retryCount)
 }
 
 // WithCredentialsProvider accepts an abstracted set of credentials

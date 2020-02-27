@@ -170,7 +170,11 @@ func NewClient(settings Settings) (*Client, error) {
 	client.ICNRTunnel = &ICNRTunnelClient{&client}
 
 	client.retryAfter = defRetryAfter
+
 	client.retryCount = defRetryCount
+	if settings.maxRetryCount > 0 {
+		client.retryCount = settings.maxRetryCount
+	}
 
 	return &client, nil
 }
@@ -218,7 +222,11 @@ func (c *Client) newRequest(ctx context.Context, method, path string, body inter
 func (c *Client) do(ctx context.Context, req *http.Request, v interface{}, state *environmentVMRunState, payload responseComparator) (*http.Response, error) {
 	if req.Method == http.MethodPost || req.Method == http.MethodPut || req.Method == http.MethodDelete {
 		for i := 0; i < c.retryCount; i++ {
-			err := c.checkResourceStateUntilSatisfied(ctx, req, state)
+			// If the context has already been cancelled, then give up retrying early
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			err := c.checkResourceStateUntilSatisfied(ctx, state)
 			if err != nil {
 				return nil, err
 			}
@@ -274,6 +282,10 @@ func (c *Client) requestPutPostDelete(ctx context.Context, req *http.Request, st
 		}
 		if payload != nil {
 			for i := 0; i < c.retryCount; i++ {
+				// If the context has already been cancelled, then give up retrying early
+				if err := ctx.Err(); err != nil {
+					return nil, false, err
+				}
 				if message, ok := payload.compareResponse(ctx, c, v, state); !ok {
 					c.backoff("response check", fmt.Sprintf("%d", code), message, c.retryAfter)
 				} else {
@@ -403,10 +415,14 @@ func (c *Client) buildErrorResponse(r *http.Response) error {
 	return errorResponse
 }
 
-func (c *Client) checkResourceStateUntilSatisfied(ctx context.Context, req *http.Request, state *environmentVMRunState) error {
+func (c *Client) checkResourceStateUntilSatisfied(ctx context.Context, state *environmentVMRunState) error {
 	runStateCheck := c.requiresChecking(state)
 	if runStateCheck > noRunStateCheck {
 		for i := 0; i < c.retryCount; i++ {
+			// If the context has already been cancelled, then give up retrying early
+			if err := ctx.Err(); err != nil {
+				return err
+			}
 			var ok bool
 			var err error
 			if runStateCheck == envRunStateCheck {

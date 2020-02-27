@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -18,6 +19,12 @@ func resourceSkytapProject() *schema.Resource {
 		Read:   resourceSkytapProjectRead,
 		Update: resourceSkytapProjectUpdate,
 		Delete: resourceSkytapProjectDelete,
+
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
+		},
 
 		Schema: map[string]*schema.Schema{
 			"name": {
@@ -49,7 +56,8 @@ func resourceSkytapProject() *schema.Resource {
 
 func resourceSkytapProjectCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*SkytapClient).projectsClient
-	ctx := meta.(*SkytapClient).StopContext
+	ctx, cancel := stopContextForCreate(d, meta.(*SkytapClient))
+	defer cancel()
 
 	name := d.Get("name").(string)
 	showProjectMembers := d.Get("show_project_members").(bool)
@@ -89,7 +97,8 @@ func resourceSkytapProjectCreate(d *schema.ResourceData, meta interface{}) error
 
 func resourceSkytapProjectRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*SkytapClient).projectsClient
-	ctx := meta.(*SkytapClient).StopContext
+	ctx, cancel := stopContextForRead(d, meta.(*SkytapClient))
+	defer cancel()
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -121,7 +130,8 @@ func resourceSkytapProjectRead(d *schema.ResourceData, meta interface{}) error {
 
 func resourceSkytapProjectUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*SkytapClient).projectsClient
-	ctx := meta.(*SkytapClient).StopContext
+	ctx, cancel := stopContextForUpdate(d, meta.(*SkytapClient))
+	defer cancel()
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -160,7 +170,8 @@ func resourceSkytapProjectUpdate(d *schema.ResourceData, meta interface{}) error
 
 func resourceSkytapProjectDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*SkytapClient).projectsClient
-	ctx := meta.(*SkytapClient).StopContext
+	ctx, cancel := stopContextForDelete(d, meta.(*SkytapClient))
+	defer cancel()
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {

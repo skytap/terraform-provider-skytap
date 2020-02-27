@@ -14,6 +14,8 @@ type Config struct {
 	APIToken string
 }
 
+var maxInt = 1<<31 - 1
+
 // SkytapClient is the Skytap client implementation
 type SkytapClient struct {
 	StopContext context.Context
@@ -66,7 +68,8 @@ func (c *Config) createClient() (*skytap.Client, error) {
 
 	return skytap.NewClient(skytap.NewDefaultSettings(
 		skytap.WithCredentialsProvider(credentialsProvider),
-		skytap.WithUserAgent(userAgent)))
+		skytap.WithUserAgent(userAgent),
+		skytap.WithMaxRetryCount(maxInt)))
 }
 
 func getUserAgent() (string, error) {

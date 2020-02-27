@@ -79,6 +79,22 @@ func TestAccSkytapVM_Basic(t *testing.T) {
 	})
 }
 
+func TestAccSkytapVM_Timeout(t *testing.T) {
+	templateID, vmID, newEnvTemplateID := setupEnvironment()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccSkytapVMConfig_basic(newEnvTemplateID, acctest.RandInt(), "", templateID, vmID, "name = \"test\"", "", `timeouts { create = "60s" }`),
+				ExpectError: regexp.MustCompile(".*?context deadline exceeded.*?"),
+			},
+		},
+	})
+}
+
 func TestAccSkytapVM_Update(t *testing.T) {
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
@@ -944,13 +960,13 @@ func TestAccSkytapVM_UserData(t *testing.T) {
 		cat /proc/cpu_info
 	EOF
 	`
-	userDataRe, _ := regexp.Compile("\\s*cat \\/proc\\/cpu_info\\n")
+	userDataRe, _ := regexp.Compile("\\s*cat /proc/cpu_info\\n")
 
 	userDataUpdated := `user_data = <<EOF
 		less /proc/cpu_info
 	EOF
 	`
-	userDataUpdatedRe, _ := regexp.Compile("\\s*less \\/proc\\/cpu_info\\n")
+	userDataUpdatedRe, _ := regexp.Compile("\\s*less /proc/cpu_info\\n")
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },

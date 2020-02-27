@@ -36,7 +36,8 @@ func dataSourceSkytapTemplate() *schema.Resource {
 
 func dataSourceSkytapTemplateRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*SkytapClient).templatesClient
-	ctx := meta.(*SkytapClient).StopContext
+	ctx, cancel := stopContextForRead(d, meta.(*SkytapClient))
+	defer cancel()
 
 	log.Printf("[INFO] preparing arguments for finding the Skytap Template")
 
