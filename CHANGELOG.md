@@ -1,4 +1,4 @@
-## 0.14.0 (Unreleased)
+## 0.14.0 (March 26, 2020)
 
 FEATURES:
 * Allow the configuration of creation, update and deletion timeouts for all resources ([#65](https://github.com/terraform-providers/terraform-provider-skytap/pull/65))
