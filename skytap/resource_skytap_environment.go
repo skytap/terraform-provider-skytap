@@ -1,6 +1,7 @@
 package skytap
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -19,6 +20,12 @@ func resourceSkytapEnvironment() *schema.Resource {
 		Read:   resourceSkytapEnvironmentRead,
 		Update: resourceSkytapEnvironmentUpdate,
 		Delete: resourceSkytapEnvironmentDelete,
+
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
+		},
 
 		Schema: map[string]*schema.Schema{
 			"template_id": {
@@ -118,7 +125,8 @@ func resourceSkytapEnvironment() *schema.Resource {
 
 func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*SkytapClient).environmentsClient
-	ctx := meta.(*SkytapClient).StopContext
+	ctx, cancel := stopContextForCreate(d, meta.(*SkytapClient))
+	defer cancel()
 
 	templateID := d.Get("template_id").(string)
 	name := d.Get("name").(string)
@@ -183,7 +191,7 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 	stateConf := &resource.StateChangeConf{
 		Pending:    environmentPendingCreateRunstates,
 		Target:     environmentTargetCreateRunstates,
-		Refresh:    environmentCreateRunstateRefreshFunc(d, meta),
+		Refresh:    environmentCreateRunstateRefreshFunc(ctx, d, meta),
 		Timeout:    d.Timeout(schema.TimeoutUpdate),
 		MinTimeout: minTimeout * time.Second,
 		Delay:      delay * time.Second,
@@ -200,7 +208,8 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 
 func resourceSkytapEnvironmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*SkytapClient).environmentsClient
-	ctx := meta.(*SkytapClient).StopContext
+	ctx, cancel := stopContextForRead(d, meta.(*SkytapClient))
+	defer cancel()
 
 	id := d.Id()
 
@@ -256,7 +265,8 @@ func resourceSkytapEnvironmentRead(d *schema.ResourceData, meta interface{}) err
 
 func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*SkytapClient).environmentsClient
-	ctx := meta.(*SkytapClient).StopContext
+	ctx, cancel := stopContextForUpdate(d, meta.(*SkytapClient))
+	defer cancel()
 
 	id := d.Id()
 
@@ -301,7 +311,7 @@ func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) e
 
 	log.Printf("[INFO] environment updated: %s", id)
 	log.Printf("[TRACE] environment updated: %v", spew.Sdump(environment))
-	if err = waitForEnvironmentReady(d, meta, *environment.ID); err != nil {
+	if err = waitForEnvironmentReady(ctx, d, meta, *environment.ID, schema.TimeoutUpdate); err != nil {
 		return err
 	}
 
@@ -361,12 +371,12 @@ func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) e
 	return resourceSkytapEnvironmentRead(d, meta)
 }
 
-func waitForEnvironmentReady(d *schema.ResourceData, meta interface{}, environmentID string) error {
+func waitForEnvironmentReady(ctx context.Context, d *schema.ResourceData, meta interface{}, environmentID string, schemaTimeout string) error {
 	stateConf := &resource.StateChangeConf{
 		Pending:    environmentPendingUpdateRunstates,
 		Target:     environmentTargetUpdateRunstates,
-		Refresh:    environmentUpdateRunstateRefreshFunc(meta, environmentID),
-		Timeout:    d.Timeout(schema.TimeoutUpdate),
+		Refresh:    environmentUpdateRunstateRefreshFunc(ctx, meta, environmentID),
+		Timeout:    d.Timeout(schemaTimeout),
 		MinTimeout: minTimeout * time.Second,
 		Delay:      delay * time.Second,
 	}
@@ -381,7 +391,8 @@ func waitForEnvironmentReady(d *schema.ResourceData, meta interface{}, environme
 
 func resourceSkytapEnvironmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*SkytapClient).environmentsClient
-	ctx := meta.(*SkytapClient).StopContext
+	ctx, cancel := stopContextForDelete(d, meta.(*SkytapClient))
+	defer cancel()
 
 	id := d.Id()
 
@@ -401,7 +412,7 @@ func resourceSkytapEnvironmentDelete(d *schema.ResourceData, meta interface{}) e
 	stateConf := &resource.StateChangeConf{
 		Pending:    []string{"false"},
 		Target:     []string{"true"},
-		Refresh:    environmentDeleteRefreshFunc(d, meta),
+		Refresh:    environmentDeleteRefreshFunc(ctx, d, meta),
 		Timeout:    d.Timeout(schema.TimeoutUpdate),
 		MinTimeout: minTimeout * time.Second,
 		Delay:      delay * time.Second,
@@ -435,10 +446,9 @@ var environmentTargetUpdateRunstates = []string{
 }
 
 func environmentCreateRunstateRefreshFunc(
-	d *schema.ResourceData, meta interface{}) resource.StateRefreshFunc {
+	ctx context.Context, d *schema.ResourceData, meta interface{}) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		client := meta.(*SkytapClient).environmentsClient
-		ctx := meta.(*SkytapClient).StopContext
 
 		id := d.Id()
 
@@ -463,10 +473,9 @@ func environmentCreateRunstateRefreshFunc(
 	}
 }
 
-func environmentUpdateRunstateRefreshFunc(meta interface{}, environmentID string) resource.StateRefreshFunc {
+func environmentUpdateRunstateRefreshFunc(ctx context.Context, meta interface{}, environmentID string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		client := meta.(*SkytapClient).environmentsClient
-		ctx := meta.(*SkytapClient).StopContext
 
 		log.Printf("[DEBUG] retrieving environment: %s", environmentID)
 		environment, err := client.Get(ctx, environmentID)
@@ -482,10 +491,9 @@ func environmentUpdateRunstateRefreshFunc(meta interface{}, environmentID string
 }
 
 func environmentDeleteRefreshFunc(
-	d *schema.ResourceData, meta interface{}) resource.StateRefreshFunc {
+	ctx context.Context, d *schema.ResourceData, meta interface{}) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		client := meta.(*SkytapClient).environmentsClient
-		ctx := meta.(*SkytapClient).StopContext
 
 		id := d.Id()
 

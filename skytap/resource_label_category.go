@@ -9,6 +9,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-skytap/skytap/utils"
 	"log"
 	"strconv"
+	"time"
 )
 
 func resourceSkytapLabelCategory() *schema.Resource {
@@ -16,6 +17,12 @@ func resourceSkytapLabelCategory() *schema.Resource {
 		Create: resourceSkytapLabelCategoryCreate,
 		Read:   resourceSkytapLabelCategoryRead,
 		Delete: resourceSkytapLabelCategoryDelete,
+
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
+		},
 
 		Schema: map[string]*schema.Schema{
 			"name": {
@@ -42,7 +49,8 @@ func resourceSkytapLabelCategory() *schema.Resource {
 
 func resourceSkytapLabelCategoryCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*SkytapClient).labelCategoryClient
-	ctx := meta.(*SkytapClient).StopContext
+	ctx, cancel := stopContextForCreate(d, meta.(*SkytapClient))
+	defer cancel()
 
 	name := d.Get("name").(string)
 	singleValue := d.Get("single_value").(bool)
@@ -66,7 +74,8 @@ func resourceSkytapLabelCategoryCreate(d *schema.ResourceData, meta interface{})
 
 func resourceSkytapLabelCategoryRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*SkytapClient).labelCategoryClient
-	ctx := meta.(*SkytapClient).StopContext
+	ctx, cancel := stopContextForRead(d, meta.(*SkytapClient))
+	defer cancel()
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -101,7 +110,8 @@ func resourceSkytapLabelCategoryRead(d *schema.ResourceData, meta interface{}) e
 
 func resourceSkytapLabelCategoryDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*SkytapClient).labelCategoryClient
-	ctx := meta.(*SkytapClient).StopContext
+	ctx, cancel := stopContextForDelete(d, meta.(*SkytapClient))
+	defer cancel()
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {

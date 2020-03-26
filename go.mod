@@ -1,12 +1,18 @@
 module github.com/terraform-providers/terraform-provider-skytap
 
 require (
+	github.com/apparentlymart/go-dump v0.0.0-20190214190832-042adf3cf4a0 // indirect
+	github.com/aws/aws-sdk-go v1.25.3 // indirect
 	github.com/davecgh/go-spew v1.1.1
-	github.com/hashicorp/terraform v0.12.18 // indirect
+	github.com/google/go-cmp v0.3.1 // indirect
 	github.com/hashicorp/terraform-plugin-sdk v1.1.0
+	github.com/mattn/go-colorable v0.1.1 // indirect
 
-	github.com/skytap/skytap-sdk-go v0.0.0-20200117145252-6ec8b61417e2
+	github.com/skytap/skytap-sdk-go v0.0.0-20200326114958-9341ee33a77e
 	github.com/stretchr/testify v1.3.0
+	github.com/vmihailenco/msgpack v4.0.1+incompatible // indirect
+	golang.org/x/net v0.0.0-20191009170851-d66e71096ffb // indirect
+	golang.org/x/sys v0.0.0-20190804053845-51ab0e2deafa // indirect
 )
 
 go 1.13

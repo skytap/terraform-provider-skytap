@@ -1,6 +1,7 @@
 package skytap
 
 import (
+	"context"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
@@ -64,4 +65,24 @@ func providerConfigure(p *schema.Provider) schema.ConfigureFunc {
 
 		return client, nil
 	}
+}
+
+func stopContextForCreate(d *schema.ResourceData, client *SkytapClient) (context.Context, context.CancelFunc) {
+	ctx := client.StopContext
+	return context.WithTimeout(ctx, d.Timeout(schema.TimeoutCreate))
+}
+
+func stopContextForRead(d *schema.ResourceData, client *SkytapClient) (context.Context, context.CancelFunc) {
+	ctx := client.StopContext
+	return context.WithTimeout(ctx, d.Timeout(schema.TimeoutRead))
+}
+
+func stopContextForUpdate(d *schema.ResourceData, client *SkytapClient) (context.Context, context.CancelFunc) {
+	ctx := client.StopContext
+	return context.WithTimeout(ctx, d.Timeout(schema.TimeoutUpdate))
+}
+
+func stopContextForDelete(d *schema.ResourceData, client *SkytapClient) (context.Context, context.CancelFunc) {
+	ctx := client.StopContext
+	return context.WithTimeout(ctx, d.Timeout(schema.TimeoutDelete))
 }

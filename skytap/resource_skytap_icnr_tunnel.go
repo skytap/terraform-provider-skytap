@@ -5,6 +5,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/terraform-providers/terraform-provider-skytap/skytap/utils"
 	"log"
+	"time"
 )
 
 func resourceSkytapICNRTunnel() *schema.Resource {
@@ -12,6 +13,12 @@ func resourceSkytapICNRTunnel() *schema.Resource {
 		Create: resourceSkytapICNRTunnelCreate,
 		Read:   resourceSkytapICNRTunnelRead,
 		Delete: resourceSkytapICNRTunnelDelete,
+
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
+		},
 
 		Schema: map[string]*schema.Schema{
 			"source": {
@@ -30,7 +37,8 @@ func resourceSkytapICNRTunnel() *schema.Resource {
 
 func resourceSkytapICNRTunnelCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*SkytapClient).icnrTunnelClient
-	ctx := meta.(*SkytapClient).StopContext
+	ctx, cancel := stopContextForCreate(d, meta.(*SkytapClient))
+	defer cancel()
 
 	source := d.Get("source").(int)
 	target := d.Get("target").(int)
@@ -47,7 +55,8 @@ func resourceSkytapICNRTunnelCreate(d *schema.ResourceData, meta interface{}) er
 
 func resourceSkytapICNRTunnelRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*SkytapClient).icnrTunnelClient
-	ctx := meta.(*SkytapClient).StopContext
+	ctx, cancel := stopContextForRead(d, meta.(*SkytapClient))
+	defer cancel()
 
 	id := d.Id()
 	_, err := client.Get(ctx, id)
@@ -64,7 +73,8 @@ func resourceSkytapICNRTunnelRead(d *schema.ResourceData, meta interface{}) erro
 
 func resourceSkytapICNRTunnelDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*SkytapClient).icnrTunnelClient
-	ctx := meta.(*SkytapClient).StopContext
+	ctx, cancel := stopContextForDelete(d, meta.(*SkytapClient))
+	defer cancel()
 
 	log.Printf("[INFO] destroying ICNR tunnel: %s", d.Id())
 	err := client.Delete(ctx, d.Id())
