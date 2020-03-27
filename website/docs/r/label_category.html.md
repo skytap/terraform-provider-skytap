@@ -34,6 +34,14 @@ The following arguments are supported:
 * `name` - (Required) User-defined label category name.
 * `single_value` - (Required) With single value labels can have only one value for a category, with false labels can have multiple values.
 
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 10 mins) Used when creating the category
+* `update` - (Defaults to 10 mins) Used when updating the category
+* `delete` - (Defaults to 10 mins) Used when destroying the category
+
 ## Attributes Reference
 
 The following attributes are exported:

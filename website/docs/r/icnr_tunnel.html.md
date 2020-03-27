@@ -58,6 +58,14 @@ The following arguments are supported:
 * `source` - (Required, Force New) Source network from where the connection was initiated. This network does not need to be “tunnelable” (visible to other networks).
 * `target` - (Required, Force New) Target network to which the connection was made. The network needs to be “tunnelable” (visible to other networks)
 
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 10 mins) Used when creating the tunnel
+* `update` - (Defaults to 10 mins) Used when updating the tunnel
+* `delete` - (Defaults to 10 mins) Used when destroying the tunnel
+
 ## Attributes Reference
 
 The following attributes are exported:
