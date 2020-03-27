@@ -44,6 +44,14 @@ The following arguments are supported:
 * `gateway` - (Optional, Computed) Gateway IP address.
 * `tunnelable` - (Optional) If true, this network can be connected to other networks.
 
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration/resources.html#operation-timeouts) for certain operations:
+
+* `create` - (Defaults to 10 mins) Used when creating the network
+* `update` - (Defaults to 10 mins) Used when updating the network
+* `delete` - (Defaults to 10 mins) Used when destroying the network
+
 ## Attributes Reference
 
 The following attributes are exported:

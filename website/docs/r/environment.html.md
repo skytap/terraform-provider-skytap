@@ -58,6 +58,14 @@ The `label` block supports:
 
 ~> **NOTE:** If `suspend_on_idle` and `suspend_at_time` are both null, automatic suspend is disabled. If multiple suspend or shut down options are sent in the same request, the `suspend_type` field determines which setting Skytap Cloud will honor.
 
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration/resources.html#operation-timeouts) for certain operations:
+
+* `create` - (Defaults to 10 mins) Used when creating the environment
+* `update` - (Defaults to 10 mins) Used when updating the environment
+* `delete` - (Defaults to 10 mins) Used when destroying the environment
+
 ## Attributes Reference
 
 The following attributes are exported:
