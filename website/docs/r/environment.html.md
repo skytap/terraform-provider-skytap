@@ -60,7 +60,7 @@ The `label` block supports:
 
 ### Timeouts
 
-The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration/resources.html#operation-timeouts) for certain operations:
 
 * `create` - (Defaults to 10 mins) Used when creating the environment
 * `update` - (Defaults to 10 mins) Used when updating the environment
