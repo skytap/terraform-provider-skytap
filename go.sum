@@ -180,8 +180,8 @@ github.com/posener/complete v1.2.1 h1:LrvDIY//XNo65Lq84G/akBuMGlawHvGBABv8f/ZN6D
 github.com/posener/complete v1.2.1/go.mod h1:6gapUrK/U1TAN7ciCoNRIdVC5sbdBTUh1DKN0g6uH7E=
 github.com/sergi/go-diff v1.0.0 h1:Kpca3qRNrduNnOQeazBd0ysaKrUJiIuISHxogkT9RPQ=
 github.com/sergi/go-diff v1.0.0/go.mod h1:0CfEIISq7TuYL3j771MWULgwwjU+GofnZX9QAmXWZgo=
-github.com/skytap/skytap-sdk-go v0.0.0-20200326114958-9341ee33a77e h1:m6kWqvAAhNcPV8gmPIDWrL48SHCHTF2oUU0xYLTwRpk=
-github.com/skytap/skytap-sdk-go v0.0.0-20200326114958-9341ee33a77e/go.mod h1:V1HX7VGGylkRYjgyftn7vnOUZ7yOnTfwKsoZUHLkk1w=
+github.com/skytap/skytap-sdk-go v0.0.0-20200416085108-e442918ac42d h1:0tvtRktKLxPSXKy8jnGuV8/qYF/wQKwhPyDYp2FaQsM=
+github.com/skytap/skytap-sdk-go v0.0.0-20200416085108-e442918ac42d/go.mod h1:V1HX7VGGylkRYjgyftn7vnOUZ7yOnTfwKsoZUHLkk1w=
 github.com/spf13/afero v1.2.2 h1:5jhuqJyZCZf2JRofRvN/nIFgIWNzPa3/Vz8mYylgbWc=
 github.com/spf13/afero v1.2.2/go.mod h1:9ZxEEn6pIJ8Rxe320qSDBk6AsU0r9pR7Q4OcevTdifk=
 github.com/spf13/pflag v1.0.2/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=

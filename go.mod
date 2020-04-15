@@ -7,8 +7,7 @@ require (
 	github.com/google/go-cmp v0.3.1 // indirect
 	github.com/hashicorp/terraform-plugin-sdk v1.1.0
 	github.com/mattn/go-colorable v0.1.1 // indirect
-
-	github.com/skytap/skytap-sdk-go v0.0.0-20200326114958-9341ee33a77e
+	github.com/skytap/skytap-sdk-go v0.0.0-20200416085108-e442918ac42d
 	github.com/stretchr/testify v1.3.0
 	github.com/vmihailenco/msgpack v4.0.1+incompatible // indirect
 	golang.org/x/net v0.0.0-20191009170851-d66e71096ffb // indirect

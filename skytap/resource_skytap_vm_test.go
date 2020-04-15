@@ -627,7 +627,7 @@ func TestAccSkytapVMCPURAM_Invalid(t *testing.T) {
 }
 
 func TestAccSkytapVMCPU_OutOfRange(t *testing.T) {
-	templateID, vmID, newEnvTemplateID := setupNonDefaultEnvironment("SKYTAP_TEMPLATE_OUTOFRANGE_ID", "136409", "SKYTAP_VM_OUTOFRANGE_ID", "849656")
+	templateID, vmID, newEnvTemplateID := setupNonDefaultEnvironment("SKYTAP_TEMPLATE_OUTOFRANGE_ID", "1877151", "SKYTAP_VM_OUTOFRANGE_ID", "66413705")
 	uniqueSuffixEnv := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
@@ -646,7 +646,7 @@ func TestAccSkytapVMCPU_OutOfRange(t *testing.T) {
 }
 
 func TestAccSkytapVMCPU_OutOfRangeAfterUpdate(t *testing.T) {
-	templateID, vmID, newEnvTemplateID := setupNonDefaultEnvironment("SKYTAP_TEMPLATE_OUTOFRANGE_ID", "136409", "SKYTAP_VM_OUTOFRANGE_ID", "849656")
+	templateID, vmID, newEnvTemplateID := setupNonDefaultEnvironment("SKYTAP_TEMPLATE_OUTOFRANGE_ID", "1877151", "SKYTAP_VM_OUTOFRANGE_ID", "66413705")
 	uniqueSuffixEnv := acctest.RandInt()
 
 	resource.Test(t, resource.TestCase{
@@ -710,7 +710,7 @@ func TestAccSkytapVMDisks_Create(t *testing.T) {
 								size = 2048
 								name = "smaller2"  # stays the same
 							  }
-
+			
 							  disk {
 								size = 2049
 								name = "bigger2" # new

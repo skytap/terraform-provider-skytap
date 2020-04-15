@@ -398,6 +398,17 @@ func mostRecentVM(environment *Environment) (*VM, error) {
 	return &vms[0], nil
 }
 
+// updateHardware will update the VM to the specified hardware settings provided in the opts struct.
+//
+// This function proceed in the following order:
+// 1. Stop the VM if running
+// 2. Create and Update (resize) disks and VM settings. This is only executed if there are changes to be made
+// 3. Remove disks from the VM
+// 4. Restart the VM if it was previously running
+//
+// The result will be the new VM struct with the new hardware
+//
+// Important to note is that this function will change the opts passed in
 func (s *VMsServiceClient) updateHardware(ctx context.Context, environmentID string, id string, opts *UpdateVMRequest) (*VM, error) {
 	path := s.buildPath(false, environmentID, id)
 
@@ -410,7 +421,7 @@ func (s *VMsServiceClient) updateHardware(ctx context.Context, environmentID str
 	if err != nil {
 		return nil, err
 	}
-	// if started stop
+	// if VM is started, then we stop it
 	runstate := *vm.Runstate
 	if runstate == VMRunstateRunning {
 		_, err = s.changeRunstate(ctx, environmentID, id, &UpdateVMRequest{Runstate: vmRunStateToPtr(VMRunstateStopped)})
@@ -428,9 +439,14 @@ func (s *VMsServiceClient) updateHardware(ctx context.Context, environmentID str
 		opts.Hardware.UpdateDisks = nil
 	}
 
-	state := vmRequestRunStateStopped(environmentID, id)
-	state.diskIdentification = diskIdentification
+	// Let's first create new disks, update the current ones or change VM settings
 	if opts.Hardware.UpdateDisks != nil || opts.Hardware.RAM != nil || opts.Hardware.CPUs != nil || opts.Name != nil {
+		state := vmRequestRunStateStopped(environmentID, id)
+		// We need to add the removed disks to the list of disks otherwise
+		// buildVMNewDisks() won't be able to calculate the proper list of new disks
+		// causing the program to loop forever
+		state.diskIdentification = addRemovedDisks(diskIdentification, removes)
+
 		requestCreate, err := s.client.newRequest(ctx, "PUT", path, opts)
 		if err != nil {
 			return nil, err
@@ -445,37 +461,25 @@ func (s *VMsServiceClient) updateHardware(ctx context.Context, environmentID str
 			return nil, err
 		}
 	}
+	// Update VM struct to have the correct disk name
 	matchUpExistingDisks(vm, diskIdentification, removes)
 	matchUpNewDisks(vm, diskIdentification, removes)
 
 	disks := vm.Hardware.Disks
 
 	if len(removes) > 0 {
-		// delete phase
-		opts.Hardware.CPUs = nil
-		opts.Hardware.RAM = nil
-		if opts.Hardware.UpdateDisks == nil {
-			opts.Hardware.UpdateDisks = &UpdateDisks{}
-		}
-		opts.Hardware.UpdateDisks.NewDisks = nil
-		opts.Hardware.UpdateDisks.ExistingDisks = removes
-		requestDelete, err := s.client.newRequest(ctx, "PUT", path, opts)
-		if err != nil {
-			return nil, err
-		}
-		_, err = s.client.do(ctx, requestDelete, &vm, state, opts)
-		if err != nil {
-			return nil, err
-		}
+		state := vmRequestRunStateStopped(environmentID, id)
+		state.diskIdentification = diskIdentification
 
-		vm, err = s.Get(ctx, environmentID, id)
+		// delete disk phase, removing all disks only (no other updates to the VM will be performed)
+		vm, err := s.removeDisks(removes, ctx, path, vm, state, environmentID, id)
 		if err != nil {
 			return nil, err
 		}
 		updateFinalDiskList(vm, disks)
 	}
 
-	// if stopped start
+	// if VM was previously running, then we start it again
 	if runstate == VMRunstateRunning {
 		_, err = s.changeRunstate(ctx, environmentID, id, &UpdateVMRequest{Runstate: vmRunStateToPtr(VMRunstateRunning)})
 		if err != nil {
@@ -488,6 +492,30 @@ func (s *VMsServiceClient) updateHardware(ctx context.Context, environmentID str
 		updateFinalDiskList(vm, disks)
 	}
 
+	return vm, nil
+}
+
+func (s *VMsServiceClient) removeDisks(removes map[string]ExistingDisk, ctx context.Context, path string, vm *VM, state *environmentVMRunState, environmentID string, id string) (*VM, error) {
+	removeReq := &UpdateVMRequest{
+		Hardware: &UpdateHardware{
+			UpdateDisks: &UpdateDisks{
+				ExistingDisks: removes,
+			},
+		},
+	}
+	requestDelete, err := s.client.newRequest(ctx, "PUT", path, removeReq)
+	if err != nil {
+		return nil, err
+	}
+	_, err = s.client.do(ctx, requestDelete, &vm, state, removeReq)
+	if err != nil {
+		return nil, err
+	}
+
+	vm, err = s.Get(ctx, environmentID, id)
+	if err != nil {
+		return nil, err
+	}
 	return vm, nil
 }
 
@@ -509,6 +537,24 @@ func (s *VMsServiceClient) changeRunstate(ctx context.Context, environmentID str
 	return &updatedVM, nil
 }
 
+// addRemovedDisks adds all the disks to be removed to the disk identification
+func addRemovedDisks(identification []DiskIdentification, removes map[string]ExistingDisk) []DiskIdentification {
+	newIdentification := make([]DiskIdentification, 0)
+
+	if identification != nil {
+		newIdentification = append(newIdentification, identification...)
+	}
+
+	for id := range removes {
+		newIdentification = append(newIdentification, DiskIdentification{
+			ID: strToPtr(id),
+		})
+	}
+
+	return newIdentification
+}
+
+// matchUpNewDisks updates the VM disk names (ignoring the OS disk, that is, the first disk) for all the disk identifications
 func matchUpExistingDisks(vm *VM, identifications []DiskIdentification, ignored map[string]ExistingDisk) {
 	for idx := range vm.Hardware.Disks {
 		// ignore os disk
@@ -525,6 +571,7 @@ func matchUpExistingDisks(vm *VM, identifications []DiskIdentification, ignored 
 	}
 }
 
+// matchUpNewDisks updates the VM disk names for all the disk identifications that had no ID
 func matchUpNewDisks(vm *VM, identifications []DiskIdentification, ignored map[string]ExistingDisk) {
 	for _, id := range identifications {
 		if id.ID == nil || *id.ID == "" {
@@ -572,6 +619,7 @@ func updateFinalDiskList(vm *VM, disks []Disk) {
 	}
 }
 
+// buildRemoveList creates a list of disks containing the disks from the vm that are not longer referenced in the diskIDs
 func buildRemoveList(vm *VM, diskIDs []DiskIdentification) map[string]ExistingDisk {
 	removes := make(map[string]ExistingDisk, 0)
 	for idx, disk := range vm.Hardware.Disks {
@@ -584,6 +632,7 @@ func buildRemoveList(vm *VM, diskIDs []DiskIdentification) map[string]ExistingDi
 				}
 			}
 			if !found {
+				// Not setting the Size on ExistingDisk will cause the disk to be removed
 				removes[*disk.ID] = ExistingDisk{
 					ID: strToPtr(*disk.ID),
 				}
@@ -593,6 +642,7 @@ func buildRemoveList(vm *VM, diskIDs []DiskIdentification) map[string]ExistingDi
 	return removes
 }
 
+// buildUpdateList creates a list of disks containing all the disks that still referenced in the VM but their size has changed
 func buildUpdateList(vm *VM, diskIDs []DiskIdentification) map[string]ExistingDisk {
 	updates := make(map[string]ExistingDisk, 0)
 	for idx, disk := range vm.Hardware.Disks {
@@ -615,6 +665,7 @@ func buildUpdateList(vm *VM, diskIDs []DiskIdentification) map[string]ExistingDi
 	return updates
 }
 
+// addOSDiskResize changes the size of the first disk (assuming that is the OS disk) in the updates map to the osDiskSize
 func addOSDiskResize(osDiskSize *int, vm *VM, updates map[string]ExistingDisk) {
 	if osDiskSize != nil && (*vm.Hardware.Disks[0].Size) < *osDiskSize {
 		updates[*vm.Hardware.Disks[0].ID] = ExistingDisk{
@@ -677,7 +728,7 @@ func (payload *UpdateVMRequest) buildComparison(vm *VM, diskIdentification []Dis
 		}
 	}
 	if payload.Hardware.CPUs == nil && payload.Hardware.RAM == nil && payload.Hardware.UpdateDisks == nil {
-		payload.Hardware = nil
+		update.Hardware = nil
 	}
 	return update
 }

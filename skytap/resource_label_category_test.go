@@ -98,6 +98,9 @@ func TestAccSkytapLabelCategory_Duplicated(t *testing.T) {
 		}
 		
 		resource skytap_label_category "duplabel2" {
+		  // making sure the first category is created before trying to create the second
+		  // to avoid flakiness.
+          depends_on = [skytap_label_category.duplabel1]
 		  name = "tftest-dup"
 		  single_value = true
 		}
