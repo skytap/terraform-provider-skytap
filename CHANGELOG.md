@@ -1,4 +1,9 @@
-## 0.15.0 (Unreleased)
+## 0.14.1 (Unreleased)
+
+BUG FIXES:
+* `resource/skytap_vm` : Fixed provider panic message when creating a VM with two disks while setting one of those CPU/RAM/Name properties.
+* `resource/skytap_vm` : Fixed provider hanging when new disks are added while old ones are removed.
+
 ## 0.14.0 (March 26, 2020)
 
 FEATURES:
