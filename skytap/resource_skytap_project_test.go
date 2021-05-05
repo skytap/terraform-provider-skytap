@@ -49,10 +49,9 @@ func testSweepSkytapProject(region string) error {
 }
 
 func TestAccSkytapProject_Basic(t *testing.T) {
-	t.Parallel()
 	rInt := acctest.RandInt()
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapProjectDestroy,
