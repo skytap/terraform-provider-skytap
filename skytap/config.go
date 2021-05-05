@@ -1,7 +1,6 @@
 package skytap
 
 import (
-	"context"
 	"fmt"
 	"log"
 
@@ -18,8 +17,6 @@ var maxInt = 1<<31 - 1
 
 // SkytapClient is the Skytap client implementation
 type SkytapClient struct {
-	StopContext context.Context
-
 	projectsClient          skytap.ProjectsService
 	environmentsClient      skytap.EnvironmentsService
 	templatesClient         skytap.TemplatesService

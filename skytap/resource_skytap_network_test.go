@@ -1,14 +1,16 @@
 package skytap
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/skytap/skytap-sdk-go/skytap"
+
 	"github.com/terraform-providers/terraform-provider-skytap/skytap/utils"
 )
 
@@ -30,7 +32,7 @@ func testSweepSkytapNetwork(region string) error {
 	}
 
 	client := meta.environmentsClient
-	ctx := meta.StopContext
+	ctx := context.TODO()
 
 	log.Printf("[INFO] Retrieving list of environments")
 	environments, err := client.List(ctx)
@@ -59,9 +61,9 @@ func TestAccSkytapNetwork_Basic(t *testing.T) {
 	var network skytap.Network
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSkytapNetworkConfig_basic(templateID, uniqueSuffixEnv, uniqueSuffixNet, "skytap.io", "192.168.1.0/24", "", true),
@@ -89,9 +91,9 @@ func TestAccSkytapNetwork_Update(t *testing.T) {
 	var network skytap.Network
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSkytapNetworkConfig_basic(templateID, uniqueSuffixEnv, uniqueSuffixInitial, "skytap.io", "192.168.1.0/24", "gateway = \"192.168.1.1\"", true),
@@ -169,7 +171,7 @@ func getNetwork(rs *terraform.ResourceState, environmentID string) (*skytap.Netw
 	var err error
 	// retrieve the connection established in Provider configuration
 	client := testAccProvider.Meta().(*SkytapClient).networksClient
-	ctx := testAccProvider.Meta().(*SkytapClient).StopContext
+	ctx := context.TODO()
 
 	// Retrieve our network by referencing it's state ID for API lookup
 	network, errClient := client.Get(ctx, environmentID, rs.Primary.ID)

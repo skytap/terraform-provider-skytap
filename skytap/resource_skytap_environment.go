@@ -7,19 +7,20 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/skytap/skytap-sdk-go/skytap"
 	"github.com/terraform-providers/terraform-provider-skytap/skytap/utils"
 )
 
 func resourceSkytapEnvironment() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceSkytapEnvironmentCreate,
-		Read:   resourceSkytapEnvironmentRead,
-		Update: resourceSkytapEnvironmentUpdate,
-		Delete: resourceSkytapEnvironmentDelete,
+		CreateContext: resourceSkytapEnvironmentCreate,
+		ReadContext:   resourceSkytapEnvironmentRead,
+		UpdateContext: resourceSkytapEnvironmentUpdate,
+		DeleteContext: resourceSkytapEnvironmentDelete,
 
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(10 * time.Minute),
@@ -123,10 +124,8 @@ func resourceSkytapEnvironment() *schema.Resource {
 	}
 }
 
-func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceSkytapEnvironmentCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*SkytapClient).environmentsClient
-	ctx, cancel := stopContextForCreate(d, meta.(*SkytapClient))
-	defer cancel()
 
 	templateID := d.Get("template_id").(string)
 	name := d.Get("name").(string)
@@ -176,11 +175,11 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 	log.Printf("[TRACE] environment create options: %v", spew.Sdump(opts))
 	environment, err := client.Create(ctx, &opts)
 	if err != nil {
-		return fmt.Errorf("error creating environment: %v", err)
+		return diag.Errorf("error creating environment: %v", err)
 	}
 
 	if environment.ID == nil {
-		return fmt.Errorf("environment ID is not set")
+		return diag.Errorf("environment ID is not set")
 	}
 	environmentID := *environment.ID
 	d.SetId(environmentID)
@@ -198,18 +197,16 @@ func resourceSkytapEnvironmentCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	log.Printf("[INFO] Waiting for environment (%s) to complete", d.Id())
-	_, err = stateConf.WaitForState()
+	_, err = stateConf.WaitForStateContext(ctx)
 	if err != nil {
-		return fmt.Errorf("error waiting for environment (%s) to complete: %s", d.Id(), err)
+		return diag.Errorf("error waiting for environment (%s) to complete: %s", d.Id(), err)
 	}
 
-	return resourceSkytapEnvironmentRead(d, meta)
+	return resourceSkytapEnvironmentRead(ctx, d, meta)
 }
 
-func resourceSkytapEnvironmentRead(d *schema.ResourceData, meta interface{}) error {
+func resourceSkytapEnvironmentRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*SkytapClient).environmentsClient
-	ctx, cancel := stopContextForRead(d, meta.(*SkytapClient))
-	defer cancel()
 
 	id := d.Id()
 
@@ -222,7 +219,7 @@ func resourceSkytapEnvironmentRead(d *schema.ResourceData, meta interface{}) err
 			return nil
 		}
 
-		return fmt.Errorf("error retrieving environment (%s): %v", id, err)
+		return diag.Errorf("error retrieving environment (%s): %v", id, err)
 	}
 
 	var routable bool
@@ -232,41 +229,69 @@ func resourceSkytapEnvironmentRead(d *schema.ResourceData, meta interface{}) err
 
 	// The templateID is not set as it is used to build the environment and is not returned by the environment response.
 	// If this attribute is changed, this environment will be rebuilt
-	d.Set("name", environment.Name)
-	d.Set("description", environment.Description)
-	d.Set("outbound_traffic", environment.OutboundTraffic)
-	d.Set("routable", routable)
-	d.Set("suspend_on_idle", environment.SuspendOnIdle)
-	d.Set("suspend_at_time", environment.SuspendAtTime)
-	d.Set("shutdown_on_idle", environment.ShutdownOnIdle)
-	d.Set("shutdown_at_time", environment.ShutdownAtTime)
-	d.Set("user_data", environment.UserData)
+	err = d.Set("name", environment.Name)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = d.Set("description", environment.Description)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = d.Set("outbound_traffic", environment.OutboundTraffic)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = d.Set("routable", routable)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = d.Set("suspend_on_idle", environment.SuspendOnIdle)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = d.Set("suspend_at_time", environment.SuspendAtTime)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = d.Set("shutdown_on_idle", environment.ShutdownOnIdle)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = d.Set("shutdown_at_time", environment.ShutdownAtTime)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = d.Set("user_data", environment.UserData)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	if environment.Tags != nil {
 		if err = d.Set("tags", flattenTags(environment.Tags)); err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 	}
 
 	if environment.LabelCount != nil && *environment.LabelCount > 0 {
 		if err = d.Set("label", flattenLabels(environment.Labels)); err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 	} else {
 		emptyLabels := make([]interface{}, 0)
-		d.Set("label", emptyLabels)
+		err = d.Set("label", emptyLabels)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	log.Printf("[INFO] environment retrieved: %s", id)
 	log.Printf("[TRACE] environment retrieved: %v", spew.Sdump(environment))
 
-	return err
+	return nil
 }
 
-func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceSkytapEnvironmentUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*SkytapClient).environmentsClient
-	ctx, cancel := stopContextForUpdate(d, meta.(*SkytapClient))
-	defer cancel()
 
 	id := d.Id()
 
@@ -303,16 +328,15 @@ func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) e
 	log.Printf("[INFO] environment update: %s", id)
 	log.Printf("[TRACE] environment update options: %v", spew.Sdump(opts))
 
-	d.Partial(true)
 	environment, err := client.Update(ctx, id, &opts)
 	if err != nil {
-		return fmt.Errorf("error updating environment (%s): %v", id, err)
+		return diag.Errorf("error updating environment (%s): %v", id, err)
 	}
 
 	log.Printf("[INFO] environment updated: %s", id)
 	log.Printf("[TRACE] environment updated: %v", spew.Sdump(environment))
 	if err = waitForEnvironmentReady(ctx, d, meta, *environment.ID, schema.TimeoutUpdate); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	if d.HasChange("tags") {
@@ -330,17 +354,15 @@ func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) e
 			// No batch removal supported by the api, remove one by one
 			for _, t := range tagsToRemove.List() {
 				if err := client.DeleteTag(ctx, *environment.ID, tagDictionary[t.(string)]); err != nil {
-					return err
+					return diag.FromErr(err)
 				}
 			}
 		}
 
 		tagsToAdd := newTagsSet.Difference(oldTagSet)
 		if err := client.CreateTags(ctx, *environment.ID, environmentCreateTags(tagsToAdd)); err != nil {
-			return err
+			return diag.FromErr(err)
 		}
-
-		d.SetPartial("tags")
 	}
 
 	if d.HasChange("label") {
@@ -351,24 +373,21 @@ func resourceSkytapEnvironmentUpdate(d *schema.ResourceData, meta interface{}) e
 		for _, l := range remove.List() {
 			label := l.(map[string]interface{})
 			if err = client.DeleteLabel(ctx, *environment.ID, label["id"].(string)); err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 		}
 		if err = client.CreateLabels(ctx, *environment.ID, environmentCreateLabels(add)); err != nil {
-			return err
+			return diag.FromErr(err)
 		}
-		d.SetPartial("label")
 	}
 
 	if d.HasChange("user_data") {
 		if err := client.UpdateUserData(ctx, *environment.ID, utils.String(d.Get("user_data").(string))); err != nil {
-			return err
+			return diag.FromErr(err)
 		}
-		d.SetPartial("user_data")
 	}
 
-	d.Partial(false)
-	return resourceSkytapEnvironmentRead(d, meta)
+	return resourceSkytapEnvironmentRead(ctx, d, meta)
 }
 
 func waitForEnvironmentReady(ctx context.Context, d *schema.ResourceData, meta interface{}, environmentID string, schemaTimeout string) error {
@@ -382,17 +401,15 @@ func waitForEnvironmentReady(ctx context.Context, d *schema.ResourceData, meta i
 	}
 
 	log.Printf("[INFO] Waiting for environment (%s) to complete", environmentID)
-	_, err := stateConf.WaitForState()
+	_, err := stateConf.WaitForStateContext(ctx)
 	if err != nil {
 		return fmt.Errorf("error waiting for environment (%s) to complete: %s", environmentID, err)
 	}
 	return nil
 }
 
-func resourceSkytapEnvironmentDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceSkytapEnvironmentDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*SkytapClient).environmentsClient
-	ctx, cancel := stopContextForDelete(d, meta.(*SkytapClient))
-	defer cancel()
 
 	id := d.Id()
 
@@ -404,7 +421,7 @@ func resourceSkytapEnvironmentDelete(d *schema.ResourceData, meta interface{}) e
 			return nil
 		}
 
-		return fmt.Errorf("error deleting environment (%s): %v", id, err)
+		return diag.Errorf("error deleting environment (%s): %v", id, err)
 	}
 
 	log.Printf("[INFO] environment destroyed: %s", id)
@@ -421,10 +438,10 @@ func resourceSkytapEnvironmentDelete(d *schema.ResourceData, meta interface{}) e
 	log.Printf("[INFO] Waiting for environment (%s) to complete", d.Id())
 	_, err = stateConf.WaitForState()
 	if err != nil {
-		return fmt.Errorf("error waiting for environment (%s) to complete: %s", d.Id(), err)
+		return diag.Errorf("error waiting for environment (%s) to complete: %s", d.Id(), err)
 	}
 
-	return err
+	return nil
 }
 
 var environmentPendingCreateRunstates = []string{

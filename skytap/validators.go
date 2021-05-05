@@ -2,12 +2,17 @@ package skytap
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/skytap/skytap-sdk-go/skytap"
 	"strings"
 )
 
+// FIXME: update validators to schema.SchemaValidateDiagFunc when the validation helper package supports it better
+// By this I mean that currently all of the builtin validators require validation.ToDiagFunc() to convert them, but even
+// worse: the validation.All() and validation.Any() functions accept schema.SchemaValidateFunc, which means that all
+// schema.SchemaValidateDiagFuncs have to be converted back to schema.SchemaValidateFuncs in order to work with these
+// aggregate functions.
 func validateNICType() schema.SchemaValidateFunc {
 	return validation.StringInSlice([]string{
 		string(skytap.NICTypeDefault),

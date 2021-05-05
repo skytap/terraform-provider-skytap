@@ -1,14 +1,13 @@
 package skytap
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 const PREFIX = "tftest"
@@ -17,7 +16,7 @@ func TestMain(m *testing.M) {
 	resource.TestMain(m)
 }
 
-func sharedClientForRegion(region string) (*SkytapClient, error) {
+func sharedClientForRegion(_ string) (*SkytapClient, error) {
 	username := os.Getenv("SKYTAP_USERNAME")
 	apiToken := os.Getenv("SKYTAP_API_TOKEN")
 
@@ -35,8 +34,6 @@ func sharedClientForRegion(region string) (*SkytapClient, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	client.StopContext = context.Background()
 
 	return client, nil
 }

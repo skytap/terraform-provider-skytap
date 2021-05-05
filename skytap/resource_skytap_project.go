@@ -1,24 +1,26 @@
 package skytap
 
 import (
-	"fmt"
+	"context"
 	"log"
 	"strconv"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/skytap/skytap-sdk-go/skytap"
+
 	"github.com/terraform-providers/terraform-provider-skytap/skytap/utils"
 )
 
 func resourceSkytapProject() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceSkytapProjectCreate,
-		Read:   resourceSkytapProjectRead,
-		Update: resourceSkytapProjectUpdate,
-		Delete: resourceSkytapProjectDelete,
+		CreateContext: resourceSkytapProjectCreate,
+		ReadContext:   resourceSkytapProjectRead,
+		UpdateContext: resourceSkytapProjectUpdate,
+		DeleteContext: resourceSkytapProjectDelete,
 
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(10 * time.Minute),
@@ -54,10 +56,8 @@ func resourceSkytapProject() *schema.Resource {
 	}
 }
 
-func resourceSkytapProjectCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceSkytapProjectCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*SkytapClient).projectsClient
-	ctx, cancel := stopContextForCreate(d, meta.(*SkytapClient))
-	defer cancel()
 
 	name := d.Get("name").(string)
 	showProjectMembers := d.Get("show_project_members").(bool)
@@ -80,11 +80,11 @@ func resourceSkytapProjectCreate(d *schema.ResourceData, meta interface{}) error
 	log.Printf("[TRACE] project create options: %v", spew.Sdump(opts))
 	project, err := client.Create(ctx, &opts)
 	if err != nil {
-		return fmt.Errorf("error creating project: %v", err)
+		return diag.Errorf("error creating project: %v", err)
 	}
 
 	if project.ID == nil {
-		return fmt.Errorf("project ID is not set")
+		return diag.Errorf("project ID is not set")
 	}
 	projectID := strconv.Itoa(*project.ID)
 	d.SetId(projectID)
@@ -92,17 +92,15 @@ func resourceSkytapProjectCreate(d *schema.ResourceData, meta interface{}) error
 	log.Printf("[INFO] project created: %d", *project.ID)
 	log.Printf("[TRACE] project created: %v", spew.Sdump(project))
 
-	return resourceSkytapProjectRead(d, meta)
+	return resourceSkytapProjectRead(ctx, d, meta)
 }
 
-func resourceSkytapProjectRead(d *schema.ResourceData, meta interface{}) error {
+func resourceSkytapProjectRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*SkytapClient).projectsClient
-	ctx, cancel := stopContextForRead(d, meta.(*SkytapClient))
-	defer cancel()
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
-		return fmt.Errorf("project (%s) is not an integer: %v", d.Id(), err)
+		return diag.Errorf("project (%s) is not an integer: %v", d.Id(), err)
 	}
 
 	log.Printf("[INFO] retrieving project: %d", id)
@@ -114,28 +112,38 @@ func resourceSkytapProjectRead(d *schema.ResourceData, meta interface{}) error {
 			return nil
 		}
 
-		return fmt.Errorf("error retrieving project (%d): %v", id, err)
+		return diag.Errorf("error retrieving project (%d): %v", id, err)
 	}
 
-	d.Set("name", project.Name)
-	d.Set("summary", project.Summary)
-	d.Set("auto_add_role_name", project.AutoAddRoleName)
-	d.Set("show_project_members", project.ShowProjectMembers)
+	err = d.Set("name", project.Name)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = d.Set("summary", project.Summary)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = d.Set("auto_add_role_name", project.AutoAddRoleName)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = d.Set("show_project_members", project.ShowProjectMembers)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	log.Printf("[INFO] project retrieved: %d", id)
 	log.Printf("[TRACE] project retrieved: %v", spew.Sdump(project))
 
-	return err
+	return nil
 }
 
-func resourceSkytapProjectUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceSkytapProjectUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*SkytapClient).projectsClient
-	ctx, cancel := stopContextForUpdate(d, meta.(*SkytapClient))
-	defer cancel()
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
-		return fmt.Errorf("project (%s) is not an integer: %v", d.Id(), err)
+		return diag.Errorf("project (%s) is not an integer: %v", d.Id(), err)
 	}
 
 	name := d.Get("name").(string)
@@ -159,23 +167,21 @@ func resourceSkytapProjectUpdate(d *schema.ResourceData, meta interface{}) error
 	log.Printf("[TRACE] project update options: %v", spew.Sdump(opts))
 	project, err := client.Update(ctx, id, &opts)
 	if err != nil {
-		return fmt.Errorf("error updating project (%d): %v", id, err)
+		return diag.Errorf("error updating project (%d): %v", id, err)
 	}
 
 	log.Printf("[INFO] project updated: %d", id)
 	log.Printf("[TRACE] project updated: %v", spew.Sdump(project))
 
-	return resourceSkytapProjectRead(d, meta)
+	return resourceSkytapProjectRead(ctx, d, meta)
 }
 
-func resourceSkytapProjectDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceSkytapProjectDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*SkytapClient).projectsClient
-	ctx, cancel := stopContextForDelete(d, meta.(*SkytapClient))
-	defer cancel()
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
-		return fmt.Errorf("project (%s) is not an integer: %v", d.Id(), err)
+		return diag.Errorf("project (%s) is not an integer: %v", d.Id(), err)
 	}
 
 	log.Printf("[INFO] destroying project: %d", id)
@@ -186,10 +192,10 @@ func resourceSkytapProjectDelete(d *schema.ResourceData, meta interface{}) error
 			return nil
 		}
 
-		return fmt.Errorf("error deleting project (%d): %v", id, err)
+		return diag.Errorf("error deleting project (%d): %v", id, err)
 	}
 
 	log.Printf("[INFO] project destroyed: %d", id)
 
-	return err
+	return nil
 }

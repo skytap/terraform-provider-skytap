@@ -1,14 +1,17 @@
 package skytap
 
 import (
+	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/skytap/skytap-sdk-go/skytap"
-	"github.com/terraform-providers/terraform-provider-skytap/skytap/utils"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/skytap/skytap-sdk-go/skytap"
+
+	"github.com/terraform-providers/terraform-provider-skytap/skytap/utils"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccSkytapLabelICNR_Basic(t *testing.T) {
@@ -17,9 +20,9 @@ func TestAccSkytapLabelICNR_Basic(t *testing.T) {
 	var tunnel skytap.ICNRTunnel
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckSkytapLabelCategoryDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testAccCheckSkytapLabelCategoryDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSkytapICNRTunnel_basic("tftest", uniqueSuffix, templateID),
@@ -80,7 +83,7 @@ func testAccCheckSkytapICNRTunnelExists(name string, icnrTunnel *skytap.ICNRTunn
 
 		// retrieve the connection established in Provider configuration
 		client := testAccProvider.Meta().(*SkytapClient).icnrTunnelClient
-		ctx := testAccProvider.Meta().(*SkytapClient).StopContext
+		ctx := context.TODO()
 
 		icnrTunnel, err = client.Get(ctx, rs.Primary.ID)
 		if err != nil {

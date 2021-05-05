@@ -1,14 +1,17 @@
 package skytap
 
 import (
+	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/terraform-providers/terraform-provider-skytap/skytap/utils"
 	"log"
 	"regexp"
 	"strconv"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+
+	"github.com/terraform-providers/terraform-provider-skytap/skytap/utils"
 )
 
 func init() {
@@ -24,9 +27,9 @@ func TestAccSkytapLabelCategory_Basic(t *testing.T) {
 	  an account limit
 	*/
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckSkytapLabelCategoryDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testAccCheckSkytapLabelCategoryDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSkytapLabelCategory_basic("tftest-label", true),
@@ -48,9 +51,9 @@ func TestAccSkytapLabelCategory_Update(t *testing.T) {
 	  an account limit
 	*/
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckSkytapLabelCategoryDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testAccCheckSkytapLabelCategoryDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSkytapLabelCategory_basic("tftest-label", true),
@@ -72,9 +75,9 @@ func TestAccSkytapLabelCategory_MultiValueBasic(t *testing.T) {
 	  an account limit
 	*/
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckSkytapLabelCategoryDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testAccCheckSkytapLabelCategoryDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSkytapLabelCategory_basic("tftest-label-multi", false),
@@ -105,15 +108,15 @@ func TestAccSkytapLabelCategory_Duplicated(t *testing.T) {
 		  single_value = true
 		}
 	`
-	error, _ := regexp.Compile(".* Validation failed: Name has already been taken")
+	expectedError := regexp.MustCompile(".* Validation failed: Name has already been taken")
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckSkytapLabelCategoryDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testAccCheckSkytapLabelCategoryDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config:      labelCategoryDuplicated,
-				ExpectError: error,
+				ExpectError: expectedError,
 			},
 		},
 	})
@@ -139,7 +142,7 @@ func testAccCheckSkytapLabelCategoryExists(name string) resource.TestCheckFunc {
 
 		// retrieve the connection established in Provider configuration
 		client := testAccProvider.Meta().(*SkytapClient).labelCategoryClient
-		ctx := testAccProvider.Meta().(*SkytapClient).StopContext
+		ctx := context.TODO()
 
 		// Retrieve our label category by referencing it's state ID for API lookup
 		id, err := strconv.Atoi(rs.Primary.ID)
@@ -165,7 +168,7 @@ func testAccCheckSkytapLabelCategoryExists(name string) resource.TestCheckFunc {
 func testAccCheckSkytapLabelCategoryDestroy(s *terraform.State) error {
 	// retrieve the connection established in Provider configuration
 	client := testAccProvider.Meta().(*SkytapClient).labelCategoryClient
-	ctx := testAccProvider.Meta().(*SkytapClient).StopContext
+	ctx := context.TODO()
 
 	// loop through the resources in state, verifying each label category
 	// is destroyed
@@ -198,7 +201,7 @@ func testSweepSkytapLabelCategory(region string) error {
 	}
 
 	client := meta.labelCategoryClient
-	ctx := meta.StopContext
+	ctx := context.TODO()
 
 	log.Printf("[INFO] Retrieving list of label category")
 	labelCategories, err := client.List(ctx)

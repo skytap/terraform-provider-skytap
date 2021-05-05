@@ -2,8 +2,9 @@ package skytap
 
 import (
 	"context"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 const (
@@ -12,8 +13,9 @@ const (
 )
 
 // Provider returns a schema.Provider for Skytap.
-func Provider() terraform.ResourceProvider {
+func Provider() *schema.Provider {
 	p := &schema.Provider{
+		ConfigureContextFunc: providerConfigure,
 		Schema: map[string]*schema.Schema{
 			"username": {
 				Type:        schema.TypeString,
@@ -44,45 +46,19 @@ func Provider() terraform.ResourceProvider {
 		},
 	}
 
-	p.ConfigureFunc = providerConfigure(p)
-
 	return p
 }
 
-func providerConfigure(p *schema.Provider) schema.ConfigureFunc {
-	return func(d *schema.ResourceData) (interface{}, error) {
-		config := &Config{
-			Username: d.Get("username").(string),
-			APIToken: d.Get("api_token").(string),
-		}
-
-		client, err := config.Client()
-		if err != nil {
-			return nil, err
-		}
-
-		client.StopContext = p.StopContext()
-
-		return client, nil
+func providerConfigure(_ context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+	config := &Config{
+		Username: d.Get("username").(string),
+		APIToken: d.Get("api_token").(string),
 	}
-}
 
-func stopContextForCreate(d *schema.ResourceData, client *SkytapClient) (context.Context, context.CancelFunc) {
-	ctx := client.StopContext
-	return context.WithTimeout(ctx, d.Timeout(schema.TimeoutCreate))
-}
+	client, err := config.Client()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
 
-func stopContextForRead(d *schema.ResourceData, client *SkytapClient) (context.Context, context.CancelFunc) {
-	ctx := client.StopContext
-	return context.WithTimeout(ctx, d.Timeout(schema.TimeoutRead))
-}
-
-func stopContextForUpdate(d *schema.ResourceData, client *SkytapClient) (context.Context, context.CancelFunc) {
-	ctx := client.StopContext
-	return context.WithTimeout(ctx, d.Timeout(schema.TimeoutUpdate))
-}
-
-func stopContextForDelete(d *schema.ResourceData, client *SkytapClient) (context.Context, context.CancelFunc) {
-	ctx := client.StopContext
-	return context.WithTimeout(ctx, d.Timeout(schema.TimeoutDelete))
+	return client, nil
 }
