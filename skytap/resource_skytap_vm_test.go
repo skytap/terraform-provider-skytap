@@ -22,7 +22,7 @@ import (
 
 const (
 	vmEnvironmentPrefix = "tftest-vm"
-	MINUTES             = 0
+	MINUTES             = 1
 )
 
 func init() {
@@ -117,6 +117,7 @@ func TestAccSkytapVM_Update(t *testing.T) {
 				),
 			},
 			{
+				// Pause between the steps to avoid an issue where the Skytap console shows a "Guest OS not responding" error
 				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID,
 					fmt.Sprintf("name = \"tftest-vm-%d\"", uniqueSuffixVM), "", ``),
