@@ -639,9 +639,9 @@ func TestAccSkytapVMCPU_OutOfRange(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
-					`cpus = 16
+					`cpus = 12
                               ram = 131072`),
-				ExpectError: regexp.MustCompile(`expected cpus to be in the range \(1 - 12\), got 16`),
+				ExpectError: regexp.MustCompile(`the 'cpus' argument has been assigned \(12\) which is more than the maximum allowed \(8\) as defined by this VM`),
 			},
 		},
 	})
@@ -662,14 +662,9 @@ func TestAccSkytapVMCPU_OutOfRangeAfterUpdate(t *testing.T) {
 			},
 			{
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
-					`cpus = 16
+					`cpus = 12
                               ram = 131072`),
-				ExpectError: regexp.MustCompile(`expected cpus to be in the range \(1 - 12\), got 16`),
-			},
-			// reset config so the erroneous values don't prevent the destroy
-			{
-				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
-					``),
+				ExpectError: regexp.MustCompile(`the 'cpus' argument has been assigned \(12\) which is more than the maximum allowed \(8\) as defined by this VM`),
 			},
 		},
 	})
