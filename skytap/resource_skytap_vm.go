@@ -90,7 +90,6 @@ func resourceSkytapVM() *schema.Resource {
 
 			"disk": {
 				Type:     schema.TypeSet,
-				Set:      diskHash,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -125,7 +124,6 @@ func resourceSkytapVM() *schema.Resource {
 
 			"network_interface": {
 				Type:     schema.TypeSet,
-				Set:      networkInterfaceHash,
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
@@ -162,7 +160,6 @@ func resourceSkytapVM() *schema.Resource {
 
 						"published_service": {
 							Type:     schema.TypeSet,
-							Set:      publishedServiceHash,
 							Optional: true,
 							ForceNew: true,
 							Elem: &schema.Resource{
@@ -471,7 +468,7 @@ func resourceSkytapVMUpdate(ctx context.Context, d *schema.ResourceData, meta in
 	}
 	opts.Hardware = hardware
 
-	var vmDisks *schema.Set
+	var vmDisks []interface{}
 	if d.HasChange("disk") || d.HasChange("name") || d.HasChange("ram") ||
 		d.HasChange("cpus") || d.HasChange("os_disk_size") {
 

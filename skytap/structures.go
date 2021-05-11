@@ -1,7 +1,6 @@
 package skytap
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 
@@ -11,37 +10,43 @@ import (
 	"github.com/terraform-providers/terraform-provider-skytap/skytap/hashcode"
 )
 
-func flattenNetworkInterfaces(interfaces []skytap.Interface) *schema.Set {
+func flattenNetworkInterfaces(interfaces []skytap.Interface) []interface{} {
 	results := make([]interface{}, 0)
 
 	for _, v := range interfaces {
 		results = append(results, flattenNetworkInterface(v))
 	}
 
-	return schema.NewSet(networkInterfaceHash, results)
+	return results
 }
 
 func flattenNetworkInterface(v skytap.Interface) map[string]interface{} {
 	result := make(map[string]interface{})
 	result["id"] = *v.ID
 	result["interface_type"] = string(*v.NICType)
-	result["network_id"] = *v.NetworkID
-	result["ip"] = *v.IP
-	result["hostname"] = *v.Hostname
+	if v.NetworkID != nil {
+		result["network_id"] = *v.NetworkID
+	}
+	if v.IP != nil {
+		result["ip"] = *v.IP
+	}
+	if v.Hostname != nil {
+		result["hostname"] = *v.Hostname
+	}
 	if len(v.Services) > 0 {
 		result["published_service"] = flattenPublishedServices(v.Services)
 	}
 	return result
 }
 
-func flattenPublishedServices(services []skytap.PublishedService) *schema.Set {
+func flattenPublishedServices(services []skytap.PublishedService) []interface{} {
 	results := make([]interface{}, 0)
 
 	for _, v := range services {
 		results = append(results, flattenPublishedService(v))
 	}
 
-	return schema.NewSet(publishedServiceHash, results)
+	return results
 }
 
 func flattenPublishedService(v skytap.PublishedService) map[string]interface{} {
@@ -56,7 +61,7 @@ func flattenPublishedService(v skytap.PublishedService) map[string]interface{} {
 	return result
 }
 
-func flattenDisks(disks []skytap.Disk) *schema.Set {
+func flattenDisks(disks []skytap.Disk) []interface{} {
 	results := make([]interface{}, 0)
 
 	for _, v := range disks {
@@ -66,7 +71,7 @@ func flattenDisks(disks []skytap.Disk) *schema.Set {
 		}
 	}
 
-	return schema.NewSet(diskHash, results)
+	return results
 }
 
 func flattenDisk(v skytap.Disk) map[string]interface{} {
@@ -113,15 +118,15 @@ func getVMNetworkInterface(id string, vm *skytap.VM) (*skytap.Interface, error) 
 	return nil, fmt.Errorf("could not find network interface (%s) in the VM", id)
 }
 
-func buildServices(interfaces *schema.Set) (map[string]int, map[string]string) {
+func buildServices(interfaces []interface{}) (map[string]int, map[string]string) {
 	ports := make(map[string]int)
 	ips := make(map[string]string)
 
-	for _, v := range interfaces.List() {
+	for _, v := range interfaces {
 		networkInterface := v.(map[string]interface{})
 		if _, ok := networkInterface["published_service"]; ok {
-			publishedServices := networkInterface["published_service"].(*schema.Set)
-			for _, v := range publishedServices.List() {
+			publishedServices := networkInterface["published_service"].([]interface{})
+			for _, v := range publishedServices {
 				publishedService := v.(map[string]interface{})
 				// check if terraform is managing the published services
 				if publishedService["name"] != nil {
@@ -134,48 +139,8 @@ func buildServices(interfaces *schema.Set) (map[string]int, map[string]string) {
 	return ports, ips
 }
 
-// Assemble the hash for the network TypeSet attribute.
-func networkInterfaceHash(v interface{}) int {
-	var buf bytes.Buffer
-	m := v.(map[string]interface{})
-	buf.WriteString(fmt.Sprintf("%s-", m["interface_type"].(string)))
-	buf.WriteString(fmt.Sprintf("%s-", m["network_id"].(string)))
-	buf.WriteString(fmt.Sprintf("%s-", m["ip"].(string)))
-	buf.WriteString(fmt.Sprintf("%s-", m["hostname"].(string)))
-	if d, ok := m["published_service"]; ok {
-		publishedServices := d.(*schema.Set).List()
-		for _, e := range publishedServices {
-			buf.WriteString(fmt.Sprintf("%d-", publishedServiceHash(e)))
-		}
-	}
-
-	return hashcode.String(buf.String())
-}
-
-// Assemble the hash for the published services TypeSet attribute.
-func publishedServiceHash(v interface{}) int {
-	var buf bytes.Buffer
-	m := v.(map[string]interface{})
-	buf.WriteString(fmt.Sprintf("%d-", m["internal_port"].(int)))
-	if d, ok := m["name"]; ok {
-		buf.WriteString(fmt.Sprintf("%s-", d.(string)))
-	}
-	return hashcode.String(buf.String())
-}
-
-// Assemble the hash for the disk TypeSet attribute.
-func diskHash(v interface{}) int {
-	var buf bytes.Buffer
-	m := v.(map[string]interface{})
-	buf.WriteString(fmt.Sprintf("%d-", m["size"].(int)))
-	if d, ok := m["name"]; ok {
-		buf.WriteString(fmt.Sprintf("%s-", d.(string)))
-	}
-	return hashcode.String(buf.String())
-}
-
 // caseInsensitiveSuppress is a helper function to suppress property changes
-func caseInsensitiveSuppress(k, old, new string, d *schema.ResourceData) bool {
+func caseInsensitiveSuppress(_, old, new string, _ *schema.ResourceData) bool {
 	return strings.ToLower(old) == strings.ToLower(new)
 }
 
