@@ -310,14 +310,10 @@ func resourceSkytapVMCreate(ctx context.Context, d *schema.ResourceData, meta in
 		return diag.Errorf("error waiting for VM (%s) to complete: %s", d.Id(), err)
 	}
 
-	return resourceSkytapVMReadAfterCreateUpdate(ctx, d, meta)
+	return resourceSkytapVMRead(ctx, d, meta)
 }
 
 func resourceSkytapVMRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	return resourceSkytapVMReadAfterCreateUpdate(ctx, d, meta)
-}
-
-func resourceSkytapVMReadAfterCreateUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*SkytapClient).vmsClient
 
 	environmentID := d.Get("environment_id").(string)
@@ -532,7 +528,7 @@ func resourceSkytapVMUpdate(ctx context.Context, d *schema.ResourceData, meta in
 		return diag.Errorf("error waiting for VM (%s) to complete: %s", d.Id(), err)
 	}
 
-	return resourceSkytapVMReadAfterCreateUpdate(ctx, d, meta)
+	return resourceSkytapVMRead(ctx, d, meta)
 }
 
 func resourceSkytapVMDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -727,6 +723,20 @@ func addVMHardware(ctx context.Context, d *schema.ResourceData, meta interface{}
 			return nil, outOfRangeError("ram", *opts.Hardware.RAM, *vm.Hardware.MaxRAM)
 		}
 	}
+
+	// Check vCPUs does not exceed RAM
+	var ramGBs = mbToGb(*vm.Hardware.RAM)
+	if opts.Hardware.RAM != nil {
+		ramGBs = mbToGb(*opts.Hardware.RAM)
+	}
+	var vCPUs = *vm.Hardware.CPUs
+	if opts.Hardware.CPUs != nil {
+		vCPUs = *opts.Hardware.CPUs
+	}
+	if vCPUs > ramGBs {
+		return nil, cpusExceedsRamError(vCPUs, ramGBs)
+	}
+
 	if v, ok := d.GetOk("os_disk_size"); ok {
 		sizeNew := v.(int)
 		opts.Hardware.UpdateDisks.OSSize = utils.Int(sizeNew)
@@ -808,6 +818,16 @@ func updateHardware(d *schema.ResourceData) (*skytap.UpdateHardware, error) {
 		hardware.UpdateDisks.DiskIdentification = make([]skytap.DiskIdentification, 0)
 	}
 
+	if ram, ok := d.GetOk("ram"); ok && d.HasChange("ram") {
+		hardware.RAM = utils.Int(ram.(int))
+		if maxRAM, maxOK := d.GetOk("max_ram"); maxOK {
+			if *hardware.RAM > maxRAM.(int) {
+				return nil, outOfRangeError("ram", *hardware.RAM, maxRAM.(int))
+			}
+		} else {
+			return nil, fmt.Errorf("unable to read the 'max_ram' element")
+		}
+	}
 	if cpus, ok := d.GetOk("cpus"); ok && d.HasChange("cpus") {
 		hardware.CPUs = utils.Int(cpus.(int))
 		if maxCPUs, maxOK := d.GetOk("max_cpus"); maxOK {
@@ -817,15 +837,9 @@ func updateHardware(d *schema.ResourceData) (*skytap.UpdateHardware, error) {
 		} else {
 			return nil, fmt.Errorf("unable to read the 'max_cpus' element")
 		}
-	}
-	if ram, ok := d.GetOk("ram"); ok && d.HasChange("ram") {
-		hardware.RAM = utils.Int(ram.(int))
-		if maxRAM, maxOK := d.GetOk("max_ram"); maxOK {
-			if *hardware.RAM > maxRAM.(int) {
-				return nil, outOfRangeError("ram", *hardware.RAM, maxRAM.(int))
-			}
-		} else {
-			return nil, fmt.Errorf("unable to read the 'max_ram' element")
+
+		if ram, ok := d.GetOk("ram"); ok && cpus.(int) > mbToGb(ram.(int)) {
+			return nil, cpusExceedsRamError(cpus.(int), mbToGb(ram.(int)))
 		}
 	}
 
@@ -849,6 +863,14 @@ func checkDiskNotShrunk(sizeOld int, sizeNew int, name string) error {
 		return fmt.Errorf("cannot shrink volume (%s) from size (%d) to size (%d)", name, sizeOld, sizeNew)
 	}
 	return nil
+}
+
+func mbToGb(mb int) int {
+	return mb / 1024
+}
+
+func cpusExceedsRamError(cpus, ram int) error {
+	return fmt.Errorf("the 'cpus' argument has been assigned (%d) which is more than the maximum allowed (%d), the number of GB of RAM", cpus, ram)
 }
 
 func retrieveIDsFromOldState(d *schema.Set, name string) (string, int) {

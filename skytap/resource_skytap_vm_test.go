@@ -542,6 +542,7 @@ func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
 			{
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`	cpus = 2
+								ram = 2048
 								disk  {
 									size = 2048
 									name = "disk1"
@@ -560,6 +561,7 @@ func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
 				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, "", templateID, vmID, "", "",
 					`  cpus = 1
+								ram = 2048
 								disk {
 									size = 2048
 									name = "disk1"
