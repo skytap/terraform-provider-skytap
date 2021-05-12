@@ -15,7 +15,7 @@ import (
 )
 
 func TestAccSkytapLabelICNR_Basic(t *testing.T) {
-	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1478959")
 	uniqueSuffix := acctest.RandInt()
 	var tunnel skytap.ICNRTunnel
 

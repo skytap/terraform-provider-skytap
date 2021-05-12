@@ -50,7 +50,7 @@ func testSweepSkytapEnvironment(region string) error {
 }
 
 func TestAccSkytapEnvironment_Basic(t *testing.T) {
-	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1478959")
 	uniqueSuffix := acctest.RandInt()
 	var environment skytap.Environment
 
@@ -80,8 +80,8 @@ func TestAccSkytapEnvironment_Basic(t *testing.T) {
 }
 
 func TestAccSkytapEnvironment_UpdateTemplate(t *testing.T) {
-	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
-	template2ID := utils.GetEnv("SKYTAP_TEMPLATE_ID2", "1473347")
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1478959")
+	template2ID := utils.GetEnv("SKYTAP_TEMPLATE_ID2", "1877151")
 	rInt := acctest.RandInt()
 	var environment skytap.Environment
 
@@ -107,7 +107,7 @@ func TestAccSkytapEnvironment_UpdateTemplate(t *testing.T) {
 }
 
 func TestAccSkytapEnvironment_UpdateTags(t *testing.T) {
-	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1478959")
 	uniqueSuffix := acctest.RandInt()
 
 	var environment skytap.Environment
@@ -141,7 +141,7 @@ func TestAccSkytapEnvironment_UpdateTags(t *testing.T) {
 }
 
 func TestAccSkytapEnvironment_UserData(t *testing.T) {
-	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1478959")
 	uniqueSuffix := acctest.RandInt()
 	var environment skytap.Environment
 
@@ -168,7 +168,7 @@ func TestAccSkytapEnvironment_UserData(t *testing.T) {
 }
 
 func TestAccSkytapEnvironment_UserDataUpdate(t *testing.T) {
-	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1478959")
 	uniqueSuffix := acctest.RandInt()
 	var environment skytap.Environment
 
@@ -222,7 +222,7 @@ const labelRequirements = `
 	`
 
 func TestAccSkytapEnvironment_Labels(t *testing.T) {
-	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1478959")
 	uniqueSuffix := acctest.RandInt()
 	var environment skytap.Environment
 
@@ -258,7 +258,7 @@ func TestAccSkytapEnvironment_Labels(t *testing.T) {
 }
 
 func TestAccSkytapEnvironment_LabelsUpdate(t *testing.T) {
-	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1478959")
 	uniqueSuffix := acctest.RandInt()
 	var environment skytap.Environment
 
