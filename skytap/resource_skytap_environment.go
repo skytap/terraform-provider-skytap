@@ -436,7 +436,7 @@ func resourceSkytapEnvironmentDelete(ctx context.Context, d *schema.ResourceData
 	}
 
 	log.Printf("[INFO] Waiting for environment (%s) to complete", d.Id())
-	_, err = stateConf.WaitForState()
+	_, err = stateConf.WaitForStateContext(ctx)
 	if err != nil {
 		return diag.Errorf("error waiting for environment (%s) to complete: %s", d.Id(), err)
 	}
