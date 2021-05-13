@@ -263,7 +263,9 @@ func resourceSkytapVMCreate(ctx context.Context, d *schema.ResourceData, meta in
 		}
 
 		err = d.Set("network_interface", vmNetworks)
-		return diag.FromErr(err)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	vmDisks, err := addVMHardware(ctx, d, meta, environmentID, id)
