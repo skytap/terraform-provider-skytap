@@ -1091,7 +1091,7 @@ func setupNonDefaultEnvironment(templateKey string, templateIDFallback string, v
 }
 
 func setupEnvironment() (string, string, string) {
-	return setupNonDefaultEnvironment("SKYTAP_TEMPLATE_ID", "1473407", "SKYTAP_VM_ID", "37865463")
+	return setupNonDefaultEnvironment("SKYTAP_TEMPLATE_ID", "1469947", "SKYTAP_VM_ID", "37715265")
 }
 
 func testAccSkytapVMConfig_typical(envTemplateID string, templateID string, vmID string, uniqueSuffixEnv int, existingPort int, extraPublishedService string, extraNIC string) string {

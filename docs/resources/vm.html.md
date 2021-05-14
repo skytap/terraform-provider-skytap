@@ -104,9 +104,9 @@ The `label` block supports:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration/resources.html#operation-timeouts) for certain operations:
 
-* `create` - (Defaults to 10 mins) Used when launching the VM
-* `update` - (Defaults to 10 mins) Used when stopping and starting the VM when necessary during update
-* `delete` - (Defaults to 10 mins) Used when terminating the instance
+* `create` - (Defaults to 20 mins) Used when launching the VM
+* `update` - (Defaults to 20 mins) Used when stopping and starting the VM when necessary during update
+* `delete` - (Defaults to 20 mins) Used when terminating the instance
 
 ## Attributes Reference
 

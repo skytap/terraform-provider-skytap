@@ -1,16 +1,15 @@
 ---
-layout: "skytap"
-page_title: "Provider: Skytap"
-sidebar_current: "docs-skytap-index"
+page_title: "Skytap Provider"
+subcategory: ""
 description: |-
-  The Skytap provider is used to interact with the resources supported by Skytap. 
-  The provider needs to be configured with the proper credentials before it can be used.
+The Skytap provider is used to interact with the resources supported by Skytap.
+The provider needs to be configured with the proper credentials before it can be used.
 ---
 
 # Skytap Provider
 
-The Skytap provider is used to interact with the resources supported by Skytap. 
-  The provider needs to be configured with the proper credentials before it can be used.
+The Skytap provider is used to interact with the resources supported by Skytap.
+The provider needs to be configured with the proper credentials before it can be used.
 
 Use the navigation to the left to read about the available resources.
 

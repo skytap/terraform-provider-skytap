@@ -62,9 +62,9 @@ The `label` block supports:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration/resources.html#operation-timeouts) for certain operations:
 
-* `create` - (Defaults to 10 mins) Used when creating the environment
-* `update` - (Defaults to 10 mins) Used when updating the environment
-* `delete` - (Defaults to 10 mins) Used when destroying the environment
+* `create` - (Defaults to 20 mins) Used when creating the environment
+* `update` - (Defaults to 20 mins) Used when updating the environment
+* `delete` - (Defaults to 20 mins) Used when destroying the environment
 
 ## Attributes Reference
 
