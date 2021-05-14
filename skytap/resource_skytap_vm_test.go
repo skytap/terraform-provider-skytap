@@ -945,11 +945,6 @@ func TestAccSkytapVM_Concurrent(t *testing.T) {
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.webservers.2", &vm),
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.webservers.3", &vm),
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.webservers.4", &vm),
-					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.webservers.5", &vm),
-					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.webservers.6", &vm),
-					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.webservers.7", &vm),
-					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.webservers.8", &vm),
-					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.webservers.9", &vm),
 				),
 			},
 		},
@@ -1367,16 +1362,11 @@ func testAccSkytapVMConfig_concurrent(envTemplateID string, uniqueSuffixEnv int,
 		"2" = "192.168.1.102"
 		"3" = "192.168.1.103"
 		"4" = "192.168.1.104"
-		"5" = "192.168.1.105"
-		"6" = "192.168.1.106"
-		"7" = "192.168.1.107"
-		"8" = "192.168.1.108"
-		"9" = "192.168.1.109"
 	  }
 	}
 	
 	resource "skytap_vm" "webservers" {
-	  count = 10
+	  count = 5
 	  template_id = "%s"
 	  vm_id = "%s"
 	  environment_id = "${skytap_environment.foo.id}"
