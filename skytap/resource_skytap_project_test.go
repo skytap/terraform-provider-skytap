@@ -70,6 +70,45 @@ func TestAccSkytapProject_Basic(t *testing.T) {
 	})
 }
 
+func TestAccSkytapProject_AddEnvironment(t *testing.T) {
+	templateID, _, _ := setupEnvironment()
+	uniqueSuffix := acctest.RandInt()
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testAccCheckSkytapProjectDestroy,
+		Steps: []resource.TestStep{
+			{
+				// Create project with environment
+				Config: testAccSkytapProjectConfig_withEnvironment(templateID, uniqueSuffix, "skytap_environment.foo.id"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapProjectExists("skytap_project.foo"),
+					resource.TestCheckTypeSetElemAttrPair("skytap_project.foo", "environment_ids.*", "skytap_environment.foo", "id"),
+				),
+			},
+			{
+				// Remove it
+				Config: testAccSkytapProjectConfig_withEnvironment(templateID, uniqueSuffix, ""),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapProjectExists("skytap_project.foo"),
+					resource.TestCheckResourceAttr("skytap_project.foo", "environment_ids.%", "0"),
+				),
+			},
+			{
+				// Add it back again
+				Config: testAccSkytapProjectConfig_withEnvironment(templateID, uniqueSuffix, "skytap_environment.foo.id"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapProjectExists("skytap_project.foo"),
+					resource.TestCheckTypeSetElemAttrPair("skytap_project.foo", "environment_ids.*", "skytap_environment.foo", "id"),
+				),
+			},
+		},
+	})
+}
+
 // Verifies the Project exists
 func testAccCheckSkytapProjectExists(name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
@@ -86,7 +125,7 @@ func testAccCheckSkytapProjectExists(name string) resource.TestCheckFunc {
 		client := testAccProvider.Meta().(*SkytapClient).projectsClient
 		ctx := context.TODO()
 
-		// Retrieve our project by referencing it's state ID for API lookup
+		// Retrieve our project by referencing its state ID for API lookup
 
 		id, err := strconv.Atoi(rs.Primary.ID)
 		if err != nil {
@@ -146,4 +185,19 @@ func testAccSkytapProjectConfig_basic(rInt int) string {
 	    name = "tftest-project-%d"
 	    summary = "This is a project created by the skytap terraform provider acceptance test"
       }`, rInt)
+}
+
+func testAccSkytapProjectConfig_withEnvironment(envTemplateID string, uniqueSuffix int, projectEnvIDs string) string {
+	return fmt.Sprintf(`
+	resource "skytap_environment" "foo" {
+ 		template_id = "%s"
+ 		name 		= "%s-environment-%d"
+ 		description = "This is an environment to support a skytap project terraform provider acceptance test"
+ 	}
+	resource "skytap_project" "foo" {
+	    name = "tftest-project-%d"
+	    summary = "This is a project created by the skytap terraform provider acceptance test"
+		environment_ids = [%s]
+      }
+	`, envTemplateID, vmEnvironmentPrefix, uniqueSuffix, uniqueSuffix, projectEnvIDs)
 }
