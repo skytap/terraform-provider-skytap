@@ -32,6 +32,7 @@ resource "skytap_project" "project" {
 ### Optional
 
 - **auto_add_role_name** (String) If this field is set to `viewer`, `participant`, `editor`, or `manager`, new users added to your Skytap account are automatically added to this project with the specified project role. Existing users aren’t affected by this setting. For additional details, see [Automatically adding new users to a project](https://help.skytap.com/csh-project-automatic-role.html)
+- **environment_ids** (Set of String) A list of environments to add to the project
 - **id** (String) The ID of this resource.
 - **show_project_members** (Boolean) Whether project members can view a list of other project members
 - **summary** (String) User-defined description of the project

@@ -58,11 +58,12 @@ func resourceSkytapProject() *schema.Resource {
 			},
 
 			"environment_ids": {
-				Type: schema.TypeSet,
+				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
+				Description: "A list of environments to add to the project",
 			},
 		},
 	}
