@@ -25,6 +25,7 @@ type EnvironmentsService interface {
 	CreateLabels(ctx context.Context, id string, createLabelRequest []*CreateLabelRequest) error
 	DeleteLabel(ctx context.Context, id string, labelId string) error
 	UpdateUserData(ctx context.Context, id string, userData *string) error
+	ListProjects(ctx context.Context, id string) (*ProjectListResult, error)
 }
 
 // EnvironmentsServiceClient is the EnvironmentsService implementation
@@ -457,6 +458,28 @@ func (s *EnvironmentsServiceClient) UpdateUserData(ctx context.Context, id strin
 	}
 
 	return nil
+}
+
+func (s *EnvironmentsServiceClient) ListProjects(ctx context.Context, id string) (*ProjectListResult, error) {
+	path := fmt.Sprintf("%s/%s/projects", environmentBasePath, id)
+
+	req, err := s.client.newRequest(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.client.setRequestListParameters(req, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var projectListResponse ProjectListResult
+	_, err = s.client.do(ctx, req, &projectListResponse.Value, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &projectListResponse, nil
 }
 
 func (payload *CreateEnvironmentRequest) compareResponse(ctx context.Context, c *Client, v interface{}, state *environmentVMRunState) (string, bool) {

@@ -9,4 +9,6 @@ require (
 	github.com/stretchr/testify v1.6.1
 )
 
+replace github.com/skytap/skytap-sdk-go v0.0.0-20200416085108-e442918ac42d => github.com/opencredo/skytap-sdk-go v0.0.0-20210514144139-4fe3119d1939
+
 go 1.13
