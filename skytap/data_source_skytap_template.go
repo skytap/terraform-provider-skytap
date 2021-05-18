@@ -23,13 +23,13 @@ func dataSourceSkytapTemplate() *schema.Resource {
 			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				Description:  "regex expression to name of the template",
+				Description:  "A regex expression for the name of the template",
 				ValidateFunc: validation.NoZeroValues,
 			},
 			"most_recent": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Description: "used when multiple items will be returned",
+				Description: "Use the most recently created template from the returned list",
 			},
 		},
 	}

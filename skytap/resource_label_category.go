@@ -29,8 +29,9 @@ func resourceSkytapLabelCategory() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"name": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "The user-defined label category name",
 				ValidateFunc: validation.All(
 					validation.NoZeroValues,
 					validation.StringLenBetween(1, 128),
@@ -42,9 +43,10 @@ func resourceSkytapLabelCategory() *schema.Resource {
 			},
 
 			"single_value": {
-				Type:     schema.TypeBool,
-				Required: true,
-				ForceNew: true,
+				Type:        schema.TypeBool,
+				Required:    true,
+				Description: "Whether labels must have a single value for the category, or if they may have multiple values",
+				ForceNew:    true,
 			},
 		},
 	}

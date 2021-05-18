@@ -27,17 +27,4 @@ data "skytap_project" "example" {
 }
 ```
 
-## Argument Reference
-
-The following arguments are supported:
-
-* `name` - (Required) The name of project.
-
-## Attributes Reference
-
-The following attributes are exported:
-
-* `id`: The ID of the project.
-* `summary`: The summary description of the project.
-* `auto_add_role_name`: The role automatically assigned to every new user added to the project.
-* `show_project_members`: Whether project members can view a list of the other project members.
+{{ .SchemaMarkdown | trimspace }}

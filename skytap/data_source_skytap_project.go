@@ -19,7 +19,7 @@ func dataSourceSkytapProject() *schema.Resource {
 			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				Description:  "name of the project",
+				Description:  "The name of the project",
 				ValidateFunc: validation.NoZeroValues,
 			},
 
@@ -27,19 +27,19 @@ func dataSourceSkytapProject() *schema.Resource {
 			"summary": {
 				Type:        schema.TypeString,
 				Computed:    true,
-				Description: "summary description of the project",
+				Description: "The summary description of the project",
 			},
 
 			"auto_add_role_name": {
 				Type:        schema.TypeString,
 				Computed:    true,
-				Description: "role automatically assigned to every new user added to the project",
+				Description: "The role automatically assigned to every new user added to the project",
 			},
 
 			"show_project_members": {
 				Type:        schema.TypeBool,
 				Computed:    true,
-				Description: "whether project members can view a list of the other project members",
+				Description: "Whether project members can view a list of the other project members",
 			},
 		},
 	}

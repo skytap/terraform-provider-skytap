@@ -32,25 +32,29 @@ func resourceSkytapProject() *schema.Resource {
 			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
+				Description:  "User-defined project name",
 				ValidateFunc: validation.NoZeroValues,
 			},
 
 			"summary": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Description:  "User-defined description of the project",
 				ValidateFunc: validation.NoZeroValues,
 			},
 
 			"auto_add_role_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Description:  "If this field is set to `viewer`, `participant`, `editor`, or `manager`, new users added to your Skytap account are automatically added to this project with the specified project role. Existing users aren’t affected by this setting. For additional details, see [Automatically adding new users to a project](https://help.skytap.com/csh-project-automatic-role.html)",
 				ValidateFunc: validateRoleType(),
 			},
 
 			"show_project_members": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  true,
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
+				Description: "Whether project members can view a list of other project members",
 			},
 		},
 	}

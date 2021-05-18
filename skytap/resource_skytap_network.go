@@ -3,6 +3,7 @@ package skytap
 import (
 	"context"
 	"log"
+	"regexp"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
@@ -32,24 +33,32 @@ func resourceSkytapNetwork() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
+				Description:  "ID of the environment you want to attach the network to",
 				ValidateFunc: validation.NoZeroValues,
 			},
 
 			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.NoZeroValues,
+				Description:  "User-defined name of the network",
+				ValidateFunc: validation.StringLenBetween(1, 255),
 			},
 
 			"domain": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: validation.NoZeroValues,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "Domain name for the Skytap network. This field can be changed only when all virtual machines in the environment are stopped (not suspended or running)",
+				ValidateFunc: validation.All(
+					validation.NoZeroValues,
+					validation.StringLenBetween(1, 64),
+					validation.StringMatch(regexp.MustCompile(`(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]`), "Valid characters are lowercase letters, numbers, and hyphens. Cannot be blank, must not begin or end with a period, and must start and end with a letter or number"),
+				),
 			},
 
 			"subnet": {
 				Type:         schema.TypeString,
 				Required:     true,
+				Description:  "Defines the subnet address and subnet mask size in CIDR format (for example, 10.0.0.0/24). IP addresses for the VMs are assigned from this subnet and standard network services (DNS resolution, CIFS share, routes to Internet) are defined appropriately for it",
 				ValidateFunc: validation.IsCIDRNetwork(16, 29),
 			},
 
@@ -57,13 +66,15 @@ func resourceSkytapNetwork() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
+				Description:  "Gateway IP address",
 				ValidateFunc: validation.IsIPAddress,
 			},
 
 			"tunnelable": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "Whether or not this network can be connected to other networks",
 			},
 		},
 	}

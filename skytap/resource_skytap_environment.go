@@ -32,6 +32,7 @@ func resourceSkytapEnvironment() *schema.Resource {
 			"template_id": {
 				Type:         schema.TypeString,
 				Required:     true,
+				Description:  "ID of the template you want to create the environment from. If updated with a new ID, the environment will be recreated",
 				ForceNew:     true,
 				ValidateFunc: validation.NoZeroValues,
 			},
@@ -39,24 +40,28 @@ func resourceSkytapEnvironment() *schema.Resource {
 			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
+				Description:  "User-defined name of the environment. Limited to 255 characters. UTF-8 character type",
 				ValidateFunc: validation.NoZeroValues,
 			},
 
 			"description": {
 				Type:         schema.TypeString,
 				Required:     true,
+				Description:  "User-defined description of the environment. Limited to 1000 characters. UTF-8 character type",
 				ValidateFunc: validation.NoZeroValues,
 			},
 
 			"outbound_traffic": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "Indicates whether networks in the environment can send outbound traffic",
 			},
 
 			"tags": {
-				Type:     schema.TypeSet,
-				Optional: true,
+				Type:        schema.TypeSet,
+				Optional:    true,
+				Description: "Set of environment tags",
 				Elem: &schema.Schema{
 					Type:             schema.TypeString,
 					DiffSuppressFunc: caseInsensitiveSuppress,
@@ -65,17 +70,20 @@ func resourceSkytapEnvironment() *schema.Resource {
 			},
 
 			"label": {
-				Type:     schema.TypeSet,
-				Optional: true,
+				Type:        schema.TypeSet,
+				Optional:    true,
+				Description: "Set of labels for the instance",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"category": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "Label category that provides contextual meaning",
 						},
 						"value": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "Label valueto be used for reporting",
 						},
 						"id": {
 							Type:     schema.TypeString,
@@ -86,39 +94,45 @@ func resourceSkytapEnvironment() *schema.Resource {
 			},
 
 			"user_data": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  nil,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     nil,
+				Description: "Environment user data, available from the metadata server and the Skytap API",
 			},
 
 			"routable": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "Indicates whether networks within the environment can route traffic to one another",
 			},
 
 			"suspend_on_idle": {
 				Type:         schema.TypeInt,
 				Optional:     true,
+				Description:  "The number of seconds an environment can be idle before it is automatically suspended. Valid range: 300 to 86400 seconds (5 minutes to 1 day)",
 				ValidateFunc: validation.IntBetween(300, 86400),
 			},
 
 			"suspend_at_time": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  nil,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     nil,
+				Description: "The date and time that the environment will be automatically suspended. Format: yyyy/mm/dd hh:mm:ss. By default, the suspend time uses the UTC offset for the time zone defined in your user account settings. Optionally, a different UTC offset can be supplied (for example: 2018/07/20 14:20:00 -0000). The value in the API response is converted to your time zone",
 			},
 
 			"shutdown_on_idle": {
 				Type:         schema.TypeInt,
 				Optional:     true,
+				Description:  "The number of seconds an environment can be idle before it is automatically shut down. Valid range: 300 to 86400 seconds (5 minutes to 1 day)",
 				ValidateFunc: validation.IntBetween(300, 86400),
 			},
 
 			"shutdown_at_time": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Default:  nil,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     nil,
+				Description: "The date and time that the environment will be automatically shut down. Format: yyyy/mm/dd hh:mm:ss. By default, the suspend time uses the UTC offset for the time zone defined in your user account settings. Optionally, a different UTC offset can be supplied (for example: 2018/07/20 14:20:00 -0000). The value in the API response is converted to your time zone",
 			},
 		},
 	}

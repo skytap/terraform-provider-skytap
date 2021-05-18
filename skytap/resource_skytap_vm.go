@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"regexp"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
@@ -33,6 +34,7 @@ func resourceSkytapVM() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
+				Description:  "ID of the environment you want to add the VM to",
 				ValidateFunc: validation.NoZeroValues,
 			},
 
@@ -40,6 +42,7 @@ func resourceSkytapVM() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
+				Description:  "ID of the template you want to create the VM from",
 				ValidateFunc: validation.NoZeroValues,
 			},
 
@@ -47,6 +50,7 @@ func resourceSkytapVM() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
+				Description:  "ID of the VM within the template that you want to create the VM from",
 				ValidateFunc: validation.NoZeroValues,
 			},
 
@@ -54,52 +58,62 @@ func resourceSkytapVM() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.NoZeroValues,
+				Description:  "User-defined name of the VM",
+				ValidateFunc: validation.StringLenBetween(1, 100),
 			},
 
 			"cpus": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
+				Description:  "Number of CPUs allocated to this virtual machine",
 				ValidateFunc: validation.IntBetween(1, 12),
 			},
 
 			"max_cpus": {
-				Type:     schema.TypeInt,
-				Computed: true,
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Maximum settable CPUs for the VM",
 			},
 
 			"ram": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
+				Description:  "Amount of RAM allocated to the VM",
 				ValidateFunc: validation.IntBetween(256, 131072),
 			},
 
 			"max_ram": {
-				Type:     schema.TypeInt,
-				Computed: true,
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Maximum amount of RAM that can be allocated to the VM",
 			},
 
 			"os_disk_size": {
 				Type:         schema.TypeInt,
 				Computed:     true,
 				Optional:     true,
+				Description:  "The size of the OS disk. The disk size is in MiB; it will be converted to GiB in the Skytap UI. The maximum disk size is 2,096,128 MiB (1.999 TiB)",
 				ValidateFunc: validation.IntBetween(2048, 2096128),
 			},
 
 			"disk": {
-				Type:     schema.TypeSet,
-				Optional: true,
+				Type:        schema.TypeSet,
+				Optional:    true,
+				Description: "Set of virtual disks within the VM",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:         schema.TypeString,
+							Required:     true,
+							Description:  "A unique name for the disk",
+							ValidateFunc: validation.StringLenBetween(1, 33),
 						},
 						"size": {
 							Type:         schema.TypeInt,
 							Required:     true,
+							Description:  "The size of the disk specified in MiB. The minimum disk size is 2048 MiB; the maximum is 2,096,128 MiB (1.999 TiB)",
 							ValidateFunc: validation.IntBetween(2048, 2096128),
 						},
 						"id": {
@@ -107,51 +121,63 @@ func resourceSkytapVM() *schema.Resource {
 							Computed: true,
 						},
 						"type": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "The type of disk",
 						},
 						"controller": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "The disk controller",
 						},
 						"lun": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "The logical unit number (LUN) of the disk",
 						},
 					},
 				},
 			},
 
 			"network_interface": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Computed: true,
-				ForceNew: true,
+				Type:        schema.TypeSet,
+				Optional:    true,
+				Computed:    true,
+				Description: "Set of virtualized network interface cards (also known as a network adapters)",
+				ForceNew:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"interface_type": {
 							Type:         schema.TypeString,
 							Required:     true,
 							ForceNew:     true,
+							Description:  "Type of network that this network adapter is attached to",
 							ValidateFunc: validateNICType(),
 						},
 						"network_id": {
 							Type:         schema.TypeString,
 							Required:     true,
 							ForceNew:     true,
+							Description:  "ID of the network that this network adapter is attached to",
 							ValidateFunc: validation.NoZeroValues,
 						},
 						"ip": {
 							Type:         schema.TypeString,
 							Required:     true,
 							ForceNew:     true,
+							Description:  "The IP address (for example, 10.1.0.37). Skytap will not assign the same IP address to multiple interfaces on the same network",
 							ValidateFunc: validation.IsIPAddress,
 						},
 						"hostname": {
-							Type:         schema.TypeString,
-							Required:     true,
-							ForceNew:     true,
-							ValidateFunc: validation.NoZeroValues,
+							Type:        schema.TypeString,
+							Required:    true,
+							ForceNew:    true,
+							Description: "Hostname of the VM",
+							ValidateFunc: validation.All(
+								validation.StringLenBetween(1, 32),
+								validation.StringMatch(regexp.MustCompile(`^(?:[a-z0-9][a-z0-9-]*)?[a-z0-9]$`), "Valid characters are lowercase letters, numbers, and hyphens. Cannot begin or end with hyphens"),
+								validation.StringNotInSlice([]string{"gw"}, true),
+							),
 						},
 						"id": {
 							Type:     schema.TypeString,
@@ -159,21 +185,24 @@ func resourceSkytapVM() *schema.Resource {
 						},
 
 						"published_service": {
-							Type:     schema.TypeSet,
-							Optional: true,
-							ForceNew: true,
+							Type:        schema.TypeSet,
+							Optional:    true,
+							ForceNew:    true,
+							Description: "A binding of a port on a network interface to an IP and port that is routable and accessible from the public Internet. This mechanism is used to selectively expose ports on the guest to the public Internet",
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"name": {
 										Type:         schema.TypeString,
 										Required:     true,
 										ForceNew:     true,
+										Description:  "A unique name for the published service",
 										ValidateFunc: validation.NoZeroValues,
 									},
 									"internal_port": {
 										Type:         schema.TypeInt,
 										Required:     true,
 										ForceNew:     true,
+										Description:  "The port that is exposed on the interface",
 										ValidateFunc: validation.NoZeroValues,
 									},
 									"id": {
@@ -181,12 +210,14 @@ func resourceSkytapVM() *schema.Resource {
 										Computed: true,
 									},
 									"external_ip": {
-										Type:     schema.TypeString,
-										Computed: true,
+										Type:        schema.TypeString,
+										Computed:    true,
+										Description: "The published service's external IP",
 									},
 									"external_port": {
-										Type:     schema.TypeInt,
-										Computed: true,
+										Type:        schema.TypeInt,
+										Computed:    true,
+										Description: "The published service's external port",
 									},
 								},
 							},
@@ -195,32 +226,38 @@ func resourceSkytapVM() *schema.Resource {
 				},
 			},
 			"service_ips": {
-				Type:     schema.TypeMap,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+				Type:        schema.TypeMap,
+				Computed:    true,
+				Description: "Map of external IP addresses. The key is the name of a published service - as defined in the `published_service` block",
+				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 			"service_ports": {
-				Type:     schema.TypeMap,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeInt},
+				Type:        schema.TypeMap,
+				Computed:    true,
+				Description: "Map of external IP addresses. The key is the name of a published service - as defined in the `published_service` block",
+				Elem:        &schema.Schema{Type: schema.TypeInt},
 			},
 			"user_data": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "VM user data, available from the metadata server and the Skytap API",
 			},
 
 			"label": {
-				Type:     schema.TypeSet,
-				Optional: true,
+				Type:        schema.TypeSet,
+				Optional:    true,
+				Description: "Set of labels for the instance",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"category": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "Label category that provides contextual meaning",
 						},
 						"value": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "Label value used for reporting",
 						},
 						"id": {
 							Type:     schema.TypeString,

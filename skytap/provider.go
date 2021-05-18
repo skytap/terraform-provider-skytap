@@ -21,13 +21,13 @@ func Provider() *schema.Provider {
 				Type:        schema.TypeString,
 				Required:    true,
 				DefaultFunc: schema.EnvDefaultFunc("SKYTAP_USERNAME", nil),
-				Description: "Username for the skytap account.",
+				Description: "The Skytap username. May also be specified by the `SKYTAP_USERNAME` shell environment variable",
 			},
 			"api_token": {
 				Type:        schema.TypeString,
 				Required:    true,
 				DefaultFunc: schema.EnvDefaultFunc("SKYTAP_API_TOKEN", nil),
-				Description: "API Token for the skytap account.",
+				Description: "The Skytap API token. May also be specified by the `SKYTAP_API_TOKEN` shell environment variable",
 			},
 		},
 
