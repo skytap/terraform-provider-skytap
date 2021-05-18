@@ -1,12 +1,11 @@
 ---
-layout: "skytap"
-page_title: "Skytap: skytap_template"
-sidebar_current: "docs-skytap-datasource-template"
+page_title: "skytap_template Data Source - terraform-provider-skytap"
+subcategory: ""
 description: |-
   Get information on a template.
 ---
 
-# skytap_template
+# skytap_template (Data Source)
 
 Get information on a template. This data source provides the id and name of a template as configured on your Skytap account.
 This is useful in order to retrieve a template's id via its name. The name field takes a regular expression to facilitate
@@ -29,6 +28,6 @@ data "skytap_template" "example" {
  	name = "18.04"
     most_recent = true
 }
-
 ```
+
 {{ .SchemaMarkdown | trimspace }}

@@ -1,12 +1,11 @@
 ---
-layout: "skytap"
-page_title: "Skytap: skytap_project"
-sidebar_current: "docs-skytap-datasource-project"
+page_title: "skytap_project Data Source - terraform-provider-skytap"
+subcategory: ""
 description: |-
   Get information on a project.
 ---
 
-# skytap_project
+# skytap_project (Data Source)
 
 Get information on a project. This data source provides the id, name, summary, auto_add_role_name and 
 show_project_members properties of a project as configured on your Skytap account.
