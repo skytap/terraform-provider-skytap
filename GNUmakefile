@@ -51,4 +51,20 @@ lint:
 imports:
 	goimports -w $(GOIMPORT_FILES)
 
-.PHONY: build test testacc vet fmt fmtcheck errcheck test-compile lint imports
+BIN=$(CURDIR)/bin
+$(BIN)/%:
+	@echo Installing tools from tools.go
+	@cat tools/tools.go | grep _ | awk -F'"' '{print $$2}' | GOBIN=$(BIN) xargs -tI {} go install {}
+
+generate-docs: $(BIN)/tfplugindocs
+	$(BIN)/tfplugindocs
+
+tfproviderlint: $(BIN)/tfproviderlint
+	$(BIN)/tfproviderlint $(TFPROVIDERLINT_ARGS) ./...
+
+sweep:
+	@echo "WARNING: This will destroy infrastructure. Use only in development accounts."
+	go test ./skytap -v -sweep=ALL $(SWEEPARGS) -timeout 30m
+
+
+.PHONY: build test testacc vet fmt fmtcheck errcheck test-compile lint imports generate-docs tfproviderlint sweep
