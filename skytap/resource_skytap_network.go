@@ -1,23 +1,26 @@
 package skytap
 
 import (
-	"fmt"
+	"context"
 	"log"
+	"regexp"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/skytap/skytap-sdk-go/skytap"
+
 	"github.com/terraform-providers/terraform-provider-skytap/skytap/utils"
 )
 
 func resourceSkytapNetwork() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceSkytapNetworkCreate,
-		Read:   resourceSkytapNetworkRead,
-		Update: resourceSkytapNetworkUpdate,
-		Delete: resourceSkytapNetworkDelete,
+		CreateContext: resourceSkytapNetworkCreate,
+		ReadContext:   resourceSkytapNetworkRead,
+		UpdateContext: resourceSkytapNetworkUpdate,
+		DeleteContext: resourceSkytapNetworkDelete,
 
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(10 * time.Minute),
@@ -30,47 +33,55 @@ func resourceSkytapNetwork() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
+				Description:  "ID of the environment you want to attach the network to",
 				ValidateFunc: validation.NoZeroValues,
 			},
 
 			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.NoZeroValues,
+				Description:  "User-defined name of the network",
+				ValidateFunc: validation.StringLenBetween(1, 255),
 			},
 
 			"domain": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: validation.NoZeroValues,
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "Domain name for the Skytap network. This field can be changed only when all virtual machines in the environment are stopped (not suspended or running)",
+				ValidateFunc: validation.All(
+					validation.NoZeroValues,
+					validation.StringLenBetween(1, 64),
+					validation.StringMatch(regexp.MustCompile(`(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]`), "Valid characters are lowercase letters, numbers, and hyphens. Cannot be blank, must not begin or end with a period, and must start and end with a letter or number"),
+				),
 			},
 
 			"subnet": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.CIDRNetwork(16, 29),
+				Description:  "Defines the subnet address and subnet mask size in CIDR format (for example, 10.0.0.0/24). IP addresses for the VMs are assigned from this subnet and standard network services (DNS resolution, CIFS share, routes to Internet) are defined appropriately for it",
+				ValidateFunc: validation.IsCIDRNetwork(16, 29),
 			},
 
 			"gateway": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.SingleIP(),
+				Description:  "Gateway IP address",
+				ValidateFunc: validation.IsIPAddress,
 			},
 
 			"tunnelable": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "Whether or not this network can be connected to other networks",
 			},
 		},
 	}
 }
 
-func resourceSkytapNetworkCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceSkytapNetworkCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*SkytapClient).networksClient
-	ctx, cancel := stopContextForCreate(d, meta.(*SkytapClient))
-	defer cancel()
 
 	environmentID := d.Get("environment_id").(string)
 	name := d.Get("name").(string)
@@ -94,11 +105,11 @@ func resourceSkytapNetworkCreate(d *schema.ResourceData, meta interface{}) error
 	log.Printf("[TRACE] network create options: %v", spew.Sdump(opts))
 	network, err := client.Create(ctx, environmentID, &opts)
 	if err != nil {
-		return fmt.Errorf("error creating network: %v", err)
+		return diag.Errorf("error creating network: %v", err)
 	}
 
 	if network.ID == nil {
-		return fmt.Errorf("network ID is not set")
+		return diag.Errorf("network ID is not set")
 	}
 	networkID := *network.ID
 	d.SetId(networkID)
@@ -107,16 +118,14 @@ func resourceSkytapNetworkCreate(d *schema.ResourceData, meta interface{}) error
 	log.Printf("[TRACE] network created: %v", spew.Sdump(network))
 
 	if err = waitForEnvironmentReady(ctx, d, meta, environmentID, schema.TimeoutCreate); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
-	return resourceSkytapNetworkRead(d, meta)
+	return resourceSkytapNetworkRead(ctx, d, meta)
 }
 
-func resourceSkytapNetworkRead(d *schema.ResourceData, meta interface{}) error {
+func resourceSkytapNetworkRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*SkytapClient).networksClient
-	ctx, cancel := stopContextForRead(d, meta.(*SkytapClient))
-	defer cancel()
 
 	environmentID := d.Get("environment_id").(string)
 	id := d.Id()
@@ -130,26 +139,42 @@ func resourceSkytapNetworkRead(d *schema.ResourceData, meta interface{}) error {
 			return nil
 		}
 
-		return fmt.Errorf("error retrieving network (%s): %v", id, err)
+		return diag.Errorf("error retrieving network (%s): %v", id, err)
 	}
 
-	d.Set("environment_id", environmentID)
-	d.Set("name", network.Name)
-	d.Set("domain", network.Domain)
-	d.Set("subnet", network.Subnet)
-	d.Set("gateway", network.Gateway)
-	d.Set("tunnelable", network.Tunnelable)
+	err = d.Set("environment_id", environmentID)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = d.Set("name", network.Name)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = d.Set("domain", network.Domain)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = d.Set("subnet", network.Subnet)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = d.Set("gateway", network.Gateway)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = d.Set("tunnelable", network.Tunnelable)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	log.Printf("[INFO] network retrieved: %s", id)
 	log.Printf("[TRACE] network retrieved: %v", spew.Sdump(network))
 
-	return err
+	return nil
 }
 
-func resourceSkytapNetworkUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceSkytapNetworkUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*SkytapClient).networksClient
-	ctx, cancel := stopContextForUpdate(d, meta.(*SkytapClient))
-	defer cancel()
 
 	id := d.Id()
 
@@ -174,23 +199,21 @@ func resourceSkytapNetworkUpdate(d *schema.ResourceData, meta interface{}) error
 	log.Printf("[TRACE] network update options: %v", spew.Sdump(opts))
 	network, err := client.Update(ctx, environmentID, id, &opts)
 	if err != nil {
-		return fmt.Errorf("error updating network (%s): %v", id, err)
+		return diag.Errorf("error updating network (%s): %v", id, err)
 	}
 
 	log.Printf("[INFO] network updated: %s", id)
 	log.Printf("[TRACE] network updated: %v", spew.Sdump(network))
 
 	if err = waitForEnvironmentReady(ctx, d, meta, environmentID, schema.TimeoutUpdate); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
-	return resourceSkytapNetworkRead(d, meta)
+	return resourceSkytapNetworkRead(ctx, d, meta)
 }
 
-func resourceSkytapNetworkDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceSkytapNetworkDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*SkytapClient).networksClient
-	ctx, cancel := stopContextForDelete(d, meta.(*SkytapClient))
-	defer cancel()
 
 	environmentID := d.Get("environment_id").(string)
 	id := d.Id()
@@ -203,13 +226,13 @@ func resourceSkytapNetworkDelete(d *schema.ResourceData, meta interface{}) error
 			return nil
 		}
 
-		return fmt.Errorf("error deleting network (%s): %v", id, err)
+		return diag.Errorf("error deleting network (%s): %v", id, err)
 	}
 	if err = waitForEnvironmentReady(ctx, d, meta, environmentID, schema.TimeoutDelete); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	log.Printf("[INFO] network destroyed: %s", id)
 
-	return err
+	return nil
 }

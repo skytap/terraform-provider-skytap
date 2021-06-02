@@ -1,14 +1,16 @@
 package skytap
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strconv"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+
 	"github.com/terraform-providers/terraform-provider-skytap/skytap/utils"
 )
 
@@ -26,7 +28,7 @@ func testSweepSkytapProject(region string) error {
 	}
 
 	client := meta.projectsClient
-	ctx := meta.StopContext
+	ctx := context.TODO()
 
 	log.Printf("[INFO] Retrieving list of projects")
 	projects, err := client.List(ctx)
@@ -47,13 +49,12 @@ func testSweepSkytapProject(region string) error {
 }
 
 func TestAccSkytapProject_Basic(t *testing.T) {
-	t.Parallel()
 	rInt := acctest.RandInt()
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckSkytapProjectDestroy,
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testAccCheckSkytapProjectDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSkytapProjectConfig_basic(rInt),
@@ -83,7 +84,7 @@ func testAccCheckSkytapProjectExists(name string) resource.TestCheckFunc {
 
 		// retrieve the connection established in Provider configuration
 		client := testAccProvider.Meta().(*SkytapClient).projectsClient
-		ctx := testAccProvider.Meta().(*SkytapClient).StopContext
+		ctx := context.TODO()
 
 		// Retrieve our project by referencing it's state ID for API lookup
 
@@ -109,7 +110,7 @@ func testAccCheckSkytapProjectExists(name string) resource.TestCheckFunc {
 func testAccCheckSkytapProjectDestroy(s *terraform.State) error {
 	// retrieve the connection established in Provider configuration
 	client := testAccProvider.Meta().(*SkytapClient).projectsClient
-	ctx := testAccProvider.Meta().(*SkytapClient).StopContext
+	ctx := context.TODO()
 
 	// loop through the resources in state, verifying each project
 	// is destroyed

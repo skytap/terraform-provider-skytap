@@ -7,7 +7,8 @@ PKG_NAME=skytap
 default: build
 
 build: fmtcheck
-	go install
+	go build -o bin/terraform-provider-$(PKG_NAME)
+	@sh -c "'$(CURDIR)/scripts/generate-dev-overrides.sh'"
 
 test: fmtcheck
 	go test -i $(TEST) || exit 1
@@ -44,25 +45,26 @@ test-compile:
 	fi
 	go test -c $(TEST) $(TESTARGS)
 
-website:
-ifeq (,$(wildcard $(GOPATH)/src/$(WEBSITE_REPO)))
-	echo "$(WEBSITE_REPO) not found in your GOPATH (necessary for layouts and assets), get-ting..."
-	git clone https://$(WEBSITE_REPO) $(GOPATH)/src/$(WEBSITE_REPO)
-endif
-	@$(MAKE) -C $(GOPATH)/src/$(WEBSITE_REPO) website-provider PROVIDER_PATH=$(shell pwd) PROVIDER_NAME=$(PKG_NAME)
-
-website-test:
-ifeq (,$(wildcard $(GOPATH)/src/$(WEBSITE_REPO)))
-	echo "$(WEBSITE_REPO) not found in your GOPATH (necessary for layouts and assets), get-ting..."
-	git clone https://$(WEBSITE_REPO) $(GOPATH)/src/$(WEBSITE_REPO)
-endif
-	@$(MAKE) -C $(GOPATH)/src/$(WEBSITE_REPO) website-provider-test PROVIDER_PATH=$(shell pwd) PROVIDER_NAME=$(PKG_NAME)
-
 lint:
 	golint ./skytap/...
 
 imports:
 	goimports -w $(GOIMPORT_FILES)
 
-.PHONY: build test testacc vet fmt fmtcheck errcheck test-compile website website-test lint imports
+BIN=$(CURDIR)/bin
+$(BIN)/%:
+	@echo Installing tools from tools.go
+	@cat tools/tools.go | grep _ | awk -F'"' '{print $$2}' | GOBIN=$(BIN) xargs -tI {} go install {}
 
+generate-docs: $(BIN)/tfplugindocs
+	$(BIN)/tfplugindocs
+
+tfproviderlint: $(BIN)/tfproviderlint
+	$(BIN)/tfproviderlint $(TFPROVIDERLINT_ARGS) ./...
+
+sweep:
+	@echo "WARNING: This will destroy infrastructure. Use only in development accounts."
+	go test ./skytap -v -sweep=ALL $(SWEEPARGS) -timeout 30m
+
+
+.PHONY: build test testacc vet fmt fmtcheck errcheck test-compile lint imports generate-docs tfproviderlint sweep

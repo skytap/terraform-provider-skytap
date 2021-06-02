@@ -1,0 +1,37 @@
+---
+page_title: "skytap_environment Resource - terraform-provider-skytap"
+subcategory: ""
+description: |-
+  Provides a Skytap Environment resource.
+---
+
+# skytap_environment (Resource)
+
+Provides a Skytap Environment resource. An environment consists of one or more virtual machines, networks, 
+and associated settings and metadata. Unlike a template, an environment can be run and have most of its settings 
+modified. When an environment is created all of its VMs will be run.
+
+## Example Usage
+
+
+```hcl
+# Create a new environment
+resource "skytap_environment" "environment" {
+  template_id = "123456"
+  name = "Terraform Example"
+  description = "Skytap terraform provider example environment."
+  tags = ["example"]
+}
+```
+
+~> **NOTE:** If `suspend_on_idle` and `suspend_at_time` are both null, automatic suspend is disabled.
+
+~> **NOTE:** If `suspend_on_idle` and `suspend_at_time` are both null, automatic suspend is disabled. If `shutdown_on_idle` and `shutdown_at_time` are both null, automatic shut down is disabled.
+
+~> **NOTE:** If `suspend_on_idle` and `suspend_at_time` are both null, automatic suspend is disabled.* An environment cannot be set to automatically suspend and shut down. Only one of the following settings can take effect: `suspend_on_idle`, `suspend_at_time`, `shutdown_on_idle`, or `shutdown_at_time`.
+
+~> **NOTE:** If `suspend_on_idle` and `suspend_at_time` are both null, automatic suspend is disabled. When you send a request that updates one of the four suspend or shutdown options, the other three options are automatically set to null by the REST API.
+
+~> **NOTE:** If `suspend_on_idle` and `suspend_at_time` are both null, automatic suspend is disabled. If multiple suspend or shut down options are sent in the same request, the `suspend_type` field determines which setting Skytap Cloud will honor.
+
+{{ .SchemaMarkdown | trimspace }}

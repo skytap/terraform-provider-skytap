@@ -1,16 +1,18 @@
 package skytap
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"regexp"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/skytap/skytap-sdk-go/skytap"
+
 	"github.com/terraform-providers/terraform-provider-skytap/skytap/utils"
 )
 
@@ -28,7 +30,7 @@ func testSweepSkytapEnvironment(region string) error {
 	}
 
 	client := meta.environmentsClient
-	ctx := meta.StopContext
+	ctx := context.TODO()
 
 	log.Printf("[INFO] Retrieving list of environments")
 	environments, err := client.List(ctx)
@@ -48,14 +50,14 @@ func testSweepSkytapEnvironment(region string) error {
 }
 
 func TestAccSkytapEnvironment_Basic(t *testing.T) {
-	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1478959")
 	uniqueSuffix := acctest.RandInt()
 	var environment skytap.Environment
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSkytapEnvironmentConfig_basic(uniqueSuffix, templateID, `["integration_test"]`),
@@ -78,15 +80,15 @@ func TestAccSkytapEnvironment_Basic(t *testing.T) {
 }
 
 func TestAccSkytapEnvironment_UpdateTemplate(t *testing.T) {
-	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
-	template2ID := utils.GetEnv("SKYTAP_TEMPLATE_ID2", "1473347")
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1478959")
+	template2ID := utils.GetEnv("SKYTAP_TEMPLATE_ID2", "1877151")
 	rInt := acctest.RandInt()
 	var environment skytap.Environment
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSkytapEnvironmentConfig_basic(rInt, templateID, `[]`),
@@ -105,15 +107,15 @@ func TestAccSkytapEnvironment_UpdateTemplate(t *testing.T) {
 }
 
 func TestAccSkytapEnvironment_UpdateTags(t *testing.T) {
-	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1478959")
 	uniqueSuffix := acctest.RandInt()
 
 	var environment skytap.Environment
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSkytapEnvironmentConfig_basic(uniqueSuffix, templateID, `["foo", "bar"]`),
@@ -139,7 +141,7 @@ func TestAccSkytapEnvironment_UpdateTags(t *testing.T) {
 }
 
 func TestAccSkytapEnvironment_UserData(t *testing.T) {
-	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1478959")
 	uniqueSuffix := acctest.RandInt()
 	var environment skytap.Environment
 
@@ -149,9 +151,9 @@ func TestAccSkytapEnvironment_UserData(t *testing.T) {
 				`
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				PreventDiskCleanup: true,
@@ -166,7 +168,7 @@ func TestAccSkytapEnvironment_UserData(t *testing.T) {
 }
 
 func TestAccSkytapEnvironment_UserDataUpdate(t *testing.T) {
-	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1478959")
 	uniqueSuffix := acctest.RandInt()
 	var environment skytap.Environment
 
@@ -174,17 +176,17 @@ func TestAccSkytapEnvironment_UserDataUpdate(t *testing.T) {
 				cat /proc/cpu_info
 				EOF
 				`
-	userDataRe, _ := regexp.Compile("\\s*cat \\/proc\\/cpu_info\\n")
+	userDataRe := regexp.MustCompile(`\s*cat /proc/cpu_info\n`)
 	userDataUpdate := `<<EOF
 				cat /proc/cpu_info  > /temp/acc
 				EOF
 				`
-	userDataUpdateRe, _ := regexp.Compile("\\s*cat \\/proc\\/cpu_info\\s*\\>\\s*\\/temp\\/acc\\n")
+	userDataUpdateRe := regexp.MustCompile(`\s*cat /proc/cpu_info\s*>\s*/temp/acc\n`)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSkytapEnvironmentConfig_UserData(uniqueSuffix, templateID, userData),
@@ -220,7 +222,7 @@ const labelRequirements = `
 	`
 
 func TestAccSkytapEnvironment_Labels(t *testing.T) {
-	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1478959")
 	uniqueSuffix := acctest.RandInt()
 	var environment skytap.Environment
 
@@ -240,9 +242,9 @@ func TestAccSkytapEnvironment_Labels(t *testing.T) {
 	`
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				PreventDiskCleanup: true,
@@ -256,7 +258,7 @@ func TestAccSkytapEnvironment_Labels(t *testing.T) {
 }
 
 func TestAccSkytapEnvironment_LabelsUpdate(t *testing.T) {
-	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1473407")
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1478959")
 	uniqueSuffix := acctest.RandInt()
 	var environment skytap.Environment
 
@@ -287,9 +289,9 @@ func TestAccSkytapEnvironment_LabelsUpdate(t *testing.T) {
 	`
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckSkytapEnvironmentDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				PreventDiskCleanup: true,
@@ -387,7 +389,7 @@ func testAccCheckSkytapEnvironmentContainsLabel(enviroment *skytap.Environment, 
 func testAccCheckSkytapEnvironmentDestroy(s *terraform.State) error {
 	// retrieve the connection established in Provider configuration
 	client := testAccProvider.Meta().(*SkytapClient).environmentsClient
-	ctx := testAccProvider.Meta().(*SkytapClient).StopContext
+	ctx := context.TODO()
 
 	// loop through the resources in state, verifying each environment
 	// is destroyed
@@ -448,7 +450,7 @@ func getEnvironment(rs *terraform.ResourceState) (*skytap.Environment, error) {
 	var err error
 	// retrieve the connection established in Provider configuration
 	client := testAccProvider.Meta().(*SkytapClient).environmentsClient
-	ctx := testAccProvider.Meta().(*SkytapClient).StopContext
+	ctx := context.TODO()
 
 	// Retrieve our environment by referencing it's state ID for API lookup
 	environment, errClient := client.Get(ctx, rs.Primary.ID)

@@ -1,0 +1,25 @@
+---
+page_title: "skytap_project Resource - terraform-provider-skytap"
+subcategory: ""
+description: |-
+  Provides a Skytap Project resource.
+---
+
+# skytap_project (Resource)
+
+Provides a Skytap Project resource. Projects are an access permissions model used to share environments, 
+templates, and assets with other users.
+
+## Example Usage
+
+```hcl
+# Create a new project
+resource "skytap_project" "project" {
+  name = "Terraform Example"
+  summary = "Skytap terraform provider example project."
+  show_project_members = false
+  auto_add_role_name = "participant"
+}
+```
+
+{{ .SchemaMarkdown | trimspace }}

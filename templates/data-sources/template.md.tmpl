@@ -1,0 +1,33 @@
+---
+page_title: "skytap_template Data Source - terraform-provider-skytap"
+subcategory: ""
+description: |-
+  Get information on a template.
+---
+
+# skytap_template (Data Source)
+
+Get information on a template. This data source provides the id and name of a template as configured on your Skytap account.
+This is useful in order to retrieve a template's id via its name. The name field takes a regular expression to facilitate
+the matching process.
+
+An error is triggered if:
+ 1. No templates can be retrieved.
+ 2. The template does not exist.
+ 3. More than one template matches the name and the `most_recent` flag is not set.
+ 
+If more than one templates are retrieved the `most_recent` can be set. 
+This will sort the results in descending order according to the creation date. The newest template will be used.
+
+## Example Usage
+
+Get the template:
+
+```hcl
+data "skytap_template" "example" {
+ 	name = "18.04"
+    most_recent = true
+}
+```
+
+{{ .SchemaMarkdown | trimspace }}

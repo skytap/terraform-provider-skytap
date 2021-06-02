@@ -87,7 +87,7 @@ func TestFlattenDisks(t *testing.T) {
 	expected["name"] = []string{"one", "two", "three"}
 
 	var disks []skytap.Disk
-	err := json.Unmarshal([]byte(readTestFile(t, "disks.json")), &disks)
+	err := json.Unmarshal(readTestFile(t, "disks.json"), &disks)
 	if err != nil {
 		t.Fatal(err)
 	}

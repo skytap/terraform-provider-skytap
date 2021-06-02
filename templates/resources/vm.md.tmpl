@@ -1,0 +1,64 @@
+---
+page_title: "skytap_vm Resource - terraform-provider-skytap"
+subcategory: ""
+description: |-
+  Provides a Skytap Virtual Machine (VM) resource.
+---
+
+# skytap_vm (Resource)
+
+Provides a Skytap Virtual Machine (VM) resource. The environment VM resource represents an image of a single virtual machine.
+
+~> **NOTE:**
+* VMs do not exist outside of environments or templates.
+* An environment or template can have multiple VMs.
+* Each VM is a unique resource. Therefore, a VM in a template will have a different ID than a VM in an environment created from that template.
+* The VM will be run immediately after creation.
+
+## Example Usage
+
+```hcl
+# Create a new vm
+resource "skytap_vm" "vm" {
+  template_id = 1473407
+  vm_id = 37865463
+  environment_id = "${skytap_environment.environment.id}"
+  name = "my vm"
+  cpus = 2
+  ram = 4096
+
+  os_disk_size = 40000
+
+  disk  {
+    name = "my disk"
+    size = 4096
+  }
+
+  disk  {
+      name = "my other disk"
+      size = 4096
+  }
+
+  network_interface  {
+     interface_type = "vmxnet3"
+     network_id = "${skytap_network.network.id}"
+     ip = "172.128.0.1"
+     hostname = "myhost"
+
+    published_service {
+      name = "ssh"
+      internal_port = 22
+    }
+  }
+}
+
+# Will work after VM resource is created
+output "ssh_ip" {
+  value = "${skytap_vm.vm.service_ips.ssh}"
+}
+output "ssh_port" {
+  value = "${skytap_vm.vm.service_ports.ssh}"
+}
+```
+
+{{ .SchemaMarkdown | trimspace }}

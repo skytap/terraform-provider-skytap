@@ -4,27 +4,29 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"regexp"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/skytap/skytap-sdk-go/skytap"
 	"github.com/terraform-providers/terraform-provider-skytap/skytap/utils"
 )
 
 func resourceSkytapVM() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceSkytapVMCreate,
-		Read:   resourceSkytapVMRead,
-		Update: resourceSkytapVMUpdate,
-		Delete: resourceSkytapVMDelete,
+		CreateContext: resourceSkytapVMCreate,
+		ReadContext:   resourceSkytapVMRead,
+		UpdateContext: resourceSkytapVMUpdate,
+		DeleteContext: resourceSkytapVMDelete,
 
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(10 * time.Minute),
-			Update: schema.DefaultTimeout(10 * time.Minute),
-			Delete: schema.DefaultTimeout(10 * time.Minute),
+			Create: schema.DefaultTimeout(20 * time.Minute),
+			Update: schema.DefaultTimeout(20 * time.Minute),
+			Delete: schema.DefaultTimeout(20 * time.Minute),
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -32,6 +34,7 @@ func resourceSkytapVM() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
+				Description:  "ID of the environment you want to add the VM to",
 				ValidateFunc: validation.NoZeroValues,
 			},
 
@@ -39,6 +42,7 @@ func resourceSkytapVM() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
+				Description:  "ID of the template you want to create the VM from",
 				ValidateFunc: validation.NoZeroValues,
 			},
 
@@ -46,6 +50,7 @@ func resourceSkytapVM() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
+				Description:  "ID of the VM within the template that you want to create the VM from",
 				ValidateFunc: validation.NoZeroValues,
 			},
 
@@ -53,53 +58,62 @@ func resourceSkytapVM() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.NoZeroValues,
+				Description:  "User-defined name of the VM",
+				ValidateFunc: validation.StringLenBetween(1, 100),
 			},
 
 			"cpus": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
+				Description:  "Number of CPUs allocated to this virtual machine",
 				ValidateFunc: validation.IntBetween(1, 12),
 			},
 
 			"max_cpus": {
-				Type:     schema.TypeInt,
-				Computed: true,
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Maximum settable CPUs for the VM",
 			},
 
 			"ram": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
+				Description:  "Amount of RAM allocated to the VM",
 				ValidateFunc: validation.IntBetween(256, 131072),
 			},
 
 			"max_ram": {
-				Type:     schema.TypeInt,
-				Computed: true,
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Maximum amount of RAM that can be allocated to the VM",
 			},
 
 			"os_disk_size": {
 				Type:         schema.TypeInt,
 				Computed:     true,
 				Optional:     true,
+				Description:  "The size of the OS disk. The disk size is in MiB; it will be converted to GiB in the Skytap UI. The maximum disk size is 2,096,128 MiB (1.999 TiB)",
 				ValidateFunc: validation.IntBetween(2048, 2096128),
 			},
 
 			"disk": {
-				Type:     schema.TypeSet,
-				Set:      diskHash,
-				Optional: true,
+				Type:        schema.TypeSet,
+				Optional:    true,
+				Description: "Set of virtual disks within the VM",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:         schema.TypeString,
+							Required:     true,
+							Description:  "A unique name for the disk",
+							ValidateFunc: validation.StringLenBetween(1, 33),
 						},
 						"size": {
 							Type:         schema.TypeInt,
 							Required:     true,
+							Description:  "The size of the disk specified in MiB. The minimum disk size is 2048 MiB; the maximum is 2,096,128 MiB (1.999 TiB)",
 							ValidateFunc: validation.IntBetween(2048, 2096128),
 						},
 						"id": {
@@ -107,52 +121,63 @@ func resourceSkytapVM() *schema.Resource {
 							Computed: true,
 						},
 						"type": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "The type of disk",
 						},
 						"controller": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "The disk controller",
 						},
 						"lun": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "The logical unit number (LUN) of the disk",
 						},
 					},
 				},
 			},
 
 			"network_interface": {
-				Type:     schema.TypeSet,
-				Set:      networkInterfaceHash,
-				Optional: true,
-				Computed: true,
-				ForceNew: true,
+				Type:        schema.TypeSet,
+				Optional:    true,
+				Computed:    true,
+				Description: "Set of virtualized network interface cards (also known as a network adapters)",
+				ForceNew:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"interface_type": {
 							Type:         schema.TypeString,
 							Required:     true,
 							ForceNew:     true,
+							Description:  "Type of network that this network adapter is attached to",
 							ValidateFunc: validateNICType(),
 						},
 						"network_id": {
 							Type:         schema.TypeString,
 							Required:     true,
 							ForceNew:     true,
+							Description:  "ID of the network that this network adapter is attached to",
 							ValidateFunc: validation.NoZeroValues,
 						},
 						"ip": {
 							Type:         schema.TypeString,
 							Required:     true,
 							ForceNew:     true,
-							ValidateFunc: validation.SingleIP(),
+							Description:  "The IP address (for example, 10.1.0.37). Skytap will not assign the same IP address to multiple interfaces on the same network",
+							ValidateFunc: validation.IsIPAddress,
 						},
 						"hostname": {
-							Type:         schema.TypeString,
-							Required:     true,
-							ForceNew:     true,
-							ValidateFunc: validation.NoZeroValues,
+							Type:        schema.TypeString,
+							Required:    true,
+							ForceNew:    true,
+							Description: "Hostname of the VM",
+							ValidateFunc: validation.All(
+								validation.StringLenBetween(1, 32),
+								validation.StringMatch(regexp.MustCompile(`^(?:[a-z0-9][a-z0-9-]*)?[a-z0-9]$`), "Valid characters are lowercase letters, numbers, and hyphens. Cannot begin or end with hyphens"),
+								validation.StringNotInSlice([]string{"gw"}, true),
+							),
 						},
 						"id": {
 							Type:     schema.TypeString,
@@ -160,22 +185,24 @@ func resourceSkytapVM() *schema.Resource {
 						},
 
 						"published_service": {
-							Type:     schema.TypeSet,
-							Set:      publishedServiceHash,
-							Optional: true,
-							ForceNew: true,
+							Type:        schema.TypeSet,
+							Optional:    true,
+							ForceNew:    true,
+							Description: "A binding of a port on a network interface to an IP and port that is routable and accessible from the public Internet. This mechanism is used to selectively expose ports on the guest to the public Internet",
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"name": {
 										Type:         schema.TypeString,
 										Required:     true,
 										ForceNew:     true,
+										Description:  "A unique name for the published service",
 										ValidateFunc: validation.NoZeroValues,
 									},
 									"internal_port": {
 										Type:         schema.TypeInt,
 										Required:     true,
 										ForceNew:     true,
+										Description:  "The port that is exposed on the interface",
 										ValidateFunc: validation.NoZeroValues,
 									},
 									"id": {
@@ -183,12 +210,14 @@ func resourceSkytapVM() *schema.Resource {
 										Computed: true,
 									},
 									"external_ip": {
-										Type:     schema.TypeString,
-										Computed: true,
+										Type:        schema.TypeString,
+										Computed:    true,
+										Description: "The published service's external IP",
 									},
 									"external_port": {
-										Type:     schema.TypeInt,
-										Computed: true,
+										Type:        schema.TypeInt,
+										Computed:    true,
+										Description: "The published service's external port",
 									},
 								},
 							},
@@ -197,32 +226,38 @@ func resourceSkytapVM() *schema.Resource {
 				},
 			},
 			"service_ips": {
-				Type:     schema.TypeMap,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+				Type:        schema.TypeMap,
+				Computed:    true,
+				Description: "Map of external IP addresses. The key is the name of a published service - as defined in the `published_service` block",
+				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 			"service_ports": {
-				Type:     schema.TypeMap,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeInt},
+				Type:        schema.TypeMap,
+				Computed:    true,
+				Description: "Map of external IP addresses. The key is the name of a published service - as defined in the `published_service` block",
+				Elem:        &schema.Schema{Type: schema.TypeInt},
 			},
 			"user_data": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "VM user data, available from the metadata server and the Skytap API",
 			},
 
 			"label": {
-				Type:     schema.TypeSet,
-				Optional: true,
+				Type:        schema.TypeSet,
+				Optional:    true,
+				Description: "Set of labels for the instance",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"category": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "Label category that provides contextual meaning",
 						},
 						"value": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "Label value used for reporting",
 						},
 						"id": {
 							Type:     schema.TypeString,
@@ -235,59 +270,54 @@ func resourceSkytapVM() *schema.Resource {
 	}
 }
 
-func resourceSkytapVMCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceSkytapVMCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	environmentID := d.Get("environment_id").(string)
 	client := meta.(*SkytapClient).vmsClient
-	ctx, cancel := stopContextForCreate(d, meta.(*SkytapClient))
-	defer cancel()
 
 	// Give it some more breathing space. Might reject request if straight after a destroy.
 	if err := waitForEnvironmentReady(ctx, d, meta, environmentID, schema.TimeoutCreate); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	id, err := vmCreate(ctx, d, meta, environmentID)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	d.SetId(id)
 
 	if err = waitForVMStopped(ctx, d, meta); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	if err = waitForEnvironmentReady(ctx, d, meta, environmentID, schema.TimeoutCreate); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
-
-	// Update the state as things get added to the VM as they will contain information needed during subsequent reads,
-	// such which network has what name
-	d.Partial(true)
 
 	// create network interfaces if necessary
 	if _, ok := d.GetOk("network_interface"); ok {
 		vmNetworks, err := addNetworkAdapters(ctx, d, meta, id)
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 
-		d.Set("network_interface", vmNetworks)
-		d.SetPartial("network_interface")
+		err = d.Set("network_interface", vmNetworks)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	vmDisks, err := addVMHardware(ctx, d, meta, environmentID, id)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	if err := d.Set("disk", vmDisks); err != nil {
 		log.Printf("[ERROR] error flattening disks: %v", err)
-		return err
+		return diag.FromErr(err)
 	}
-	d.SetPartial("disk")
 
 	if userData, ok := d.GetOk("user_data"); ok {
 		if err := client.UpdateUserData(ctx, environmentID, id, utils.String(userData.(string))); err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 	}
 
@@ -295,15 +325,13 @@ func resourceSkytapVMCreate(d *schema.ResourceData, meta interface{}) error {
 		labels := vmCreateLabels(label.(*schema.Set))
 		for _, l := range labels {
 			if err = client.CreateLabel(ctx, environmentID, id, l); err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 		}
 	}
 
-	d.Partial(false)
-
 	if err = forceRunning(ctx, meta, environmentID, id); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	stateConfUpdate := &resource.StateChangeConf{
@@ -316,21 +344,15 @@ func resourceSkytapVMCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	log.Printf("[INFO] Waiting for VM (%s) to complete", d.Id())
-	_, err = stateConfUpdate.WaitForState()
+	_, err = stateConfUpdate.WaitForStateContext(ctx)
 	if err != nil {
-		return fmt.Errorf("error waiting for VM (%s) to complete: %s", d.Id(), err)
+		return diag.Errorf("error waiting for VM (%s) to complete: %s", d.Id(), err)
 	}
 
-	return resourceSkytapVMReadAfterCreateUpdate(ctx, d, meta)
+	return resourceSkytapVMRead(ctx, d, meta)
 }
 
-func resourceSkytapVMRead(d *schema.ResourceData, meta interface{}) error {
-	ctx, cancel := stopContextForRead(d, meta.(*SkytapClient))
-	defer cancel()
-	return resourceSkytapVMReadAfterCreateUpdate(ctx, d, meta)
-}
-
-func resourceSkytapVMReadAfterCreateUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) error {
+func resourceSkytapVMRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*SkytapClient).vmsClient
 
 	environmentID := d.Get("environment_id").(string)
@@ -345,26 +367,47 @@ func resourceSkytapVMReadAfterCreateUpdate(ctx context.Context, d *schema.Resour
 			return nil
 		}
 
-		return fmt.Errorf("error retrieving VM (%s): %v", id, err)
+		return diag.Errorf("error retrieving VM (%s): %v", id, err)
 	}
 
 	// templateID and vmID are not set, as they are not returned by the VM response.
 	// If any of these attributes are changed, this VM will be rebuilt.
-	d.Set("environment_id", environmentID)
-	d.Set("name", vm.Name)
-	d.Set("cpus", vm.Hardware.CPUs)
-	d.Set("ram", vm.Hardware.RAM)
-	d.Set("max_cpus", vm.Hardware.MaxCPUs)
-	d.Set("max_ram", vm.Hardware.MaxRAM)
+	err = d.Set("environment_id", environmentID)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = d.Set("name", vm.Name)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = d.Set("cpus", vm.Hardware.CPUs)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = d.Set("ram", vm.Hardware.RAM)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = d.Set("max_cpus", vm.Hardware.MaxCPUs)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = d.Set("max_ram", vm.Hardware.MaxRAM)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	userData, err := client.GetUserData(ctx, environmentID, id)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
-	d.Set("user_data", userData)
+	err = d.Set("user_data", userData)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	if err = d.Set("label", flattenLabels(vm.Labels)); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	if len(vm.Interfaces) > 0 {
@@ -374,7 +417,7 @@ func resourceSkytapVMReadAfterCreateUpdate(ctx context.Context, d *schema.Resour
 			networkInterfaceMap := networkInterface.(map[string]interface{})
 			vmInterface, err := getVMNetworkInterface(networkInterfaceMap["id"].(string), vm)
 			if err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 			if _, ok := networkInterfaceMap["published_service"]; ok {
 				publishedServiceSet := networkInterfaceMap["published_service"].(*schema.Set)
@@ -393,21 +436,24 @@ func resourceSkytapVMReadAfterCreateUpdate(ctx context.Context, d *schema.Resour
 
 		if err := d.Set("network_interface", networkSetFlattened); err != nil {
 			log.Printf("[ERROR] error flattening network interfaces: %v", err)
-			return err
+			return diag.FromErr(err)
 		}
 		ports, ips := buildServices(networkSetFlattened)
 		err = d.Set("service_ports", ports)
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 		err = d.Set("service_ips", ips)
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 	}
 
 	if len(vm.Hardware.Disks) > 0 {
-		d.Set("os_disk_size", *vm.Hardware.Disks[0].Size)
+		err = d.Set("os_disk_size", *vm.Hardware.Disks[0].Size)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	for _, disk := range vm.Hardware.Disks {
@@ -430,7 +476,7 @@ func resourceSkytapVMReadAfterCreateUpdate(ctx context.Context, d *schema.Resour
 
 		if err := d.Set("disk", diskSetFlattened); err != nil {
 			log.Printf("[ERROR] error flattening disks: %v", err)
-			return err
+			return diag.FromErr(err)
 		}
 	}
 	log.Printf("[INFO] retrieved VM: %s", id)
@@ -439,28 +485,25 @@ func resourceSkytapVMReadAfterCreateUpdate(ctx context.Context, d *schema.Resour
 	return nil
 }
 
-func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceSkytapVMUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*SkytapClient).vmsClient
-	ctx, cancel := stopContextForUpdate(d, meta.(*SkytapClient))
-	defer cancel()
 
 	environmentID := d.Get("environment_id").(string)
 	id := d.Id()
 
 	opts := skytap.UpdateVMRequest{}
 
-	d.Partial(true)
 	if v, ok := d.GetOk("name"); ok && d.HasChange("name") {
 		opts.Name = utils.String(v.(string))
 	}
 
 	hardware, err := updateHardware(d)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	opts.Hardware = hardware
 
-	var vmDisks *schema.Set
+	var vmDisks []interface{}
 	if d.HasChange("disk") || d.HasChange("name") || d.HasChange("ram") ||
 		d.HasChange("cpus") || d.HasChange("os_disk_size") {
 
@@ -468,7 +511,7 @@ func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
 		log.Printf("[TRACE] VM update options: %v", spew.Sdump(opts))
 		vm, err := client.Update(ctx, environmentID, id, &opts)
 		if err != nil {
-			return fmt.Errorf("error updating vm (%s): %v", id, err)
+			return diag.Errorf("error updating vm (%s): %v", id, err)
 		}
 
 		log.Printf("[INFO] updated VM: %s", id)
@@ -478,22 +521,16 @@ func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
 		vmDisks = flattenDisks(vm.Hardware.Disks)
 
 		if err := d.Set("disk", vmDisks); err != nil {
-			return err
+			return diag.FromErr(err)
 		}
-		d.SetPartial("disk")
-		d.SetPartial("name")
-		d.SetPartial("ram")
-		d.SetPartial("cpus")
-		d.SetPartial("os_disk_size")
 	}
 
 	if d.HasChange("user_data") {
 		if userData, ok := d.GetOk("user_data"); ok {
 			if err := client.UpdateUserData(ctx, environmentID, id, utils.String(userData.(string))); err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 		}
-		d.SetPartial("user_data")
 	}
 
 	if d.HasChange("label") {
@@ -504,19 +541,16 @@ func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
 		for _, l := range remove.List() {
 			label := l.(map[string]interface{})
 			if err = client.DeleteLabel(ctx, environmentID, id, label["id"].(string)); err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 		}
 		labelsToAdd := vmCreateLabels(add)
 		for _, l := range labelsToAdd {
 			if err = client.CreateLabel(ctx, environmentID, id, l); err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 		}
-		d.SetPartial("label")
 	}
-
-	d.Partial(false)
 
 	stateConf := &resource.StateChangeConf{
 		Pending:    getVMPendingUpdateRunstates(false),
@@ -528,18 +562,16 @@ func resourceSkytapVMUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	log.Printf("[INFO] Waiting for VM (%s) to complete", d.Id())
-	_, err = stateConf.WaitForState()
+	_, err = stateConf.WaitForStateContext(ctx)
 	if err != nil {
-		return fmt.Errorf("error waiting for VM (%s) to complete: %s", d.Id(), err)
+		return diag.Errorf("error waiting for VM (%s) to complete: %s", d.Id(), err)
 	}
 
-	return resourceSkytapVMReadAfterCreateUpdate(ctx, d, meta)
+	return resourceSkytapVMRead(ctx, d, meta)
 }
 
-func resourceSkytapVMDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceSkytapVMDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*SkytapClient).vmsClient
-	ctx, cancel := stopContextForDelete(d, meta.(*SkytapClient))
-	defer cancel()
 
 	environmentID := d.Get("environment_id").(string)
 	id := d.Id()
@@ -552,7 +584,7 @@ func resourceSkytapVMDelete(d *schema.ResourceData, meta interface{}) error {
 			return nil
 		}
 
-		return fmt.Errorf("error deleting VM (%s): %v", id, err)
+		return diag.Errorf("error deleting VM (%s): %v", id, err)
 	}
 
 	stateConf := &resource.StateChangeConf{
@@ -565,16 +597,16 @@ func resourceSkytapVMDelete(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	log.Printf("[INFO] Waiting for VM (%s) to complete", d.Id())
-	_, err = stateConf.WaitForState()
+	_, err = stateConf.WaitForStateContext(ctx)
 	if err != nil {
-		return fmt.Errorf("error waiting for VM (%s) to complete: %s", d.Id(), err)
+		return diag.Errorf("error waiting for VM (%s) to complete: %s", d.Id(), err)
 	}
 	if err = waitForEnvironmentReady(ctx, d, meta, environmentID, schema.TimeoutDelete); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	log.Printf("[INFO] destroyed VM ID: %s", id)
 
-	return err
+	return nil
 }
 
 func addNetworkAdapters(ctx context.Context, d *schema.ResourceData, meta interface{}, vmID string) (interface{}, error) {
@@ -730,6 +762,20 @@ func addVMHardware(ctx context.Context, d *schema.ResourceData, meta interface{}
 			return nil, outOfRangeError("ram", *opts.Hardware.RAM, *vm.Hardware.MaxRAM)
 		}
 	}
+
+	// Check vCPUs does not exceed RAM
+	var ramGBs = mbToGb(*vm.Hardware.RAM)
+	if opts.Hardware.RAM != nil {
+		ramGBs = mbToGb(*opts.Hardware.RAM)
+	}
+	var vCPUs = *vm.Hardware.CPUs
+	if opts.Hardware.CPUs != nil {
+		vCPUs = *opts.Hardware.CPUs
+	}
+	if vCPUs > ramGBs {
+		return nil, cpusExceedsRamError(vCPUs, ramGBs)
+	}
+
 	if v, ok := d.GetOk("os_disk_size"); ok {
 		sizeNew := v.(int)
 		opts.Hardware.UpdateDisks.OSSize = utils.Int(sizeNew)
@@ -811,6 +857,16 @@ func updateHardware(d *schema.ResourceData) (*skytap.UpdateHardware, error) {
 		hardware.UpdateDisks.DiskIdentification = make([]skytap.DiskIdentification, 0)
 	}
 
+	if ram, ok := d.GetOk("ram"); ok && d.HasChange("ram") {
+		hardware.RAM = utils.Int(ram.(int))
+		if maxRAM, maxOK := d.GetOk("max_ram"); maxOK {
+			if *hardware.RAM > maxRAM.(int) {
+				return nil, outOfRangeError("ram", *hardware.RAM, maxRAM.(int))
+			}
+		} else {
+			return nil, fmt.Errorf("unable to read the 'max_ram' element")
+		}
+	}
 	if cpus, ok := d.GetOk("cpus"); ok && d.HasChange("cpus") {
 		hardware.CPUs = utils.Int(cpus.(int))
 		if maxCPUs, maxOK := d.GetOk("max_cpus"); maxOK {
@@ -820,15 +876,9 @@ func updateHardware(d *schema.ResourceData) (*skytap.UpdateHardware, error) {
 		} else {
 			return nil, fmt.Errorf("unable to read the 'max_cpus' element")
 		}
-	}
-	if ram, ok := d.GetOk("ram"); ok && d.HasChange("ram") {
-		hardware.RAM = utils.Int(ram.(int))
-		if maxRAM, maxOK := d.GetOk("max_ram"); maxOK {
-			if *hardware.RAM > maxRAM.(int) {
-				return nil, outOfRangeError("ram", *hardware.RAM, maxRAM.(int))
-			}
-		} else {
-			return nil, fmt.Errorf("unable to read the 'max_ram' element")
+
+		if ram, ok := d.GetOk("ram"); ok && cpus.(int) > mbToGb(ram.(int)) {
+			return nil, cpusExceedsRamError(cpus.(int), mbToGb(ram.(int)))
 		}
 	}
 
@@ -852,6 +902,14 @@ func checkDiskNotShrunk(sizeOld int, sizeNew int, name string) error {
 		return fmt.Errorf("cannot shrink volume (%s) from size (%d) to size (%d)", name, sizeOld, sizeNew)
 	}
 	return nil
+}
+
+func mbToGb(mb int) int {
+	return mb / 1024
+}
+
+func cpusExceedsRamError(cpus, ram int) error {
+	return fmt.Errorf("the 'cpus' argument has been assigned (%d) which is more than the maximum allowed (%d), the number of GB of RAM", cpus, ram)
 }
 
 func retrieveIDsFromOldState(d *schema.Set, name string) (string, int) {
@@ -939,7 +997,7 @@ func waitForVMStopped(ctx context.Context, d *schema.ResourceData, meta interfac
 	}
 
 	log.Printf("[INFO] Waiting for VM (%s) to complete", d.Id())
-	_, err := stateConf.WaitForState()
+	_, err := stateConf.WaitForStateContext(ctx)
 	if err != nil {
 		return fmt.Errorf("error waiting for VM (%s) to complete: %s", d.Id(), err)
 	}

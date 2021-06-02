@@ -1,14 +1,15 @@
 package skytap
 
 import (
-	"fmt"
+	"context"
 	"log"
 	"regexp"
 	"sort"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/skytap/skytap-sdk-go/skytap"
 )
 
@@ -16,28 +17,26 @@ const timestampFormat = "2006/01/02 15:04:05 -0700"
 
 func dataSourceSkytapTemplate() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceSkytapTemplateRead,
+		ReadContext: dataSourceSkytapTemplateRead,
 
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				Description:  "regex expression to name of the template",
+				Description:  "A regex expression for the name of the template",
 				ValidateFunc: validation.NoZeroValues,
 			},
 			"most_recent": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Description: "used when multiple items will be returned",
+				Description: "Use the most recently created template from the returned list",
 			},
 		},
 	}
 }
 
-func dataSourceSkytapTemplateRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceSkytapTemplateRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*SkytapClient).templatesClient
-	ctx, cancel := stopContextForRead(d, meta.(*SkytapClient))
-	defer cancel()
 
 	log.Printf("[INFO] preparing arguments for finding the Skytap Template")
 
@@ -45,13 +44,13 @@ func dataSourceSkytapTemplateRead(d *schema.ResourceData, meta interface{}) erro
 
 	templatesResult, err := client.List(ctx)
 	if err != nil {
-		return fmt.Errorf("error retrieving templates: %s", err)
+		return diag.Errorf("error retrieving templates: %s", err)
 	}
 
 	templates := filterDataSourceSkytapTemplatesByName(templatesResult.Value, name)
 
 	if len(templates) == 0 {
-		return fmt.Errorf("no template found with name %s", name)
+		return diag.Errorf("no template found with name %s", name)
 	}
 
 	var template skytap.Template
@@ -62,7 +61,7 @@ func dataSourceSkytapTemplateRead(d *schema.ResourceData, meta interface{}) erro
 		if recent {
 			template = mostRecentTemplate(templates)
 		} else {
-			return fmt.Errorf("your query returned more than one result. Please try a more " +
+			return diag.Errorf("your query returned more than one result. Please try a more " +
 				"specific search criteria, or set `most_recent` attribute to true")
 		}
 	} else {
@@ -70,7 +69,7 @@ func dataSourceSkytapTemplateRead(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	if template.ID == nil {
-		return fmt.Errorf("template ID is not set")
+		return diag.Errorf("template ID is not set")
 	}
 	templateID := *template.ID
 	d.SetId(templateID)
