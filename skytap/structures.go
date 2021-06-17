@@ -109,6 +109,22 @@ func flattenLabels(labels []*skytap.Label) []interface{} {
 	return flatted
 }
 
+func flattenProjectIDs(projects []skytap.Project) []interface{} {
+	flattened := make([]interface{}, len(projects))
+	for i, v := range projects {
+		flattened[i] = v.ID
+	}
+	return flattened
+}
+
+func flattenProjectEnvironments(environments []skytap.ProjectEnvironment) []interface{} {
+	flattened := make([]interface{}, len(environments))
+	for i, v := range environments {
+		flattened[i] = v.ID
+	}
+	return flattened
+}
+
 func getVMNetworkInterface(id string, vm *skytap.VM) (*skytap.Interface, error) {
 	for _, networkInterface := range vm.Interfaces {
 		if *networkInterface.ID == id {

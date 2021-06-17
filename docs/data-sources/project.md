@@ -40,5 +40,6 @@ data "skytap_project" "example" {
 ### Read-Only
 
 - **auto_add_role_name** (String) The role automatically assigned to every new user added to the project
+- **environment_ids** (Set of String) IDs of the environments within the project
 - **show_project_members** (Boolean) Whether project members can view a list of the other project members
 - **summary** (String) The summary description of the project

@@ -19,6 +19,9 @@ type ProjectsService interface {
 	Create(ctx context.Context, project *Project) (*Project, error)
 	Update(ctx context.Context, id int, project *Project) (*Project, error)
 	Delete(ctx context.Context, id int) error
+	ListEnvironments(ctx context.Context, id int) (*ProjectEnvironmentsListResult, error)
+	AddEnvironment(ctx context.Context, projectID int, environmentID string) (*ProjectEnvironment, error)
+	RemoveEnvironment(ctx context.Context, projectID int, environmentID string) error
 }
 
 // ProjectsServiceClient is the ProjectsService implementation
@@ -49,6 +52,15 @@ const (
 // ProjectListResult is the listing request specific struct
 type ProjectListResult struct {
 	Value []Project
+}
+
+type ProjectEnvironmentsListResult struct {
+	Value []ProjectEnvironment
+}
+
+// ProjectEnvironment is the environment resource as represented in the Projects API
+type ProjectEnvironment struct {
+	ID string `json:"id"`
 }
 
 // List the projects
@@ -150,4 +162,54 @@ func (s *ProjectsServiceClient) Delete(ctx context.Context, id int) error {
 	}
 
 	return nil
+}
+
+// ListEnvironments should list the environments within a project
+func (s *ProjectsServiceClient) ListEnvironments(ctx context.Context, id int) (*ProjectEnvironmentsListResult, error) {
+	path := fmt.Sprintf("%s/%d/configurations", projectsBasePath, id)
+
+	req, err := s.client.newRequest(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.client.setRequestListParameters(req, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var result ProjectEnvironmentsListResult
+	_, err = s.client.do(ctx, req, &result.Value, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+// AddEnvironment should add an environment to a project
+func (s *ProjectsServiceClient) AddEnvironment(ctx context.Context, projectID int, environmentID string) (*ProjectEnvironment, error) {
+	path := fmt.Sprintf("%s/%d/configurations/%s", projectsBasePath, projectID, environmentID)
+
+	req, err := s.client.newRequest(ctx, "POST", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var env ProjectEnvironment
+	_, err = s.client.do(ctx, req, &env, nil, nil)
+	return &env, err
+}
+
+// RemoveEnvironment should remove an environment from a project
+func (s *ProjectsServiceClient) RemoveEnvironment(ctx context.Context, projectID int, environmentID string) error {
+	path := fmt.Sprintf("%s/%d/configurations/%s", projectsBasePath, projectID, environmentID)
+
+	req, err := s.client.newRequest(ctx, "DELETE", path, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.client.do(ctx, req, nil, nil, nil)
+	return err
 }

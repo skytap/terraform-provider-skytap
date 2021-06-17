@@ -41,6 +41,15 @@ func dataSourceSkytapProject() *schema.Resource {
 				Computed:    true,
 				Description: "Whether project members can view a list of the other project members",
 			},
+
+			"environment_ids": {
+				Type:        schema.TypeSet,
+				Computed:    true,
+				Description: "IDs of the environments within the project",
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 		},
 	}
 }
@@ -87,6 +96,15 @@ func dataSourceSkytapProjectRead(ctx context.Context, d *schema.ResourceData, me
 		return diag.FromErr(err)
 	}
 	err = d.Set("show_project_members", project.ShowProjectMembers)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	environments, err := client.ListEnvironments(ctx, *project.ID)
+	if err != nil {
+		return diag.Errorf("error retrieving project environments: %v", err)
+	}
+	err = d.Set("environment_ids", flattenProjectEnvironments(environments.Value))
 	if err != nil {
 		return diag.FromErr(err)
 	}

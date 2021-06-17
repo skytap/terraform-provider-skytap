@@ -56,6 +56,15 @@ func resourceSkytapProject() *schema.Resource {
 				Default:     true,
 				Description: "Whether project members can view a list of other project members",
 			},
+
+			"environment_ids": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				Description: "A list of environments to add to the project",
+			},
 		},
 	}
 }
@@ -92,6 +101,14 @@ func resourceSkytapProjectCreate(ctx context.Context, d *schema.ResourceData, me
 	}
 	projectID := strconv.Itoa(*project.ID)
 	d.SetId(projectID)
+
+	environmentIDs := d.Get("environment_ids").(*schema.Set)
+	for _, environmentID := range environmentIDs.List() {
+		_, err := client.AddEnvironment(ctx, *project.ID, environmentID.(string))
+		if err != nil {
+			return diag.Errorf("error adding environment to project: %v", err)
+		}
+	}
 
 	log.Printf("[INFO] project created: %d", *project.ID)
 	log.Printf("[TRACE] project created: %v", spew.Sdump(project))
@@ -136,6 +153,15 @@ func resourceSkytapProjectRead(ctx context.Context, d *schema.ResourceData, meta
 		return diag.FromErr(err)
 	}
 
+	environments, err := client.ListEnvironments(ctx, id)
+	if err != nil {
+		return diag.Errorf("error retrieving project environments: %v", err)
+	}
+	err = d.Set("environment_ids", flattenProjectEnvironments(environments.Value))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	log.Printf("[INFO] project retrieved: %d", id)
 	log.Printf("[TRACE] project retrieved: %v", spew.Sdump(project))
 
@@ -172,6 +198,22 @@ func resourceSkytapProjectUpdate(ctx context.Context, d *schema.ResourceData, me
 	project, err := client.Update(ctx, id, &opts)
 	if err != nil {
 		return diag.Errorf("error updating project (%d): %v", id, err)
+	}
+
+	oldEnvIDs, newEnvIds := d.GetChange("environment_ids")
+	addedEnvs := newEnvIds.(*schema.Set).Difference(oldEnvIDs.(*schema.Set))
+	removedEnvs := oldEnvIDs.(*schema.Set).Difference(newEnvIds.(*schema.Set))
+	for _, envID := range addedEnvs.List() {
+		_, err := client.AddEnvironment(ctx, id, envID.(string))
+		if err != nil {
+			return diag.Errorf("error adding environment to project: %v", err)
+		}
+	}
+	for _, envID := range removedEnvs.List() {
+		err := client.RemoveEnvironment(ctx, id, envID.(string))
+		if err != nil {
+			return diag.Errorf("error removing environment from project: %v", err)
+		}
 	}
 
 	log.Printf("[INFO] project updated: %d", id)
