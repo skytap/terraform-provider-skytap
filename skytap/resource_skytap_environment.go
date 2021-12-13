@@ -54,7 +54,6 @@ func resourceSkytapEnvironment() *schema.Resource {
 			"outbound_traffic": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     false,
 				Description: "Indicates whether networks in the environment can send outbound traffic",
 			},
 
@@ -103,7 +102,6 @@ func resourceSkytapEnvironment() *schema.Resource {
 			"routable": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     false,
 				Description: "Indicates whether networks within the environment can route traffic to one another",
 			},
 
@@ -143,14 +141,18 @@ func resourceSkytapEnvironmentCreate(ctx context.Context, d *schema.ResourceData
 
 	templateID := d.Get("template_id").(string)
 	name := d.Get("name").(string)
-	outboundTraffic := d.Get("outbound_traffic").(bool)
-	routable := d.Get("routable").(bool)
 
 	opts := skytap.CreateEnvironmentRequest{
-		TemplateID:      &templateID,
-		Name:            &name,
-		OutboundTraffic: &outboundTraffic,
-		Routable:        &routable,
+		TemplateID: &templateID,
+		Name:       &name,
+	}
+
+	if v, ok := d.GetOk("outbound_traffic"); ok {
+		opts.OutboundTraffic = utils.Bool(v.(bool))
+	}
+
+	if v, ok := d.GetOk("routable"); ok {
+		opts.OutboundTraffic = utils.Bool(v.(bool))
 	}
 
 	if v, ok := d.GetOk("description"); ok {
