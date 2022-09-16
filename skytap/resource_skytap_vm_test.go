@@ -64,7 +64,7 @@ func TestAccSkytapVM_Basic(t *testing.T) {
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -84,7 +84,7 @@ func TestAccSkytapVM_Basic(t *testing.T) {
 func TestAccSkytapVM_Timeout(t *testing.T) {
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -103,7 +103,7 @@ func TestAccSkytapVM_Update(t *testing.T) {
 	uniqueSuffixVM := acctest.RandInt()
 	var vm skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -135,7 +135,7 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -229,7 +229,7 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -353,7 +353,7 @@ func TestAccSkytapVM_PublishedServiceBadNic(t *testing.T) {
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -385,7 +385,7 @@ func TestAccExternalPorts(t *testing.T) {
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -424,7 +424,7 @@ func TestAccSkytapVM_Typical(t *testing.T) {
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -467,7 +467,7 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 	var vm skytap.VM
 	var vmUpdated skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -534,7 +534,7 @@ func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
 	var vm skytap.VM
 	var vmUpdated skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -585,7 +585,7 @@ func TestAccSkytapVMCPURAM_UpdateNPECheck(t *testing.T) {
 	var vm skytap.VM
 	var vmUpdated skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -616,7 +616,7 @@ func TestAccSkytapVMCPURAM_Invalid(t *testing.T) {
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -635,7 +635,7 @@ func TestAccSkytapVMCPU_OutOfRange(t *testing.T) {
 	templateID, vmID, newEnvTemplateID := setupNonDefaultEnvironment("SKYTAP_TEMPLATE_OUTOFRANGE_ID", "1877151", "SKYTAP_VM_OUTOFRANGE_ID", "66413705")
 	uniqueSuffixEnv := acctest.RandInt()
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -654,7 +654,7 @@ func TestAccSkytapVMCPU_OutOfRangeAfterUpdate(t *testing.T) {
 	templateID, vmID, newEnvTemplateID := setupNonDefaultEnvironment("SKYTAP_TEMPLATE_OUTOFRANGE_ID", "1877151", "SKYTAP_VM_OUTOFRANGE_ID", "66413705")
 	uniqueSuffixEnv := acctest.RandInt()
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -679,7 +679,7 @@ func TestAccSkytapVMDisks_Create(t *testing.T) {
 	var vm skytap.VM
 	var vmUpdated skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -739,7 +739,7 @@ func TestAccSkytapVMDisks_UpdateNPECheck(t *testing.T) {
 	var vm skytap.VM
 	var vmUpdated skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -777,7 +777,7 @@ func TestAccSkytapVMDisks_Resize(t *testing.T) {
 	var vm skytap.VM
 	var vmUpdated skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -826,7 +826,7 @@ func TestAccSkytapVMDisk_Invalid(t *testing.T) {
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -858,7 +858,7 @@ func TestAccSkytapVMDisk_OS(t *testing.T) {
 	var vm skytap.VM
 	var vmUpdated skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -900,7 +900,7 @@ func TestAccSkytapVMDisk_OSChangeAfter(t *testing.T) {
 	var vm skytap.VM
 	var vmUpdated skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -932,7 +932,7 @@ func TestAccSkytapVM_Concurrent(t *testing.T) {
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -968,7 +968,7 @@ func TestAccSkytapVM_UserData(t *testing.T) {
 	`
 	userDataUpdatedRe, _ := regexp.Compile("\\s*less /proc/cpu_info\\n")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -1032,33 +1032,36 @@ func TestAccSkytapVM_Labels(t *testing.T) {
 		}
 	`
 
-	resource.Test(t, resource.TestCase{
+	labelEnv := fmt.Sprintf("tftest-Environment-%d", uniqueSuffixEnv)
+	labelOwners := fmt.Sprintf("tftest-Owners-%d", uniqueSuffixEnv)
+
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSkytapVMConfigBlock(newEnvTemplateID, uniqueSuffixEnv, templateID, vmID, "test",
-					labelRequirements, labels),
+					labelRequirements(uniqueSuffixEnv), labels),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "test"),
 					testAccCheckSkytapVMRunning(&vm),
-					testAccCheckSkytapLabelExists(&vm, "tftest-Environment", "Prod"),
-					testAccCheckSkytapLabelExists(&vm, "tftest-Owners", "Finance"),
-					testAccCheckSkytapLabelExists(&vm, "tftest-Owners", "Accounting"),
+					testAccCheckSkytapLabelExists(&vm, labelEnv, "Prod"),
+					testAccCheckSkytapLabelExists(&vm, labelOwners, "Finance"),
+					testAccCheckSkytapLabelExists(&vm, labelOwners, "Accounting"),
 				),
 			},
 			{
 				Config: testAccSkytapVMConfigBlock(newEnvTemplateID, uniqueSuffixEnv, templateID, vmID, "test",
-					labelRequirements, labelsUpdated),
+					labelRequirements(uniqueSuffixEnv), labelsUpdated),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "test"),
 					testAccCheckSkytapVMRunning(&vm),
-					testAccCheckSkytapLabelExists(&vm, "tftest-Environment", "UAT"),
-					testAccCheckSkytapLabelExists(&vm, "tftest-Owners", "Marketing"),
-					testAccCheckSkytapLabelExists(&vm, "tftest-Owners", "Accounting"),
+					testAccCheckSkytapLabelExists(&vm, labelEnv, "UAT"),
+					testAccCheckSkytapLabelExists(&vm, labelOwners, "Marketing"),
+					testAccCheckSkytapLabelExists(&vm, labelOwners, "Accounting"),
 				),
 			},
 		},

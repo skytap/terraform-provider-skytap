@@ -26,7 +26,7 @@ func TestAccSkytapLabelCategory_Basic(t *testing.T) {
 	  including label categories that have been deleted. If the test randomize the input it will soon reach
 	  an account limit
 	*/
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapLabelCategoryDestroy,
@@ -50,7 +50,7 @@ func TestAccSkytapLabelCategory_Update(t *testing.T) {
 	  including label categories that have been deleted. If the test randomize the input it will soon reach
 	  an account limit
 	*/
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapLabelCategoryDestroy,
@@ -74,7 +74,7 @@ func TestAccSkytapLabelCategory_MultiValueBasic(t *testing.T) {
 	  including label categories that have been deleted. If the test randomize the input it will soon reach
 	  an account limit
 	*/
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapLabelCategoryDestroy,
@@ -109,7 +109,7 @@ func TestAccSkytapLabelCategory_Duplicated(t *testing.T) {
 		}
 	`
 	expectedError := regexp.MustCompile(".* Validation failed: Name has already been taken")
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapLabelCategoryDestroy,

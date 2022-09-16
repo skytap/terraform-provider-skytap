@@ -19,7 +19,7 @@ func TestAccSkytapLabelICNR_Basic(t *testing.T) {
 	uniqueSuffix := acctest.RandInt()
 	var tunnel skytap.ICNRTunnel
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapLabelCategoryDestroy,

@@ -54,7 +54,7 @@ func TestAccSkytapEnvironment_Basic(t *testing.T) {
 	uniqueSuffix := acctest.RandInt()
 	var environment skytap.Environment
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -120,7 +120,7 @@ func TestAccSkytapEnvironment_UpdateTemplate(t *testing.T) {
 	rInt := acctest.RandInt()
 	var environment skytap.Environment
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -147,7 +147,7 @@ func TestAccSkytapEnvironment_UpdateTags(t *testing.T) {
 
 	var environment skytap.Environment
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -185,7 +185,7 @@ func TestAccSkytapEnvironment_UserData(t *testing.T) {
 				EOF
 				`
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -218,7 +218,7 @@ func TestAccSkytapEnvironment_UserDataUpdate(t *testing.T) {
 				`
 	userDataUpdateRe := regexp.MustCompile(`\s*cat /proc/cpu_info\s*>\s*/temp/acc\n`)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -244,17 +244,19 @@ func TestAccSkytapEnvironment_UserDataUpdate(t *testing.T) {
 	})
 }
 
-const labelRequirements = `
+func labelRequirements(uniqueSuffix int) string {
+	return fmt.Sprintf(`
 		resource skytap_label_category "environment_label" {
-			name = "tftest-Environment"
+			name = "tftest-Environment-%d"
 			single_value = true
 		}
 
 		resource skytap_label_category "owners_label" {
-			name = "tftest-Owners"
+			name = "tftest-Owners-%d"
 			single_value = false
 		}
-	`
+	`, uniqueSuffix, uniqueSuffix)
+}
 
 func TestAccSkytapEnvironment_Labels(t *testing.T) {
 	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1478959")
@@ -276,14 +278,14 @@ func TestAccSkytapEnvironment_Labels(t *testing.T) {
 		}
 	`
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				PreventDiskCleanup: true,
-				Config:             testAccSkytapEnvironmentConfigBlock(uniqueSuffix, templateID, labelRequirements, labels),
+				Config:             testAccSkytapEnvironmentConfigBlock(uniqueSuffix, templateID, labelRequirements(uniqueSuffix), labels),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapEnvironmentExists("skytap_environment.foo", &environment),
 				),
@@ -323,28 +325,31 @@ func TestAccSkytapEnvironment_LabelsUpdate(t *testing.T) {
 		}
 	`
 
-	resource.Test(t, resource.TestCase{
+	labelEnv := fmt.Sprintf("tftest-Environment-%d", uniqueSuffix)
+	labelOwners := fmt.Sprintf("tftest-Owners-%d", uniqueSuffix)
+
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				PreventDiskCleanup: true,
-				Config:             testAccSkytapEnvironmentConfigBlock(uniqueSuffix, templateID, labelRequirements, labels),
+				Config:             testAccSkytapEnvironmentConfigBlock(uniqueSuffix, templateID, labelRequirements(uniqueSuffix), labels),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapEnvironmentExists("skytap_environment.foo", &environment),
-					testAccCheckSkytapEnvironmentContainsLabel(&environment, "tftest-Environment", "Prod"),
-					testAccCheckSkytapEnvironmentContainsLabel(&environment, "tftest-Owners", "Finance"),
-					testAccCheckSkytapEnvironmentContainsLabel(&environment, "tftest-Owners", "Accounting"),
+					testAccCheckSkytapEnvironmentContainsLabel(&environment, labelEnv, "Prod"),
+					testAccCheckSkytapEnvironmentContainsLabel(&environment, labelOwners, "Finance"),
+					testAccCheckSkytapEnvironmentContainsLabel(&environment, labelOwners, "Accounting"),
 				),
 			},
 			{
 				PreventDiskCleanup: true,
-				Config:             testAccSkytapEnvironmentConfigBlock(uniqueSuffix, templateID, labelRequirements, labelsUpdated),
+				Config:             testAccSkytapEnvironmentConfigBlock(uniqueSuffix, templateID, labelRequirements(uniqueSuffix), labelsUpdated),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapEnvironmentExists("skytap_environment.foo", &environment),
-					testAccCheckSkytapEnvironmentContainsLabel(&environment, "tftest-Environment", "UAT"),
-					testAccCheckSkytapEnvironmentContainsLabel(&environment, "tftest-Owners", "Accounting"),
+					testAccCheckSkytapEnvironmentContainsLabel(&environment, labelEnv, "UAT"),
+					testAccCheckSkytapEnvironmentContainsLabel(&environment, labelOwners, "Accounting"),
 				),
 			},
 		},
