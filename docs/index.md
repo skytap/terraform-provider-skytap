@@ -16,8 +16,8 @@ A typical provider configuration will look something like:
 
 ```hcl
 provider "skytap" {
-  username = "${var.skytap_username}"
-  api_token = "${var.skytap_api_token}"
+  username = var.skytap_username
+  api_token = var.skytap_api_token
 }
 
 resource "skytap_environment" "env" {
