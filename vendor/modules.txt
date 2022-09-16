@@ -357,7 +357,7 @@ github.com/posener/complete/cmd/install
 github.com/posener/complete/match
 # github.com/russross/blackfriday v1.6.0
 github.com/russross/blackfriday
-# github.com/skytap/skytap-sdk-go v0.0.0-20210602165100-9d8dca474ca4
+# github.com/skytap/skytap-sdk-go v0.0.0-20220916175331-92892db63cd3 => ../skytap-sdk-go
 github.com/skytap/skytap-sdk-go/skytap
 # github.com/stretchr/testify v1.6.1
 github.com/stretchr/testify/assert

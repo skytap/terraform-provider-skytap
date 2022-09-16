@@ -66,6 +66,7 @@ func TestAccSkytapEnvironment_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr("skytap_environment.foo", "name", fmt.Sprintf("tftest-environment-%d", uniqueSuffix)),
 					resource.TestCheckResourceAttr("skytap_environment.foo", "description", "This is an environment created by the skytap terraform provider acceptance test"),
 					resource.TestCheckResourceAttrSet("skytap_environment.foo", "template_id"),
+					resource.TestCheckResourceAttr("skytap_environment.foo", "disable_internet", "false"),
 					resource.TestCheckResourceAttr("skytap_environment.foo", "outbound_traffic", "false"),
 					resource.TestCheckResourceAttr("skytap_environment.foo", "routable", "false"),
 					resource.TestCheckResourceAttr("skytap_environment.foo", "suspend_on_idle", "0"),
@@ -73,6 +74,40 @@ func TestAccSkytapEnvironment_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr("skytap_environment.foo", "shutdown_on_idle", "0"),
 					resource.TestCheckResourceAttr("skytap_environment.foo", "shutdown_at_time", ""),
 					resource.TestCheckResourceAttr("skytap_environment.foo", "tags.#", "1"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccSkytapEnvironment_Update(t *testing.T) {
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1478959")
+	uniqueSuffix := acctest.RandInt()
+	var environment skytap.Environment
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccSkytapEnvironmentConfig_advanced(uniqueSuffix, templateID, `["integration_test"]`, true, true),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapEnvironmentExists("skytap_environment.foo", &environment),
+				),
+			},
+			{
+				PreConfig: func() {
+					pause(MINUTES)()
+					// This should only be used until stopping the environment for disableInternet/routable update is implemented
+					err := suspendEnvironment(&environment)
+					if err != nil {
+						t.Fatal(err)
+					}
+				},
+				Config: testAccSkytapEnvironmentConfig_advanced(uniqueSuffix, templateID, `["integration_test"]`, false, false),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckSkytapEnvironmentExists("skytap_environment.foo", &environment),
 				),
 			},
 		},
@@ -316,6 +351,32 @@ func TestAccSkytapEnvironment_LabelsUpdate(t *testing.T) {
 	})
 }
 
+func TestAccSkytapEnvironment_DisableInternetConflict(t *testing.T) {
+	templateID := utils.GetEnv("SKYTAP_TEMPLATE_ID", "1478959")
+	uniqueSuffix := acctest.RandInt()
+	resourceWithConflict := fmt.Sprintf(`
+		resource skytap_environment "env" {
+		  name = "tftest-environment-%d"
+          description = "This is an environment created by the skytap terraform provider acceptance test"
+		  template_id = %s
+		  disable_internet = true
+          outbound_traffic = true
+		}
+	`, uniqueSuffix, templateID)
+	expectedError := regexp.MustCompile("\"disable_internet\": conflicts with outbound_traffic")
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: testAccProviders,
+		CheckDestroy:      testAccCheckSkytapLabelCategoryDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config:      resourceWithConflict,
+				ExpectError: expectedError,
+			},
+		},
+	})
+}
+
 // Verifies the Environment exists
 func testAccCheckSkytapEnvironmentExists(name string, environment *skytap.Environment) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
@@ -335,6 +396,24 @@ func testAccCheckSkytapEnvironmentExists(name string, environment *skytap.Enviro
 
 		return nil
 	}
+}
+
+// Suspends the Environment exists
+func suspendEnvironment(env *skytap.Environment) error {
+	client := testAccProvider.Meta().(*SkytapClient).environmentsClient
+
+	ctx := context.TODO()
+
+	stopped := skytap.EnvironmentRunstateSuspended
+	_, err := client.Update(ctx, *env.ID, &skytap.UpdateEnvironmentRequest{Runstate: &stopped})
+	if err != nil {
+		if utils.ResponseErrorIsNotFound(err) {
+			err = fmt.Errorf("environment (%s) was not found - does not exist", *env.ID)
+		}
+
+		err = fmt.Errorf("error retrieving environment (%s): %v", *env.ID, err)
+	}
+	return nil
 }
 
 // Verifies the Environment is brand new
@@ -422,6 +501,18 @@ func testAccSkytapEnvironmentConfig_basic(uniqueSuffix int, templateID string, t
 	    name = "tftest-environment-%d"
 	    description = "This is an environment created by the skytap terraform provider acceptance test"
       }`, templateID, tags, uniqueSuffix)
+}
+
+func testAccSkytapEnvironmentConfig_advanced(uniqueSuffix int, templateID string, tags string, disableInternet bool, routable bool) string {
+	return fmt.Sprintf(`
+      resource "skytap_environment" "foo" {
+	    template_id = "%s"
+		tags = %s
+	    name = "tftest-environment-%d"
+	    description = "This is an environment created by the skytap terraform provider acceptance test"
+		disable_internet = %t
+		routable = %t
+      }`, templateID, tags, uniqueSuffix, disableInternet, routable)
 }
 
 func testAccSkytapEnvironmentConfig_UserData(uniqueSuffix int, templateID string, userData string) string {
