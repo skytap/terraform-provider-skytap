@@ -155,7 +155,7 @@ func testAccSkytapNetworkConfig_basic(templateID string, uniqueSuffixEnv int, un
 	resource "skytap_network" "bar" {
   		name        		= "tftest-network-%d"
 		domain      		= %q
-  		environment_id 	= "${skytap_environment.foo.id}"
+  		environment_id 	= skytap_environment.foo.id
   		subnet      		= %q
 		%s
   		tunnelable  		= %t

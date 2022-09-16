@@ -33,7 +33,7 @@ data "skytap_template" "foo" {
 }
 
 output "id" {
-  value = "${data.skytap_template.foo.id}"
+  value = data.skytap_template.foo.id
 }`, name)
 }
 
@@ -64,6 +64,6 @@ data "skytap_template" "foo" {
 }
 
 output "id" {
-  value = "${data.skytap_template.foo.id}"
+  value = data.skytap_template.foo.id
 }`, partial)
 }

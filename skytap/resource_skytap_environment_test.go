@@ -85,7 +85,7 @@ func TestAccSkytapEnvironment_Update(t *testing.T) {
 	uniqueSuffix := acctest.RandInt()
 	var environment skytap.Environment
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -265,15 +265,15 @@ func TestAccSkytapEnvironment_Labels(t *testing.T) {
 
 	labels := `
 		label {
-			category = "${skytap_label_category.environment_label.name}"
+			category = skytap_label_category.environment_label.name
 			value = "Prod"
 		}
 		label {
-			category = "${skytap_label_category.owners_label.name}"
+			category = skytap_label_category.owners_label.name
 			value = "Finance"
 		}
 		label {
-			category = "${skytap_label_category.owners_label.name}"
+			category = skytap_label_category.owners_label.name
 			value = "Accounting"
 		}
 	`
@@ -301,26 +301,26 @@ func TestAccSkytapEnvironment_LabelsUpdate(t *testing.T) {
 
 	labels := `
 		label {
-			category = "${skytap_label_category.environment_label.name}"
+			category = skytap_label_category.environment_label.name
 			value = "Prod"
 		}
 		label {
-			category = "${skytap_label_category.owners_label.name}"
+			category = skytap_label_category.owners_label.name
 			value = "Finance"
 		}
 		label {
-			category = "${skytap_label_category.owners_label.name}"
+			category = skytap_label_category.owners_label.name
 			value = "Accounting"
 		}
 	`
 
 	labelsUpdated := `
 		label {
-			category = "${skytap_label_category.environment_label.name}"
+			category = skytap_label_category.environment_label.name
 			value = "UAT"
 		}
 		label {
-			category = "${skytap_label_category.owners_label.name}"
+			category = skytap_label_category.owners_label.name
 			value = "Accounting"
 		}
 	`
@@ -369,7 +369,7 @@ func TestAccSkytapEnvironment_DisableInternetConflict(t *testing.T) {
 		}
 	`, uniqueSuffix, templateID)
 	expectedError := regexp.MustCompile("\"disable_internet\": conflicts with outbound_traffic")
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapLabelCategoryDestroy,

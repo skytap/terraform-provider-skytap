@@ -145,20 +145,20 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
 						domain      		= "mydomain.com"
-  						environment_id 	= "${skytap_environment.foo.id}"
+  						environment_id 	= skytap_environment.foo.id
   						subnet      		= "192.168.0.0/16"
 					}`, templateID, vmID, "name = \"test\"", `
 
                   	network_interface {
                     	interface_type = "vmxnet3"
-                    	network_id = "${skytap_network.baz.id}"
+                    	network_id = skytap_network.baz.id
 						ip = "192.168.0.10"
 						hostname = "bloggs-web"
                   	}
 
                     network_interface {
                     	interface_type = "vmxnet3"
-                    	network_id = "${skytap_network.baz.id}"
+                    	network_id = skytap_network.baz.id
 						ip = "192.168.0.11"
 						hostname = "bloggs-web2"
                   	}
@@ -174,7 +174,7 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
 						domain      		= "mydomain.com"
-  						environment_id 	= "${skytap_environment.foo.id}"
+  						environment_id 	= skytap_environment.foo.id
   						subnet      		= "192.168.0.0/16"
 					}
 					`, templateID, vmID, "name = \"test\"",
@@ -182,14 +182,14 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 
                  	network_interface {
                    		interface_type = "vmxnet3"
-                   		network_id = "${skytap_network.baz.id}"
+                   		network_id = skytap_network.baz.id
 						ip = "192.168.0.20"
 						hostname = "bloggs-web3"
                  	}
 
                     network_interface {
                    		interface_type = "vmxnet3"
-                   		network_id = "${skytap_network.baz.id}"
+                   		network_id = skytap_network.baz.id
 						ip = "192.168.0.21"
 						hostname = "bloggs-web4"
                  	}
@@ -204,13 +204,13 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
 						domain      		= "mydomain.com"
-  						environment_id 		= "${skytap_environment.foo.id}"
+  						environment_id 		= skytap_environment.foo.id
   						subnet      		= "192.168.0.0/16"
 					}
 					`, templateID, vmID, "name = \"test\"", `
                  	network_interface {
                    		interface_type = "vmxnet3"
-                   		network_id = "${skytap_network.baz.id}"
+                   		network_id = skytap_network.baz.id
 						ip = "192.168.0.22"
 						hostname = "bloggs-web5"
                  	}`, ``),
@@ -239,13 +239,13 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
 						domain      		= "mydomain.com"
-  						environment_id 	= "${skytap_environment.foo.id}"
+  						environment_id 	= skytap_environment.foo.id
   						subnet      		= "192.168.0.0/16"
 					}`, templateID, vmID, "name = \"test\"", `
 
                   	network_interface {
                     	interface_type = "vmxnet3"
-                    	network_id = "${skytap_network.baz.id}"
+                    	network_id = skytap_network.baz.id
 						ip = "192.168.0.10"
 						hostname = "bloggs-web"
 
@@ -269,14 +269,14 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
 						domain      		= "mydomain.com"
-  						environment_id   	= "${skytap_environment.foo.id}"
+  						environment_id   	= skytap_environment.foo.id
   						subnet      		= "192.168.0.0/16"
 					}`,
 					templateID, vmID, "name = \"test\"",
 					`
                   	network_interface {
                     	interface_type = "vmxnet3"
-                    	network_id = "${skytap_network.baz.id}"
+                    	network_id = skytap_network.baz.id
 						ip = "192.168.0.10"
 						hostname = "bloggs-web"
 						published_service {
@@ -298,14 +298,14 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
 						domain      		= "mydomain.com"
-  						environment_id 	= "${skytap_environment.foo.id}"
+  						environment_id 	= skytap_environment.foo.id
   						subnet      		= "192.168.0.0/16"
 					}`,
 					templateID, vmID, "name = \"test\"",
 					`
                   	network_interface {
                     	interface_type = "vmxnet3"
-                    	network_id = "${skytap_network.baz.id}"
+                    	network_id = skytap_network.baz.id
 						ip = "192.168.0.10"
 						hostname = "bloggs-web"
 						published_service {
@@ -323,14 +323,14 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
 						domain      		= "mydomain.com"
-  						environment_id 	= "${skytap_environment.foo.id}"
+  						environment_id 	= skytap_environment.foo.id
   						subnet      		= "192.168.0.0/16"
 					}`,
 					templateID, vmID, "name = \"test\"",
 					`
                   	network_interface {
                     	interface_type = "e1000"
-                    	network_id = "${skytap_network.baz.id}"
+                    	network_id = skytap_network.baz.id
 						ip = "192.168.0.10"
 						hostname = "bloggs-web"
 						published_service {
@@ -363,7 +363,7 @@ func TestAccSkytapVM_PublishedServiceBadNic(t *testing.T) {
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
 						domain      		= "mydomain.com"
-  						environment_id 	= "${skytap_environment.foo.id}"
+  						environment_id 	= skytap_environment.foo.id
   						subnet      		= "192.168.0.0/16"
 					}
 
@@ -371,7 +371,7 @@ func TestAccSkytapVM_PublishedServiceBadNic(t *testing.T) {
 					`
                   	network_interface {
                     	interface_type = "e1000e"
-                    	network_id = "${skytap_network.baz.id}"
+                    	network_id = skytap_network.baz.id
 						ip = "192.168.0.10"
 						hostname = "bloggs-web"
                   	}`, ``),
@@ -399,7 +399,7 @@ func TestAccExternalPorts(t *testing.T) {
 					 `,
 					`network_interface {
     	              interface_type = "vmxnet3"
-        	          network_id     = "${skytap_network.dev_network.id}"
+        	          network_id     = skytap_network.dev_network.id
         	          ip         = "10.0.3.2"
                       hostname = "myhost2"
 
@@ -440,7 +440,7 @@ func TestAccSkytapVM_Typical(t *testing.T) {
 					}`,
 					`network_interface  {
     	              interface_type = "vmxnet3"
-        	          network_id     = "${skytap_network.dev_network.id}"
+        	          network_id     = skytap_network.dev_network.id
         	          ip         = "10.0.3.2"
                       hostname = "myhost2"
 
@@ -1004,30 +1004,30 @@ func TestAccSkytapVM_Labels(t *testing.T) {
 
 	labels := `
 		label {
-			category = "${skytap_label_category.environment_label.name}"
+			category = skytap_label_category.environment_label.name
 			value = "Prod"
 		}
 		label {
-			category = "${skytap_label_category.owners_label.name}"
+			category = skytap_label_category.owners_label.name
 			value = "Finance"
 		}
 		label {
-			category = "${skytap_label_category.owners_label.name}"
+			category = skytap_label_category.owners_label.name
 			value = "Accounting"
 		}
 	`
 
 	labelsUpdated := `
 		label {
-			category = "${skytap_label_category.environment_label.name}"
+			category = skytap_label_category.environment_label.name
 			value = "UAT"
 		}
 		label {
-			category = "${skytap_label_category.owners_label.name}"
+			category = skytap_label_category.owners_label.name
 			value = "Marketing"
 		}
 		label {
-			category = "${skytap_label_category.owners_label.name}"
+			category = skytap_label_category.owners_label.name
 			value = "Accounting"
 		}
 	`
@@ -1102,20 +1102,20 @@ func testAccSkytapVMConfig_typical(envTemplateID string, templateID string, vmID
     }
 
     resource "skytap_network" "dev_network" {
-      environment_id = "${skytap_environment.my_new_environment.id}"
+      environment_id = skytap_environment.my_new_environment.id
       name = "tftest-network-1"
       domain = "dev.skytap.io"
       subnet = "10.0.3.0/24"
     }
 
     resource "skytap_vm" "cassandra1" {
-      environment_id = "${skytap_environment.my_new_environment.id}"
+      environment_id = skytap_environment.my_new_environment.id
       template_id = "%s"
       vm_id = "%s"
       name = "cassandra1"
       network_interface  {
         interface_type = "vmxnet3"
-        network_id = "${skytap_network.dev_network.id}"
+        network_id = skytap_network.dev_network.id
         ip = "10.0.3.1"
         hostname = "myhost"
 
@@ -1306,7 +1306,7 @@ func testAccSkytapVMConfig_basic(envTemplateID string, uniqueSuffixEnv int, netw
 	%s
 
  	resource "skytap_vm" "bar" {
-		environment_id    = "${skytap_environment.foo.id}"
+		environment_id    = skytap_environment.foo.id
    		template_id       = "%s"
  		vm_id      		  = "%s"
 		%s
@@ -1330,7 +1330,7 @@ func testAccSkytapVMConfigBlock(envTemplateID string, uniqueSuffixEnv int, VMTem
 	%s
 
  	resource "skytap_vm" "bar" {
-		environment_id    = "${skytap_environment.foo.id}"
+		environment_id    = skytap_environment.foo.id
    		template_id       = "%s"
  		vm_id      		  = "%s"
 		name 			  = "%s"
@@ -1350,7 +1350,7 @@ func testAccSkytapVMConfig_concurrent(envTemplateID string, uniqueSuffixEnv int,
  	}
 
 	resource "skytap_network" "network" {
-	  environment_id = "${skytap_environment.foo.id}"
+	  environment_id = skytap_environment.foo.id
 	  name = "Network"
 	  domain = "skytap.services"
 	  subnet = "192.168.1.0/24"
@@ -1372,13 +1372,13 @@ func testAccSkytapVMConfig_concurrent(envTemplateID string, uniqueSuffixEnv int,
 	  count = 5
 	  template_id = "%s"
 	  vm_id = "%s"
-	  environment_id = "${skytap_environment.foo.id}"
+	  environment_id = skytap_environment.foo.id
 	  name = "web-${count.index}"
 
 	  network_interface {
 		interface_type = "vmxnet3"
-		network_id = "${skytap_network.network.id}"
-		ip = "${lookup(var.ip_addreses, count.index)}"
+		network_id = skytap_network.network.id
+		ip = lookup(var.ip_addreses, count.index)
 		hostname = "web-${count.index}"
 	  }
 

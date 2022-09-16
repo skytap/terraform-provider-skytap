@@ -47,6 +47,6 @@ resource "skytap_environment" "foo" {
 }
 
 data "skytap_project" "bar" {
-	name = "${skytap_project.foo.name}"
+	name = skytap_project.foo.name
 }`, uniqueSuffix, envTemplateID, vmEnvironmentPrefix, uniqueSuffix)
 }
