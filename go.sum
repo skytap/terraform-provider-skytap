@@ -325,8 +325,8 @@ github.com/russross/blackfriday v1.6.0/go.mod h1:ti0ldHuxg49ri4ksnFxlkCfN+hvslNl
 github.com/sergi/go-diff v1.0.0/go.mod h1:0CfEIISq7TuYL3j771MWULgwwjU+GofnZX9QAmXWZgo=
 github.com/sergi/go-diff v1.1.0 h1:we8PVUC3FE2uYfodKH/nBHMSetSfHDR6scGdBi+erh0=
 github.com/sergi/go-diff v1.1.0/go.mod h1:STckp+ISIX8hZLjrqAeVduY0gWCT9IjLuqbuNXdaHfM=
-github.com/skytap/skytap-sdk-go v0.0.0-20210602165100-9d8dca474ca4 h1:4RtgZctkF7L1mdGEsN252pVK3gqWTsJKzDxzc0H4G5o=
-github.com/skytap/skytap-sdk-go v0.0.0-20210602165100-9d8dca474ca4/go.mod h1:V1HX7VGGylkRYjgyftn7vnOUZ7yOnTfwKsoZUHLkk1w=
+github.com/skytap/skytap-sdk-go v0.0.0-20220928154701-3cdf094703d6 h1:ALe1b4cL57njnx2fbLmEKty2yNIFCKz50nBnw5R3sAM=
+github.com/skytap/skytap-sdk-go v0.0.0-20220928154701-3cdf094703d6/go.mod h1:V1HX7VGGylkRYjgyftn7vnOUZ7yOnTfwKsoZUHLkk1w=
 github.com/spf13/afero v1.2.2/go.mod h1:9ZxEEn6pIJ8Rxe320qSDBk6AsU0r9pR7Q4OcevTdifk=
 github.com/spf13/pflag v1.0.2/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=
 github.com/spf13/pflag v1.0.3/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=

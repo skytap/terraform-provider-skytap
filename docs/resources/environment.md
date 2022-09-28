@@ -47,7 +47,8 @@ resource "skytap_environment" "environment" {
 
 - **id** (String) The ID of this resource.
 - **label** (Block Set) Set of labels for the instance (see [below for nested schema](#nestedblock--label))
-- **outbound_traffic** (Boolean) Indicates whether networks in the environment can send outbound traffic
+- **disable_internet** (Boolean) Indicates whether networks in the environment allow outbound internet traffic
+- **outbound_traffic** (Boolean) **DEPRECATED** Indicates whether networks in the environment can send outbound traffic. Use `disable_internet` instead
 - **routable** (Boolean) Indicates whether networks within the environment can route traffic to one another
 - **shutdown_at_time** (String) The date and time that the environment will be automatically shut down. Format: yyyy/mm/dd hh:mm:ss. By default, the suspend time uses the UTC offset for the time zone defined in your user account settings. Optionally, a different UTC offset can be supplied (for example: 2018/07/20 14:20:00 -0000). The value in the API response is converted to your time zone
 - **shutdown_on_idle** (Number) The number of seconds an environment can be idle before it is automatically shut down. Valid range: 300 to 86400 seconds (5 minutes to 1 day)

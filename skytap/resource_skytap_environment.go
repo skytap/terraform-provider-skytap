@@ -51,10 +51,20 @@ func resourceSkytapEnvironment() *schema.Resource {
 				ValidateFunc: validation.NoZeroValues,
 			},
 
+			"disable_internet": {
+				Type:          schema.TypeBool,
+				Computed:      true,
+				Optional:      true,
+				Description:   "If true, outbound internet is disabled for VMs in this environment",
+				ConflictsWith: []string{"outbound_traffic"},
+			},
+
 			"outbound_traffic": {
 				Type:        schema.TypeBool,
+				Computed:    true,
 				Optional:    true,
 				Description: "Indicates whether networks in the environment can send outbound traffic",
+				Deprecated:  "This attribute has been deprecated, use 'disable_internet' instead",
 			},
 
 			"tags": {
@@ -102,6 +112,7 @@ func resourceSkytapEnvironment() *schema.Resource {
 			"routable": {
 				Type:        schema.TypeBool,
 				Optional:    true,
+				Computed:    true,
 				Description: "Indicates whether networks within the environment can route traffic to one another",
 			},
 
@@ -148,11 +159,16 @@ func resourceSkytapEnvironmentCreate(ctx context.Context, d *schema.ResourceData
 	}
 
 	if v, ok := d.GetOk("outbound_traffic"); ok {
-		opts.OutboundTraffic = utils.Bool(v.(bool))
+		// Intentionally mapping to DisableInternet as the outbound traffic is deprecated
+		opts.DisableInternet = utils.Bool(v.(bool))
+	}
+
+	if v, ok := d.GetOk("disable_internet"); ok {
+		opts.DisableInternet = utils.Bool(v.(bool))
 	}
 
 	if v, ok := d.GetOk("routable"); ok {
-		opts.OutboundTraffic = utils.Bool(v.(bool))
+		opts.Routable = utils.Bool(v.(bool))
 	}
 
 	if v, ok := d.GetOk("description"); ok {
@@ -238,11 +254,6 @@ func resourceSkytapEnvironmentRead(ctx context.Context, d *schema.ResourceData, 
 		return diag.Errorf("error retrieving environment (%s): %v", id, err)
 	}
 
-	var routable bool
-	if environment.OutboundTraffic != nil {
-		routable = *environment.OutboundTraffic
-	}
-
 	// The templateID is not set as it is used to build the environment and is not returned by the environment response.
 	// If this attribute is changed, this environment will be rebuilt
 	err = d.Set("name", environment.Name)
@@ -253,11 +264,15 @@ func resourceSkytapEnvironmentRead(ctx context.Context, d *schema.ResourceData, 
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	err = d.Set("disable_internet", environment.DisableInternet)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	err = d.Set("outbound_traffic", environment.OutboundTraffic)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	err = d.Set("routable", routable)
+	err = d.Set("routable", *environment.Routable)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -312,13 +327,22 @@ func resourceSkytapEnvironmentUpdate(ctx context.Context, d *schema.ResourceData
 	id := d.Id()
 
 	name := d.Get("name").(string)
-	outboundTraffic := d.Get("outbound_traffic").(bool)
-	routable := d.Get("routable").(bool)
 
 	opts := skytap.UpdateEnvironmentRequest{
-		Name:            &name,
-		OutboundTraffic: &outboundTraffic,
-		Routable:        &routable,
+		Name: &name,
+	}
+
+	if d.HasChange("outbound_traffic") {
+		// Intentionally mapping to DisableInternet as the outbound traffic is deprecated
+		opts.DisableInternet = utils.Bool(d.Get("outbound_traffic").(bool))
+	}
+
+	if d.HasChange("disable_internet") {
+		opts.DisableInternet = utils.Bool(d.Get("disable_internet").(bool))
+	}
+
+	if d.HasChange("routable") {
+		opts.Routable = utils.Bool(d.Get("routable").(bool))
 	}
 
 	if v, ok := d.GetOk("description"); ok {
