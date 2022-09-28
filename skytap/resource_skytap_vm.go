@@ -144,34 +144,29 @@ func resourceSkytapVM() *schema.Resource {
 				Optional:    true,
 				Computed:    true,
 				Description: "Set of virtualized network interface cards (also known as a network adapters)",
-				ForceNew:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"interface_type": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ForceNew:     true,
 							Description:  "Type of network that this network adapter is attached to",
 							ValidateFunc: validateNICType(),
 						},
 						"network_id": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ForceNew:     true,
 							Description:  "ID of the network that this network adapter is attached to",
 							ValidateFunc: validation.NoZeroValues,
 						},
 						"ip": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ForceNew:     true,
 							Description:  "The IP address (for example, 10.1.0.37). Skytap will not assign the same IP address to multiple interfaces on the same network",
 							ValidateFunc: validation.IsIPAddress,
 						},
 						"hostname": {
 							Type:        schema.TypeString,
 							Required:    true,
-							ForceNew:    true,
 							Description: "Hostname of the VM",
 							ValidateFunc: validation.All(
 								validation.StringLenBetween(1, 32),
@@ -187,21 +182,18 @@ func resourceSkytapVM() *schema.Resource {
 						"published_service": {
 							Type:        schema.TypeSet,
 							Optional:    true,
-							ForceNew:    true,
 							Description: "A binding of a port on a network interface to an IP and port that is routable and accessible from the public Internet. This mechanism is used to selectively expose ports on the guest to the public Internet",
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"name": {
 										Type:         schema.TypeString,
 										Required:     true,
-										ForceNew:     true,
 										Description:  "A unique name for the published service",
 										ValidateFunc: validation.NoZeroValues,
 									},
 									"internal_port": {
 										Type:         schema.TypeInt,
 										Required:     true,
-										ForceNew:     true,
 										Description:  "The port that is exposed on the interface",
 										ValidateFunc: validation.NoZeroValues,
 									},
@@ -330,7 +322,7 @@ func resourceSkytapVMCreate(ctx context.Context, d *schema.ResourceData, meta in
 		}
 	}
 
-	if err = forceRunning(ctx, meta, environmentID, id); err != nil {
+	if err = forceRunstate(ctx, meta, environmentID, id, skytap.VMRunstateRunning); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -417,7 +409,7 @@ func resourceSkytapVMRead(ctx context.Context, d *schema.ResourceData, meta inte
 			networkInterfaceMap := networkInterface.(map[string]interface{})
 			vmInterface, err := getVMNetworkInterface(networkInterfaceMap["id"].(string), vm)
 			if err != nil {
-				return diag.FromErr(err)
+				continue
 			}
 			if _, ok := networkInterfaceMap["published_service"]; ok {
 				publishedServiceSet := networkInterfaceMap["published_service"].(*schema.Set)
@@ -487,6 +479,7 @@ func resourceSkytapVMRead(ctx context.Context, d *schema.ResourceData, meta inte
 
 func resourceSkytapVMUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	client := meta.(*SkytapClient).vmsClient
+	interfacesClient := meta.(*SkytapClient).interfacesClient
 
 	environmentID := d.Get("environment_id").(string)
 	id := d.Id()
@@ -497,6 +490,14 @@ func resourceSkytapVMUpdate(ctx context.Context, d *schema.ResourceData, meta in
 		opts.Name = utils.String(v.(string))
 	}
 
+	env, err := client.Get(ctx, environmentID, id)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	// Previous state to start
+	previousState := env.Runstate
+
 	hardware, err := updateHardware(d)
 	if err != nil {
 		return diag.FromErr(err)
@@ -506,6 +507,10 @@ func resourceSkytapVMUpdate(ctx context.Context, d *schema.ResourceData, meta in
 	var vmDisks []interface{}
 	if d.HasChange("disk") || d.HasChange("name") || d.HasChange("ram") ||
 		d.HasChange("cpus") || d.HasChange("os_disk_size") {
+
+		if err = forceRunstate(ctx, meta, environmentID, id, skytap.VMRunstateStopped); err != nil {
+			return diag.FromErr(err)
+		}
 
 		log.Printf("[INFO] VM update: %s", id)
 		log.Printf("[TRACE] VM update options: %v", spew.Sdump(opts))
@@ -545,11 +550,53 @@ func resourceSkytapVMUpdate(ctx context.Context, d *schema.ResourceData, meta in
 			}
 		}
 		labelsToAdd := vmCreateLabels(add)
+
 		for _, l := range labelsToAdd {
 			if err = client.CreateLabel(ctx, environmentID, id, l); err != nil {
 				return diag.FromErr(err)
 			}
 		}
+	}
+
+	if d.HasChange("network_interface") {
+
+		if err = forceRunstate(ctx, meta, environmentID, id, skytap.VMRunstateStopped); err != nil {
+			return diag.FromErr(err)
+		}
+
+		old, new := d.GetChange("network_interface")
+		remove := old.(*schema.Set).Difference(new.(*schema.Set))
+		add := new.(*schema.Set).Difference(old.(*schema.Set))
+
+		for _, l := range remove.List() {
+			label := l.(map[string]interface{})
+			if err = interfacesClient.Delete(ctx, environmentID, id, label["id"].(string)); err != nil {
+				return diag.FromErr(err)
+			}
+		}
+
+		vmNetworkInterfaces := make([]skytap.Interface, add.Len())
+		for idx, l := range add.List() {
+			vmInterface, err := addNetworkAdapter(ctx, meta, environmentID, id, l)
+			if err != nil {
+				return diag.FromErr(err)
+			}
+
+			if vmInterface != nil {
+				vmNetworkInterfaces[idx] = *vmInterface
+			}
+
+		}
+		err = d.Set("network_interface", flattenNetworkInterfaces(vmNetworkInterfaces))
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+	}
+
+	// Set VM to previous running state
+	if err = forceRunstate(ctx, meta, environmentID, id, *previousState); err != nil {
+		return diag.FromErr(err)
 	}
 
 	stateConf := &resource.StateChangeConf{
@@ -634,73 +681,87 @@ func addNetworkAdapters(ctx context.Context, d *schema.ResourceData, meta interf
 	vmNetworkInterfaces := make([]skytap.Interface, networkInterfaceSet.Len())
 	log.Printf("[INFO] creating %d network interfaces", networkInterfaceSet.Len())
 	for idx, networkInterface := range networkInterfaceSet.List() {
-		networkInterfaceMap := networkInterface.(map[string]interface{})
-		nicType := skytap.CreateInterfaceRequest{
-			NICType: utils.NICType(skytap.NICType(networkInterfaceMap["interface_type"].(string))),
+		vmInterface, err := addNetworkAdapter(ctx, meta, environmentID, vmID, networkInterface)
+		if err != nil {
+			return nil, fmt.Errorf("error creating interface: %v", err)
 		}
-		networkID := skytap.AttachInterfaceRequest{
-			NetworkID: utils.String(networkInterfaceMap["network_id"].(string)),
-		}
-
-		opts := skytap.UpdateInterfaceRequest{}
-		requiresUpdate := false
-		if v, ok := networkInterfaceMap["ip"]; ok && networkInterfaceMap["ip"] != "" {
-			opts.IP = utils.String(v.(string))
-			requiresUpdate = true
-		}
-		if v, ok := networkInterfaceMap["hostname"]; ok && networkInterfaceMap["hostname"] != "" {
-			opts.Hostname = utils.String(v.(string))
-			requiresUpdate = true
-		}
-
-		var id string
-		{
-			log.Printf("[INFO] creating interface")
-			log.Printf("[TRACE] creating interface: %v", spew.Sdump(nicType))
-			networkInterface, err := client.Create(ctx, environmentID, vmID, &nicType)
-			if err != nil {
-				return nil, fmt.Errorf("error creating interface: %v", err)
-			}
-			id = *networkInterface.ID
-
-			log.Printf("[INFO] created interface: %s", id)
-			log.Printf("[TRACE] created interface: %v", spew.Sdump(networkInterface))
-		}
-		{
-			log.Printf("[INFO] attaching interface: %s", id)
-			log.Printf("[TRACE] attaching interface: %v", spew.Sdump(networkID))
-			_, err := client.Attach(ctx, environmentID, vmID, id, &networkID)
-			if err != nil {
-				return nil, fmt.Errorf("error attaching interface: %v", err)
-			}
-
-			log.Printf("[INFO] attached interface: %s", id)
-			log.Printf("[TRACE] attached interface: %v", spew.Sdump(networkInterface))
-		}
-		{
-			// if the user define a hostname or ip we need an interface update.
-			if requiresUpdate {
-				log.Printf("[INFO] updating interface: %s", id)
-				log.Printf("[TRACE] updating interface options: %v", spew.Sdump(opts))
-				vmInterface, err := client.Update(ctx, environmentID, vmID, id, &opts)
-				if err != nil {
-					return nil, fmt.Errorf("error updating interface: %v", err)
-				}
-				vmNetworkInterfaces[idx] = *vmInterface
-				log.Printf("[INFO] updated interface: %s", id)
-				log.Printf("[TRACE] updated interface: %v", spew.Sdump(networkInterface))
-			}
-		}
-		if _, ok := networkInterfaceMap["published_service"]; ok {
-			// create network interfaces if necessary
-			err := addPublishedServices(ctx, meta, environmentID, vmID, id, networkInterfaceMap, &vmNetworkInterfaces[idx])
-			if err != nil {
-				return nil, err
-			}
+		if vmInterface != nil {
+			vmNetworkInterfaces[idx] = *vmInterface
 		}
 	}
 	// Have to do this here in order to capture `published_service` name
 	return flattenNetworkInterfaces(vmNetworkInterfaces), nil
+}
+
+func addNetworkAdapter(ctx context.Context, meta interface{}, environmentID string, vmID string, networkInterface interface{}) (*skytap.Interface, error) {
+	client := meta.(*SkytapClient).interfacesClient
+	var vmInterface *skytap.Interface
+
+	networkInterfaceMap := networkInterface.(map[string]interface{})
+	nicType := skytap.CreateInterfaceRequest{
+		NICType: utils.NICType(skytap.NICType(networkInterfaceMap["interface_type"].(string))),
+	}
+	networkID := skytap.AttachInterfaceRequest{
+		NetworkID: utils.String(networkInterfaceMap["network_id"].(string)),
+	}
+
+	opts := skytap.UpdateInterfaceRequest{}
+	requiresUpdate := false
+	if v, ok := networkInterfaceMap["ip"]; ok && networkInterfaceMap["ip"] != "" {
+		opts.IP = utils.String(v.(string))
+		requiresUpdate = true
+	}
+	if v, ok := networkInterfaceMap["hostname"]; ok && networkInterfaceMap["hostname"] != "" {
+		opts.Hostname = utils.String(v.(string))
+		requiresUpdate = true
+	}
+
+	var id string
+	{
+		log.Printf("[INFO] creating interface")
+		log.Printf("[TRACE] creating interface: %v", spew.Sdump(nicType))
+		networkInterface, err := client.Create(ctx, environmentID, vmID, &nicType)
+		if err != nil {
+			return nil, fmt.Errorf("error creating interface: %v", err)
+		}
+		id = *networkInterface.ID
+
+		log.Printf("[INFO] created interface: %s", id)
+		log.Printf("[TRACE] created interface: %v", spew.Sdump(networkInterface))
+	}
+	{
+		log.Printf("[INFO] attaching interface: %s", id)
+		log.Printf("[TRACE] attaching interface: %v", spew.Sdump(networkID))
+		_, err := client.Attach(ctx, environmentID, vmID, id, &networkID)
+		if err != nil {
+			return nil, fmt.Errorf("error attaching interface: %v", err)
+		}
+
+		log.Printf("[INFO] attached interface: %s", id)
+		log.Printf("[TRACE] attached interface: %v", spew.Sdump(networkInterface))
+	}
+	{
+		// if the user define a hostname or ip we need an interface update.
+		if requiresUpdate {
+			log.Printf("[INFO] updating interface: %s", id)
+			log.Printf("[TRACE] updating interface options: %v", spew.Sdump(opts))
+			var err error
+			vmInterface, err = client.Update(ctx, environmentID, vmID, id, &opts)
+			if err != nil {
+				return nil, fmt.Errorf("error updating interface: %v", err)
+			}
+			log.Printf("[INFO] updated interface: %s", id)
+			log.Printf("[TRACE] updated interface: %v", spew.Sdump(networkInterface))
+		}
+	}
+	if _, ok := networkInterfaceMap["published_service"]; ok {
+		// create network interfaces if necessary
+		err := addPublishedServices(ctx, meta, environmentID, vmID, id, networkInterfaceMap, vmInterface)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return vmInterface, nil
 }
 
 // create the public service for a specific interface
@@ -1053,11 +1114,11 @@ func vmCreate(ctx context.Context, d *schema.ResourceData, meta interface{}, env
 	return *vm.ID, nil
 }
 
-func forceRunning(ctx context.Context, meta interface{}, environmentID string, id string) error {
+func forceRunstate(ctx context.Context, meta interface{}, environmentID string, id string, runstate skytap.VMRunstate) error {
 	client := meta.(*SkytapClient).vmsClient
 
 	opts := skytap.UpdateVMRequest{}
-	opts.Runstate = utils.VMRunstate(skytap.VMRunstateRunning)
+	opts.Runstate = utils.VMRunstate(runstate)
 	log.Printf("[INFO] VM starting: %s", id)
 	log.Printf("[TRACE] VM starting: %v", spew.Sdump(opts))
 	vm, err := client.Update(ctx, environmentID, id, &opts)
