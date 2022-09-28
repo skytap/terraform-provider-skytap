@@ -1,4 +1,9 @@
 ## 0.15.0 (Unreleased)
+
+## 0.14.7 (September 28, 2022)
+* `skytap_environment` : Deprecated `outbound_traffic` and introduced the new `disable_internet` as to be used instead
+* `skytap_environment` : Fixed time-out issue when using `outbound_traffic = true`
+
 ## 0.14.1 (April 17, 2020)
 
 BUG FIXES:
