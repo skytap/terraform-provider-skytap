@@ -1,7 +1,16 @@
 ## 0.15.0 (Unreleased)
 
+## 0.14.8 (September 28, 2022)
+
+BUG FIXES:
+* Changed Golang version 1.16 to be able to release for darwin_arm64
+
 ## 0.14.7 (September 28, 2022)
+
+FEATURES:
 * `skytap_environment` : Deprecated `outbound_traffic` and introduced the new `disable_internet` as to be used instead
+
+BUG FIXES:
 * `skytap_environment` : Fixed time-out issue when using `outbound_traffic = true`
 
 ## 0.14.1 (April 17, 2020)
