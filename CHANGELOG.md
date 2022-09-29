@@ -1,8 +1,14 @@
-## 0.15.0 (Unreleased)
+## 0.16.0 (Unreleased)
+
+## 0.15.0 (September 29, 2022)
+
+FEATURES:
+* Upgraded provider dependencies to latest versions
+* Change acceptance tests to run in parallel
 
 ## 0.14.8 (September 28, 2022)
 
-BUG FIXES:
+FEATURES:
 * Changed Golang version 1.16 to be able to release for darwin_arm64
 
 ## 0.14.7 (September 28, 2022)
