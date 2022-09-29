@@ -64,7 +64,7 @@ func TestAccSkytapVM_Basic(t *testing.T) {
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -84,7 +84,7 @@ func TestAccSkytapVM_Basic(t *testing.T) {
 func TestAccSkytapVM_Timeout(t *testing.T) {
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -103,7 +103,7 @@ func TestAccSkytapVM_Update(t *testing.T) {
 	uniqueSuffixVM := acctest.RandInt()
 	var vm skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -135,7 +135,7 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -145,20 +145,20 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
 						domain      		= "mydomain.com"
-  						environment_id 	= "${skytap_environment.foo.id}"
+  						environment_id 	= skytap_environment.foo.id
   						subnet      		= "192.168.0.0/16"
 					}`, templateID, vmID, "name = \"test\"", `
 
                   	network_interface {
                     	interface_type = "vmxnet3"
-                    	network_id = "${skytap_network.baz.id}"
+                    	network_id = skytap_network.baz.id
 						ip = "192.168.0.10"
 						hostname = "bloggs-web"
                   	}
 
                     network_interface {
                     	interface_type = "vmxnet3"
-                    	network_id = "${skytap_network.baz.id}"
+                    	network_id = skytap_network.baz.id
 						ip = "192.168.0.11"
 						hostname = "bloggs-web2"
                   	}
@@ -174,7 +174,7 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
 						domain      		= "mydomain.com"
-  						environment_id 	= "${skytap_environment.foo.id}"
+  						environment_id 	= skytap_environment.foo.id
   						subnet      		= "192.168.0.0/16"
 					}
 					`, templateID, vmID, "name = \"test\"",
@@ -182,14 +182,14 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 
                  	network_interface {
                    		interface_type = "vmxnet3"
-                   		network_id = "${skytap_network.baz.id}"
+                   		network_id = skytap_network.baz.id
 						ip = "192.168.0.20"
 						hostname = "bloggs-web3"
                  	}
 
                     network_interface {
                    		interface_type = "vmxnet3"
-                   		network_id = "${skytap_network.baz.id}"
+                   		network_id = skytap_network.baz.id
 						ip = "192.168.0.21"
 						hostname = "bloggs-web4"
                  	}
@@ -204,13 +204,13 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
 						domain      		= "mydomain.com"
-  						environment_id 		= "${skytap_environment.foo.id}"
+  						environment_id 		= skytap_environment.foo.id
   						subnet      		= "192.168.0.0/16"
 					}
 					`, templateID, vmID, "name = \"test\"", `
                  	network_interface {
                    		interface_type = "vmxnet3"
-                   		network_id = "${skytap_network.baz.id}"
+                   		network_id = skytap_network.baz.id
 						ip = "192.168.0.22"
 						hostname = "bloggs-web5"
                  	}`, ``),
@@ -229,7 +229,7 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -239,13 +239,13 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
 						domain      		= "mydomain.com"
-  						environment_id 	= "${skytap_environment.foo.id}"
+  						environment_id 	= skytap_environment.foo.id
   						subnet      		= "192.168.0.0/16"
 					}`, templateID, vmID, "name = \"test\"", `
 
                   	network_interface {
                     	interface_type = "vmxnet3"
-                    	network_id = "${skytap_network.baz.id}"
+                    	network_id = skytap_network.baz.id
 						ip = "192.168.0.10"
 						hostname = "bloggs-web"
 
@@ -269,14 +269,14 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
 						domain      		= "mydomain.com"
-  						environment_id   	= "${skytap_environment.foo.id}"
+  						environment_id   	= skytap_environment.foo.id
   						subnet      		= "192.168.0.0/16"
 					}`,
 					templateID, vmID, "name = \"test\"",
 					`
                   	network_interface {
                     	interface_type = "vmxnet3"
-                    	network_id = "${skytap_network.baz.id}"
+                    	network_id = skytap_network.baz.id
 						ip = "192.168.0.10"
 						hostname = "bloggs-web"
 						published_service {
@@ -298,14 +298,14 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
 						domain      		= "mydomain.com"
-  						environment_id 	= "${skytap_environment.foo.id}"
+  						environment_id 	= skytap_environment.foo.id
   						subnet      		= "192.168.0.0/16"
 					}`,
 					templateID, vmID, "name = \"test\"",
 					`
                   	network_interface {
                     	interface_type = "vmxnet3"
-                    	network_id = "${skytap_network.baz.id}"
+                    	network_id = skytap_network.baz.id
 						ip = "192.168.0.10"
 						hostname = "bloggs-web"
 						published_service {
@@ -323,14 +323,14 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
 						domain      		= "mydomain.com"
-  						environment_id 	= "${skytap_environment.foo.id}"
+  						environment_id 	= skytap_environment.foo.id
   						subnet      		= "192.168.0.0/16"
 					}`,
 					templateID, vmID, "name = \"test\"",
 					`
                   	network_interface {
                     	interface_type = "e1000"
-                    	network_id = "${skytap_network.baz.id}"
+                    	network_id = skytap_network.baz.id
 						ip = "192.168.0.10"
 						hostname = "bloggs-web"
 						published_service {
@@ -353,7 +353,7 @@ func TestAccSkytapVM_PublishedServiceBadNic(t *testing.T) {
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -363,7 +363,7 @@ func TestAccSkytapVM_PublishedServiceBadNic(t *testing.T) {
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
 						domain      		= "mydomain.com"
-  						environment_id 	= "${skytap_environment.foo.id}"
+  						environment_id 	= skytap_environment.foo.id
   						subnet      		= "192.168.0.0/16"
 					}
 
@@ -371,7 +371,7 @@ func TestAccSkytapVM_PublishedServiceBadNic(t *testing.T) {
 					`
                   	network_interface {
                     	interface_type = "e1000e"
-                    	network_id = "${skytap_network.baz.id}"
+                    	network_id = skytap_network.baz.id
 						ip = "192.168.0.10"
 						hostname = "bloggs-web"
                   	}`, ``),
@@ -385,7 +385,7 @@ func TestAccExternalPorts(t *testing.T) {
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -399,7 +399,7 @@ func TestAccExternalPorts(t *testing.T) {
 					 `,
 					`network_interface {
     	              interface_type = "vmxnet3"
-        	          network_id     = "${skytap_network.dev_network.id}"
+        	          network_id     = skytap_network.dev_network.id
         	          ip         = "10.0.3.2"
                       hostname = "myhost2"
 
@@ -424,7 +424,7 @@ func TestAccSkytapVM_Typical(t *testing.T) {
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -440,7 +440,7 @@ func TestAccSkytapVM_Typical(t *testing.T) {
 					}`,
 					`network_interface  {
     	              interface_type = "vmxnet3"
-        	          network_id     = "${skytap_network.dev_network.id}"
+        	          network_id     = skytap_network.dev_network.id
         	          ip         = "10.0.3.2"
                       hostname = "myhost2"
 
@@ -467,7 +467,7 @@ func TestAccSkytapVMCPURam_Create(t *testing.T) {
 	var vm skytap.VM
 	var vmUpdated skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -534,7 +534,7 @@ func TestAccSkytapVMCPU_DiskIntact(t *testing.T) {
 	var vm skytap.VM
 	var vmUpdated skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -585,7 +585,7 @@ func TestAccSkytapVMCPURAM_UpdateNPECheck(t *testing.T) {
 	var vm skytap.VM
 	var vmUpdated skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -616,7 +616,7 @@ func TestAccSkytapVMCPURAM_Invalid(t *testing.T) {
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -635,7 +635,7 @@ func TestAccSkytapVMCPU_OutOfRange(t *testing.T) {
 	templateID, vmID, newEnvTemplateID := setupNonDefaultEnvironment("SKYTAP_TEMPLATE_OUTOFRANGE_ID", "1877151", "SKYTAP_VM_OUTOFRANGE_ID", "66413705")
 	uniqueSuffixEnv := acctest.RandInt()
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -654,7 +654,7 @@ func TestAccSkytapVMCPU_OutOfRangeAfterUpdate(t *testing.T) {
 	templateID, vmID, newEnvTemplateID := setupNonDefaultEnvironment("SKYTAP_TEMPLATE_OUTOFRANGE_ID", "1877151", "SKYTAP_VM_OUTOFRANGE_ID", "66413705")
 	uniqueSuffixEnv := acctest.RandInt()
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -679,7 +679,7 @@ func TestAccSkytapVMDisks_Create(t *testing.T) {
 	var vm skytap.VM
 	var vmUpdated skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -739,7 +739,7 @@ func TestAccSkytapVMDisks_UpdateNPECheck(t *testing.T) {
 	var vm skytap.VM
 	var vmUpdated skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -777,7 +777,7 @@ func TestAccSkytapVMDisks_Resize(t *testing.T) {
 	var vm skytap.VM
 	var vmUpdated skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -826,7 +826,7 @@ func TestAccSkytapVMDisk_Invalid(t *testing.T) {
 	templateID, vmID, newEnvTemplateID := setupEnvironment()
 	uniqueSuffixEnv := acctest.RandInt()
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -858,7 +858,7 @@ func TestAccSkytapVMDisk_OS(t *testing.T) {
 	var vm skytap.VM
 	var vmUpdated skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -900,7 +900,7 @@ func TestAccSkytapVMDisk_OSChangeAfter(t *testing.T) {
 	var vm skytap.VM
 	var vmUpdated skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -932,7 +932,7 @@ func TestAccSkytapVM_Concurrent(t *testing.T) {
 	uniqueSuffixEnv := acctest.RandInt()
 	var vm skytap.VM
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -968,7 +968,7 @@ func TestAccSkytapVM_UserData(t *testing.T) {
 	`
 	userDataUpdatedRe, _ := regexp.Compile("\\s*less /proc/cpu_info\\n")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
@@ -1004,61 +1004,64 @@ func TestAccSkytapVM_Labels(t *testing.T) {
 
 	labels := `
 		label {
-			category = "${skytap_label_category.environment_label.name}"
+			category = skytap_label_category.environment_label.name
 			value = "Prod"
 		}
 		label {
-			category = "${skytap_label_category.owners_label.name}"
+			category = skytap_label_category.owners_label.name
 			value = "Finance"
 		}
 		label {
-			category = "${skytap_label_category.owners_label.name}"
+			category = skytap_label_category.owners_label.name
 			value = "Accounting"
 		}
 	`
 
 	labelsUpdated := `
 		label {
-			category = "${skytap_label_category.environment_label.name}"
+			category = skytap_label_category.environment_label.name
 			value = "UAT"
 		}
 		label {
-			category = "${skytap_label_category.owners_label.name}"
+			category = skytap_label_category.owners_label.name
 			value = "Marketing"
 		}
 		label {
-			category = "${skytap_label_category.owners_label.name}"
+			category = skytap_label_category.owners_label.name
 			value = "Accounting"
 		}
 	`
 
-	resource.Test(t, resource.TestCase{
+	labelEnv := fmt.Sprintf("tftest-Environment-%d", uniqueSuffixEnv)
+	labelOwners := fmt.Sprintf("tftest-Owners-%d", uniqueSuffixEnv)
+
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSkytapVMConfigBlock(newEnvTemplateID, uniqueSuffixEnv, templateID, vmID, "test",
-					labelRequirements, labels),
+					labelRequirements(uniqueSuffixEnv), labels),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "test"),
 					testAccCheckSkytapVMRunning(&vm),
-					testAccCheckSkytapLabelExists(&vm, "tftest-Environment", "Prod"),
-					testAccCheckSkytapLabelExists(&vm, "tftest-Owners", "Finance"),
-					testAccCheckSkytapLabelExists(&vm, "tftest-Owners", "Accounting"),
+					testAccCheckSkytapLabelExists(&vm, labelEnv, "Prod"),
+					testAccCheckSkytapLabelExists(&vm, labelOwners, "Finance"),
+					testAccCheckSkytapLabelExists(&vm, labelOwners, "Accounting"),
 				),
 			},
 			{
 				Config: testAccSkytapVMConfigBlock(newEnvTemplateID, uniqueSuffixEnv, templateID, vmID, "test",
-					labelRequirements, labelsUpdated),
+					labelRequirements(uniqueSuffixEnv), labelsUpdated),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "test"),
 					testAccCheckSkytapVMRunning(&vm),
-					testAccCheckSkytapLabelExists(&vm, "tftest-Environment", "UAT"),
-					testAccCheckSkytapLabelExists(&vm, "tftest-Owners", "Marketing"),
-					testAccCheckSkytapLabelExists(&vm, "tftest-Owners", "Accounting"),
+					testAccCheckSkytapLabelExists(&vm, labelEnv, "UAT"),
+					testAccCheckSkytapLabelExists(&vm, labelOwners, "Marketing"),
+					testAccCheckSkytapLabelExists(&vm, labelOwners, "Accounting"),
 				),
 			},
 		},
@@ -1099,20 +1102,20 @@ func testAccSkytapVMConfig_typical(envTemplateID string, templateID string, vmID
     }
 
     resource "skytap_network" "dev_network" {
-      environment_id = "${skytap_environment.my_new_environment.id}"
+      environment_id = skytap_environment.my_new_environment.id
       name = "tftest-network-1"
       domain = "dev.skytap.io"
       subnet = "10.0.3.0/24"
     }
 
     resource "skytap_vm" "cassandra1" {
-      environment_id = "${skytap_environment.my_new_environment.id}"
+      environment_id = skytap_environment.my_new_environment.id
       template_id = "%s"
       vm_id = "%s"
       name = "cassandra1"
       network_interface  {
         interface_type = "vmxnet3"
-        network_id = "${skytap_network.dev_network.id}"
+        network_id = skytap_network.dev_network.id
         ip = "10.0.3.1"
         hostname = "myhost"
 
@@ -1303,7 +1306,7 @@ func testAccSkytapVMConfig_basic(envTemplateID string, uniqueSuffixEnv int, netw
 	%s
 
  	resource "skytap_vm" "bar" {
-		environment_id    = "${skytap_environment.foo.id}"
+		environment_id    = skytap_environment.foo.id
    		template_id       = "%s"
  		vm_id      		  = "%s"
 		%s
@@ -1327,7 +1330,7 @@ func testAccSkytapVMConfigBlock(envTemplateID string, uniqueSuffixEnv int, VMTem
 	%s
 
  	resource "skytap_vm" "bar" {
-		environment_id    = "${skytap_environment.foo.id}"
+		environment_id    = skytap_environment.foo.id
    		template_id       = "%s"
  		vm_id      		  = "%s"
 		name 			  = "%s"
@@ -1347,7 +1350,7 @@ func testAccSkytapVMConfig_concurrent(envTemplateID string, uniqueSuffixEnv int,
  	}
 
 	resource "skytap_network" "network" {
-	  environment_id = "${skytap_environment.foo.id}"
+	  environment_id = skytap_environment.foo.id
 	  name = "Network"
 	  domain = "skytap.services"
 	  subnet = "192.168.1.0/24"
@@ -1369,13 +1372,13 @@ func testAccSkytapVMConfig_concurrent(envTemplateID string, uniqueSuffixEnv int,
 	  count = 5
 	  template_id = "%s"
 	  vm_id = "%s"
-	  environment_id = "${skytap_environment.foo.id}"
+	  environment_id = skytap_environment.foo.id
 	  name = "web-${count.index}"
 
 	  network_interface {
 		interface_type = "vmxnet3"
-		network_id = "${skytap_network.network.id}"
-		ip = "${lookup(var.ip_addreses, count.index)}"
+		network_id = skytap_network.network.id
+		ip = lookup(var.ip_addreses, count.index)
 		hostname = "web-${count.index}"
 	  }
 

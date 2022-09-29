@@ -3,6 +3,7 @@ package skytap
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"log"
 	"regexp"
 	"strconv"
@@ -22,21 +23,21 @@ func init() {
 }
 
 func TestAccSkytapLabelCategory_Basic(t *testing.T) {
-	/** This test does not randomize as there are a total of 200 label category per account
-	  including label categories that have been deleted. If the test randomize the input it will soon reach
-	  an account limit
-	*/
-	resource.Test(t, resource.TestCase{
+	uniqueSuffix := acctest.RandInt()
+
+	label := fmt.Sprintf("tftest-label-%d", uniqueSuffix)
+
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapLabelCategoryDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapLabelCategory_basic("tftest-label", true),
+				Config: testAccSkytapLabelCategory_basic(label, true),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapLabelCategoryExists("skytap_label_category.env_category"),
 					resource.TestCheckResourceAttr("skytap_label_category.env_category", "name",
-						fmt.Sprintf("tftest-label")),
+						label),
 					resource.TestCheckResourceAttrSet("skytap_label_category.env_category", "single_value"),
 					resource.TestCheckResourceAttr("skytap_label_category.env_category", "single_value", "true"),
 				),
@@ -46,22 +47,22 @@ func TestAccSkytapLabelCategory_Basic(t *testing.T) {
 }
 
 func TestAccSkytapLabelCategory_Update(t *testing.T) {
-	/** This test does not randomize as there are a total of 200 label category per account
-	  including label categories that have been deleted. If the test randomize the input it will soon reach
-	  an account limit
-	*/
-	resource.Test(t, resource.TestCase{
+	uniqueSuffix := acctest.RandInt()
+
+	label := fmt.Sprintf("tftest-label-%d", uniqueSuffix)
+
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapLabelCategoryDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapLabelCategory_basic("tftest-label", true),
+				Config: testAccSkytapLabelCategory_basic(label, true),
 				Check:  testAccCheckSkytapLabelCategoryExists("skytap_label_category.env_category"),
 			},
 			{
 				ExpectNonEmptyPlan: true,
-				Config:             testAccSkytapLabelCategory_basic("tftest-label", false),
+				Config:             testAccSkytapLabelCategory_basic(label, false),
 				Check:              testAccCheckSkytapLabelCategoryExists("skytap_label_category.env_category"),
 				ExpectError:        regexp.MustCompile(`can not be created with this single value property as it is recreated from a existing label category`),
 			},
@@ -70,21 +71,21 @@ func TestAccSkytapLabelCategory_Update(t *testing.T) {
 }
 
 func TestAccSkytapLabelCategory_MultiValueBasic(t *testing.T) {
-	/** This test does not randomize as there are a total of 200 label category per account
-	  including label categories that have been deleted. If the test randomize the input it will soon reach
-	  an account limit
-	*/
-	resource.Test(t, resource.TestCase{
+	uniqueSuffix := acctest.RandInt()
+
+	label := fmt.Sprintf("tftest-label-multi-%d", uniqueSuffix)
+
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapLabelCategoryDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccSkytapLabelCategory_basic("tftest-label-multi", false),
+				Config: testAccSkytapLabelCategory_basic(label, false),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapLabelCategoryExists("skytap_label_category.env_category"),
 					resource.TestCheckResourceAttr("skytap_label_category.env_category", "name",
-						fmt.Sprintf("tftest-label-multi")),
+						label),
 					resource.TestCheckResourceAttrSet("skytap_label_category.env_category", "single_value"),
 					resource.TestCheckResourceAttr("skytap_label_category.env_category", "single_value", "false"),
 				),
@@ -109,7 +110,7 @@ func TestAccSkytapLabelCategory_Duplicated(t *testing.T) {
 		}
 	`
 	expectedError := regexp.MustCompile(".* Validation failed: Name has already been taken")
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapLabelCategoryDestroy,

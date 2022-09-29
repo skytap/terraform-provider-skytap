@@ -4,6 +4,8 @@ GOIMPORT_FILES?=$$(find . -type f -name '*.go' -not -path './vendor/*')
 WEBSITE_REPO=github.com/hashicorp/terraform-website
 PKG_NAME=skytap
 
+TEST_PARALLELISM?=4
+
 default: build
 
 build: fmtcheck
@@ -11,12 +13,12 @@ build: fmtcheck
 	@sh -c "'$(CURDIR)/scripts/generate-dev-overrides.sh'"
 
 test: fmtcheck
-	go test -i $(TEST) || exit 1
+	go test $(TEST) || exit 1
 	echo $(TEST) | \
-		xargs -t -n4 go test $(TESTARGS) -timeout=30s -parallel=4
+		xargs -t -n4 go test $(TESTARGS) -timeout=30s -parallel=$(TEST_PARALLELISM)
 
 testacc: fmtcheck
-	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 240m
+	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 240m -parallel=$(TEST_PARALLELISM)
 
 vet:
 	@echo "go vet ."

@@ -25,7 +25,7 @@ resource "skytap_environment" "env2" {
 }
 
 resource "skytap_network" "net1" {
-    environment_id = "${skytap_environment.env1.id}"
+    environment_id = skytap_environment.env1.id
     name = "net1"
     domain = "domain.com"
     subnet = "10.0.100.0/24"
@@ -34,7 +34,7 @@ resource "skytap_network" "net1" {
 }
 
 resource "skytap_network" "net2" {
-    environment_id = "${skytap_environment.env2.id}"
+    environment_id = skytap_environment.env2.id
     name = "net2"
     domain = "domain.com"
     subnet = "10.0.200.0/24"
@@ -44,8 +44,8 @@ resource "skytap_network" "net2" {
 
 # Create an ICNR Tunnel between both networks.
 resource "skytap_icnr_tunnel" "tunnel" {
-    source = "${skytap_network.net1.id}"
-    target = "${skytap_network.net2.id}"
+    source = skytap_network.net1.id
+    target = skytap_network.net2.id
 }
 ```
 

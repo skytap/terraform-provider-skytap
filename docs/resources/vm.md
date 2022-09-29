@@ -22,7 +22,7 @@ Provides a Skytap Virtual Machine (VM) resource. The environment VM resource rep
 resource "skytap_vm" "vm" {
   template_id = 1473407
   vm_id = 37865463
-  environment_id = "${skytap_environment.environment.id}"
+  environment_id = skytap_environment.environment.id
   name = "my vm"
   cpus = 2
   ram = 4096
@@ -41,7 +41,7 @@ resource "skytap_vm" "vm" {
 
   network_interface  {
      interface_type = "vmxnet3"
-     network_id = "${skytap_network.network.id}"
+     network_id = skytap_network.network.id
      ip = "172.128.0.1"
      hostname = "myhost"
 
@@ -54,10 +54,10 @@ resource "skytap_vm" "vm" {
 
 # Will work after VM resource is created
 output "ssh_ip" {
-  value = "${skytap_vm.vm.service_ips.ssh}"
+  value = skytap_vm.vm.service_ips.ssh
 }
 output "ssh_port" {
-  value = "${skytap_vm.vm.service_ports.ssh}"
+  value = skytap_vm.vm.service_ports.ssh
 }
 ```
 

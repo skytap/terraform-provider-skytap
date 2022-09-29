@@ -19,7 +19,7 @@ func TestAccSkytapLabelICNR_Basic(t *testing.T) {
 	uniqueSuffix := acctest.RandInt()
 	var tunnel skytap.ICNRTunnel
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviders,
 		CheckDestroy:      testAccCheckSkytapLabelCategoryDestroy,
@@ -49,7 +49,7 @@ func testAccSkytapICNRTunnel_basic(prefix string, suffix int, templateId string)
       	}
 
 		resource "skytap_network" "net1" {
-  			environment_id = "${skytap_environment.env1.id}"
+  			environment_id = skytap_environment.env1.id
 			name = "net1"
   			domain = "domain.com"
 			subnet = "10.0.100.0/24"
@@ -58,7 +58,7 @@ func testAccSkytapICNRTunnel_basic(prefix string, suffix int, templateId string)
 		}
 
 		resource "skytap_network" "net2" {
-  			environment_id = "${skytap_environment.env2.id}"
+  			environment_id = skytap_environment.env2.id
 			name = "net2"
   			domain = "domain.com"
 			subnet = "10.0.200.0/24"
@@ -67,8 +67,8 @@ func testAccSkytapICNRTunnel_basic(prefix string, suffix int, templateId string)
 		}
 
 		resource "skytap_icnr_tunnel" "tunnel" {
-			source = "${skytap_network.net1.id}"
-			target = "${skytap_network.net2.id}"
+			source = skytap_network.net1.id
+			target = skytap_network.net2.id
 		}
 		`,
 		templateId, prefix, suffix, templateId, prefix, suffix)
