@@ -3,7 +3,6 @@ package skytap
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"log"
 	"regexp"
 	"strconv"
@@ -23,9 +22,7 @@ func init() {
 }
 
 func TestAccSkytapLabelCategory_Basic(t *testing.T) {
-	uniqueSuffix := acctest.RandInt()
-
-	label := fmt.Sprintf("tftest-label-%d", uniqueSuffix)
+	label := fmt.Sprintf("tftest-label-%s", t.Name())
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
@@ -47,9 +44,7 @@ func TestAccSkytapLabelCategory_Basic(t *testing.T) {
 }
 
 func TestAccSkytapLabelCategory_Update(t *testing.T) {
-	uniqueSuffix := acctest.RandInt()
-
-	label := fmt.Sprintf("tftest-label-%d", uniqueSuffix)
+	label := fmt.Sprintf("tftest-label-%s", t.Name())
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
@@ -70,9 +65,7 @@ func TestAccSkytapLabelCategory_Update(t *testing.T) {
 }
 
 func TestAccSkytapLabelCategory_MultiValueBasic(t *testing.T) {
-	uniqueSuffix := acctest.RandInt()
-
-	label := fmt.Sprintf("tftest-label-multi-%d", uniqueSuffix)
+	label := fmt.Sprintf("tftest-label-multi-%s", t.Name())
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
@@ -94,9 +87,9 @@ func TestAccSkytapLabelCategory_MultiValueBasic(t *testing.T) {
 }
 
 func TestAccSkytapLabelCategory_Duplicated(t *testing.T) {
-	labelCategoryDuplicated := `
+	labelCategoryDuplicated := fmt.Sprintf(`
 		resource skytap_label_category "duplabel1" {
-		  name = "tftest-dup"
+		  name = "tftest-dup-%s"
 		  single_value = true
 		}
 		
@@ -104,10 +97,10 @@ func TestAccSkytapLabelCategory_Duplicated(t *testing.T) {
 		  // making sure the first category is created before trying to create the second
 		  // to avoid flakiness.
           depends_on = [skytap_label_category.duplabel1]
-		  name = "tftest-dup"
+		  name = "tftest-dup-%s"
 		  single_value = true
 		}
-	`
+	`, t.Name(), t.Name())
 	expectedError := regexp.MustCompile(".* Validation failed: Name has already been taken")
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },

@@ -1036,8 +1036,8 @@ func TestAccSkytapVM_Labels(t *testing.T) {
 		}
 	`
 
-	labelEnv := fmt.Sprintf("tftest-Environment-%d", uniqueSuffixEnv)
-	labelOwners := fmt.Sprintf("tftest-Owners-%d", uniqueSuffixEnv)
+	labelEnv := fmt.Sprintf("tftest-Environment-%s", t.Name())
+	labelOwners := fmt.Sprintf("tftest-Owners-%s", t.Name())
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
@@ -1046,7 +1046,7 @@ func TestAccSkytapVM_Labels(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSkytapVMConfigBlock(newEnvTemplateID, uniqueSuffixEnv, templateID, vmID, "test",
-					labelRequirements(uniqueSuffixEnv), labels),
+					labelRequirements(t.Name()), labels),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "test"),
@@ -1058,7 +1058,7 @@ func TestAccSkytapVM_Labels(t *testing.T) {
 			},
 			{
 				Config: testAccSkytapVMConfigBlock(newEnvTemplateID, uniqueSuffixEnv, templateID, vmID, "test",
-					labelRequirements(uniqueSuffixEnv), labelsUpdated),
+					labelRequirements(t.Name()), labelsUpdated),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "test"),
