@@ -435,9 +435,9 @@ func TestAccSkytapVM_Typical(t *testing.T) {
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:             testAccSkytapVMConfig_typical(newEnvTemplateID, templateID, vmID, uniqueSuffixEnv, 22, "", ""),
-				ExpectNonEmptyPlan: false,
+				Config: testAccSkytapVMConfig_typical(newEnvTemplateID, templateID, vmID, uniqueSuffixEnv, 22, "", ""),
 			}, {
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_typical(newEnvTemplateID, templateID, vmID, uniqueSuffixEnv, 23,
 					`published_service  {
 						name = "web-internal"
@@ -460,7 +460,6 @@ func TestAccSkytapVM_Typical(t *testing.T) {
         	          }
 
       	            }`),
-				ExpectNonEmptyPlan: false,
 			},
 		},
 	})

@@ -61,10 +61,9 @@ func TestAccSkytapLabelCategory_Update(t *testing.T) {
 				Check:  testAccCheckSkytapLabelCategoryExists("skytap_label_category.env_category"),
 			},
 			{
-				ExpectNonEmptyPlan: true,
-				Config:             testAccSkytapLabelCategory_basic(label, false),
-				Check:              testAccCheckSkytapLabelCategoryExists("skytap_label_category.env_category"),
-				ExpectError:        regexp.MustCompile(`can not be created with this single value property as it is recreated from a existing label category`),
+				Config:      testAccSkytapLabelCategory_basic(label, false),
+				Check:       testAccCheckSkytapLabelCategoryExists("skytap_label_category.env_category"),
+				ExpectError: regexp.MustCompile(`can not be created with this single value property as it is recreated from a existing label category`),
 			},
 		},
 	})

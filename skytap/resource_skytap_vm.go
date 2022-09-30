@@ -1119,14 +1119,15 @@ func forceRunstate(ctx context.Context, meta interface{}, environmentID string, 
 
 	opts := skytap.UpdateVMRequest{}
 	opts.Runstate = utils.VMRunstate(runstate)
-	log.Printf("[INFO] VM starting: %s", id)
-	log.Printf("[TRACE] VM starting: %v", spew.Sdump(opts))
+
+	log.Printf("[INFO] Changing VM (%s) runstate to %s", id, runstate)
+	log.Printf("[TRACE] VM (%s) update request: %v", id, spew.Sdump(opts))
 	vm, err := client.Update(ctx, environmentID, id, &opts)
 	if err != nil {
-		return fmt.Errorf("error starting VM (%s): %v", id, err)
+		return fmt.Errorf("error changing VM (%s) runstate to (%s): %v", id, runstate, err)
 	}
-	log.Printf("[INFO] started VM: %s", id)
-	log.Printf("[TRACE] started VM: %v", spew.Sdump(vm))
+	log.Printf("[INFO] VM (%s) runstate transitioned to (%s)", id, runstate)
+	log.Printf("[TRACE] VM (%s) runstate transitioned to (%s): %v", id, runstate, spew.Sdump(vm))
 	return nil
 }
 
