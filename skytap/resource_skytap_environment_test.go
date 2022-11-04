@@ -244,15 +244,15 @@ func TestAccSkytapEnvironment_UserDataUpdate(t *testing.T) {
 	})
 }
 
-func labelRequirements(uniqueSuffix int) string {
+func labelRequirements(uniqueSuffix string) string {
 	return fmt.Sprintf(`
 		resource skytap_label_category "environment_label" {
-			name = "tftest-Environment-%d"
+			name = "tftest-Environment-%s"
 			single_value = true
 		}
 
 		resource skytap_label_category "owners_label" {
-			name = "tftest-Owners-%d"
+			name = "tftest-Owners-%s"
 			single_value = false
 		}
 	`, uniqueSuffix, uniqueSuffix)
@@ -285,7 +285,7 @@ func TestAccSkytapEnvironment_Labels(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				PreventDiskCleanup: true,
-				Config:             testAccSkytapEnvironmentConfigBlock(uniqueSuffix, templateID, labelRequirements(uniqueSuffix), labels),
+				Config:             testAccSkytapEnvironmentConfigBlock(uniqueSuffix, templateID, labelRequirements(t.Name()), labels),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapEnvironmentExists("skytap_environment.foo", &environment),
 				),
@@ -325,8 +325,8 @@ func TestAccSkytapEnvironment_LabelsUpdate(t *testing.T) {
 		}
 	`
 
-	labelEnv := fmt.Sprintf("tftest-Environment-%d", uniqueSuffix)
-	labelOwners := fmt.Sprintf("tftest-Owners-%d", uniqueSuffix)
+	labelEnv := fmt.Sprintf("tftest-Environment-%s", t.Name())
+	labelOwners := fmt.Sprintf("tftest-Owners-%s", t.Name())
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
@@ -335,7 +335,7 @@ func TestAccSkytapEnvironment_LabelsUpdate(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				PreventDiskCleanup: true,
-				Config:             testAccSkytapEnvironmentConfigBlock(uniqueSuffix, templateID, labelRequirements(uniqueSuffix), labels),
+				Config:             testAccSkytapEnvironmentConfigBlock(uniqueSuffix, templateID, labelRequirements(t.Name()), labels),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapEnvironmentExists("skytap_environment.foo", &environment),
 					testAccCheckSkytapEnvironmentContainsLabel(&environment, labelEnv, "Prod"),
@@ -345,7 +345,7 @@ func TestAccSkytapEnvironment_LabelsUpdate(t *testing.T) {
 			},
 			{
 				PreventDiskCleanup: true,
-				Config:             testAccSkytapEnvironmentConfigBlock(uniqueSuffix, templateID, labelRequirements(uniqueSuffix), labelsUpdated),
+				Config:             testAccSkytapEnvironmentConfigBlock(uniqueSuffix, templateID, labelRequirements(t.Name()), labelsUpdated),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapEnvironmentExists("skytap_environment.foo", &environment),
 					testAccCheckSkytapEnvironmentContainsLabel(&environment, labelEnv, "UAT"),

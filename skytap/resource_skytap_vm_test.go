@@ -170,6 +170,7 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 					testAccCheckSkytapInterfaceAttributes(t, "skytap_environment.foo", "skytap_network.baz", &vm, skytap.NICTypeVMXNet3, []string{"192.168.0.10", "192.168.0.11"}, []string{"bloggs-web", "bloggs-web2"}),
 				),
 			}, {
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
@@ -200,6 +201,7 @@ func TestAccSkytapVM_Interface(t *testing.T) {
 					testAccCheckSkytapInterfaceAttributes(t, "skytap_environment.foo", "skytap_network.baz", &vm, skytap.NICTypeVMXNet3, []string{"192.168.0.20", "192.168.0.21"}, []string{"bloggs-web3", "bloggs-web4"}),
 				),
 			}, {
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
@@ -265,6 +267,7 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 					testAccCheckSkytapPublishedServiceAttributes(&vm, []int{8080, 8081}),
 				),
 			}, {
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
@@ -294,6 +297,7 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 					testAccCheckSkytapPublishedServiceAttributes(&vm, []int{8082, 8083}),
 				),
 			}, {
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
@@ -319,6 +323,7 @@ func TestAccSkytapVM_PublishedService(t *testing.T) {
 					testAccCheckSkytapPublishedServiceAttributes(&vm, []int{8084}),
 				),
 			}, {
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_basic(newEnvTemplateID, uniqueSuffixEnv, `
 					resource "skytap_network" "baz" {
   						name        		= "tftest-network-1"
@@ -430,9 +435,9 @@ func TestAccSkytapVM_Typical(t *testing.T) {
 		CheckDestroy:      testAccCheckSkytapEnvironmentDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:             testAccSkytapVMConfig_typical(newEnvTemplateID, templateID, vmID, uniqueSuffixEnv, 22, "", ""),
-				ExpectNonEmptyPlan: false,
+				Config: testAccSkytapVMConfig_typical(newEnvTemplateID, templateID, vmID, uniqueSuffixEnv, 22, "", ""),
 			}, {
+				PreConfig: pause(MINUTES),
 				Config: testAccSkytapVMConfig_typical(newEnvTemplateID, templateID, vmID, uniqueSuffixEnv, 23,
 					`published_service  {
 						name = "web-internal"
@@ -455,7 +460,6 @@ func TestAccSkytapVM_Typical(t *testing.T) {
         	          }
 
       	            }`),
-				ExpectNonEmptyPlan: false,
 			},
 		},
 	})
@@ -1032,8 +1036,8 @@ func TestAccSkytapVM_Labels(t *testing.T) {
 		}
 	`
 
-	labelEnv := fmt.Sprintf("tftest-Environment-%d", uniqueSuffixEnv)
-	labelOwners := fmt.Sprintf("tftest-Owners-%d", uniqueSuffixEnv)
+	labelEnv := fmt.Sprintf("tftest-Environment-%s", t.Name())
+	labelOwners := fmt.Sprintf("tftest-Owners-%s", t.Name())
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
@@ -1042,7 +1046,7 @@ func TestAccSkytapVM_Labels(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccSkytapVMConfigBlock(newEnvTemplateID, uniqueSuffixEnv, templateID, vmID, "test",
-					labelRequirements(uniqueSuffixEnv), labels),
+					labelRequirements(t.Name()), labels),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "test"),
@@ -1054,7 +1058,7 @@ func TestAccSkytapVM_Labels(t *testing.T) {
 			},
 			{
 				Config: testAccSkytapVMConfigBlock(newEnvTemplateID, uniqueSuffixEnv, templateID, vmID, "test",
-					labelRequirements(uniqueSuffixEnv), labelsUpdated),
+					labelRequirements(t.Name()), labelsUpdated),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckSkytapVMExists("skytap_environment.foo", "skytap_vm.bar", &vm),
 					resource.TestCheckResourceAttr("skytap_vm.bar", "name", "test"),
