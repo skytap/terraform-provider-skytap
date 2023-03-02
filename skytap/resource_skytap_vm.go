@@ -67,7 +67,7 @@ func resourceSkytapVM() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				Description:  "Number of CPUs allocated to this virtual machine",
-				ValidateFunc: validation.IntBetween(1, 12),
+				ValidateFunc: validation.IntBetween(1, 24),
 			},
 
 			"max_cpus": {
