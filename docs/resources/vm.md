@@ -27,7 +27,7 @@ resource "skytap_vm" "vm" {
   cpus = 2
   ram = 4096
 
-  os_disk_size = 40000
+  os_disk_size = 40960
 
   disk  {
     name = "my disk"
